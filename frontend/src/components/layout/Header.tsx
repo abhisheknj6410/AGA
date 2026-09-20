@@ -11,7 +11,9 @@ import {
   Database,
   Link,
   FileCheck,
-  Download
+  Download,
+  Clock,
+  ChevronDown
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,6 +30,8 @@ interface HeaderProps {
   allNodes: GraphNode[];
   allEdges: GraphEdge[];
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
+  isTimelineOpen?: boolean;
+  onToggleTimeline?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,10 +47,13 @@ export const Header: React.FC<HeaderProps> = ({
   pendingResolutionCount,
   allNodes,
   allEdges,
-  onSelectElement
+  onSelectElement,
+  isTimelineOpen,
+  onToggleTimeline
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const filteredNodes = searchQuery.trim()
     ? allNodes.filter(
@@ -250,6 +257,20 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
+        {/* Timeline Playback Toggle */}
+        <button
+          onClick={onToggleTimeline}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border transition ${
+            isTimelineOpen
+              ? 'bg-amber-950/70 border-amber-500/70 text-amber-300 shadow-md shadow-amber-900/30'
+              : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+          }`}
+          title="Toggle Chronological Timeline Stepper"
+        >
+          <Clock className={`w-3.5 h-3.5 ${isTimelineOpen ? 'text-amber-400' : 'text-slate-400'}`} />
+          <span>Timeline</span>
+        </button>
+
         {/* Audit Log */}
         <button
           onClick={onOpenAudit}
@@ -260,17 +281,51 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Audit</span>
         </button>
 
-        {/* Export Snapshot */}
+        {/* Export Formats Dropdown */}
         {currentCase && (
-          <a
-            href={`/api/cases/${currentCase.id}/export`}
-            download={`case-${currentCase.id.slice(0, 8)}-snapshot.json`}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
-            title="Export Complete Investigation Snapshot (JSON)"
-          >
-            <Download className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Snapshot</span>
-          </a>
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
+              title="Export Investigation in Multiple Formats"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Export</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {showExportMenu && (
+              <div
+                className="absolute right-0 mt-1.5 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl py-1 text-xs z-50 divide-y divide-slate-800"
+                onClick={() => setShowExportMenu(false)}
+              >
+                <a
+                  href={`/api/cases/${currentCase.id}/export?format=json`}
+                  download={`case-${currentCase.id.slice(0, 8)}-snapshot.json`}
+                  className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-slate-200 transition"
+                >
+                  <span className="font-medium">JSON Snapshot</span>
+                  <span className="text-[10px] text-indigo-400 font-mono">.json</span>
+                </a>
+                <a
+                  href={`/api/cases/${currentCase.id}/export?format=graphml`}
+                  download={`case-${currentCase.id.slice(0, 8)}.graphml`}
+                  className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-slate-200 transition"
+                >
+                  <span className="font-medium">GraphML (Standard)</span>
+                  <span className="text-[10px] text-amber-400 font-mono">.graphml</span>
+                </a>
+                <a
+                  href={`/api/cases/${currentCase.id}/export?format=dot`}
+                  download={`case-${currentCase.id.slice(0, 8)}.dot`}
+                  className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-slate-200 transition"
+                >
+                  <span className="font-medium">Graphviz DOT</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">.dot</span>
+                </a>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </header>

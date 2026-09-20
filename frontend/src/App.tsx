@@ -4,6 +4,7 @@ import { SidebarFilters, FilterState } from './components/layout/SidebarFilters'
 import { CytoscapeCanvas } from './components/graph/CytoscapeCanvas';
 import { InspectorPanel } from './components/inspector/InspectorPanel';
 import { StatusBar } from './components/layout/StatusBar';
+import { TimelinePlayback } from './components/timeline/TimelinePlayback';
 import { AddNodeModal } from './components/modals/AddNodeModal';
 import { AddEdgeModal } from './components/modals/AddEdgeModal';
 import { ImportModal } from './components/modals/ImportModal';
@@ -61,6 +62,12 @@ export const App: React.FC = () => {
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
+  // Timeline playback state
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const [timelineStep, setTimelineStep] = useState(0);
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
+  const [cumulativeTimeline, setCumulativeTimeline] = useState(false);
+
   // Modals state
   const [nodeModalOpen, setNodeModalOpen] = useState(false);
   const [nodeModalCategory, setNodeModalCategory] = useState<NodeCategory>('ENTITY');
@@ -100,14 +107,61 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadCaseData();
     setSelectedElement(null);
+    setTimelineStep(0);
+    setIsTimelinePlaying(false);
   }, [loadCaseData]);
+
+  // Extract sorted chronological events for timeline playback
+  const chronologicalEvents = useMemo(() => {
+    if (!graph) return [];
+    return graph.nodes
+      .filter(n => n.category === 'EVENT')
+      .slice()
+      .sort((a, b) => {
+        const ta = a.time?.start ? new Date(a.time.start).getTime() : 0;
+        const tb = b.time?.start ? new Date(b.time.start).getTime() : 0;
+        if (ta !== tb) return ta - tb;
+        return a.label.localeCompare(b.label);
+      });
+  }, [graph]);
+
+  // Handle timeline step change and auto-focus
+  const handleTimelineStepChange = useCallback((newStep: number) => {
+    setTimelineStep(newStep);
+    if (chronologicalEvents[newStep]) {
+      setSelectedElement({ type: 'node', id: chronologicalEvents[newStep].id });
+    }
+  }, [chronologicalEvents]);
 
   // Filtered graph computation
   const filteredElements = useMemo(() => {
     if (!graph) return { nodes: [], edges: [] };
 
+    // Cumulative timeline filtering (if enabled)
+    let allowedConnectedNodeIds: Set<string> | null = null;
+    if (isTimelineOpen && cumulativeTimeline && chronologicalEvents.length > 0) {
+      const activeSlice = chronologicalEvents.slice(0, timelineStep + 1);
+      const allowedEventIds = new Set(activeSlice.map(e => e.id));
+      allowedConnectedNodeIds = new Set<string>(allowedEventIds);
+
+      // Include entities & evidence directly linked to visible events
+      for (const edge of graph.edges) {
+        if (allowedEventIds.has(edge.source)) {
+          allowedConnectedNodeIds.add(edge.target);
+        }
+        if (allowedEventIds.has(edge.target)) {
+          allowedConnectedNodeIds.add(edge.source);
+        }
+      }
+    }
+
     // 1. Filter Nodes
     const visibleNodes = graph.nodes.filter(n => {
+      // Cumulative playback filter
+      if (allowedConnectedNodeIds && !allowedConnectedNodeIds.has(n.id)) {
+        return false;
+      }
+
       // Category filter
       if (!filters.visibleCategories[n.category]) return false;
 
@@ -133,7 +187,7 @@ export const App: React.FC = () => {
     });
 
     return { nodes: visibleNodes, edges: visibleEdges };
-  }, [graph, filters]);
+  }, [graph, filters, isTimelineOpen, cumulativeTimeline, chronologicalEvents, timelineStep]);
 
   // Handlers
   const handleAddNodeOpen = (cat: NodeCategory) => {
@@ -190,6 +244,14 @@ export const App: React.FC = () => {
         allNodes={graph?.nodes || []}
         allEdges={graph?.edges || []}
         onSelectElement={(type, id) => setSelectedElement({ type, id })}
+        isTimelineOpen={isTimelineOpen}
+        onToggleTimeline={() => {
+          const next = !isTimelineOpen;
+          setIsTimelineOpen(next);
+          if (!next) {
+            setIsTimelinePlaying(false);
+          }
+        }}
       />
 
       {/* Main Workspace Layout */}
@@ -203,14 +265,35 @@ export const App: React.FC = () => {
           onResetFilters={() => setFilters(INITIAL_FILTERS)}
         />
 
-        {/* Center Cytoscape Canvas */}
-        <CytoscapeCanvas
-          nodes={filteredElements.nodes}
-          edges={filteredElements.edges}
-          selectedElement={selectedElement}
-          onSelectElement={setSelectedElement}
-          layoutType={filters.layout}
-        />
+        {/* Center Cytoscape Canvas & Floating Overlays */}
+        <div className="relative flex-1 h-full overflow-hidden">
+          <CytoscapeCanvas
+            nodes={filteredElements.nodes}
+            edges={filteredElements.edges}
+            selectedElement={selectedElement}
+            onSelectElement={setSelectedElement}
+            layoutType={filters.layout}
+          />
+
+          {/* Chronological Event Stepper & Playback Toolbar */}
+          {isTimelineOpen && (
+            <TimelinePlayback
+              events={chronologicalEvents}
+              allNodes={graph?.nodes || []}
+              allEdges={graph?.edges || []}
+              currentStep={timelineStep}
+              onStepChange={handleTimelineStepChange}
+              isPlaying={isTimelinePlaying}
+              onTogglePlay={() => setIsTimelinePlaying(!isTimelinePlaying)}
+              cumulativeMode={cumulativeTimeline}
+              onToggleCumulative={() => setCumulativeTimeline(!cumulativeTimeline)}
+              onClose={() => {
+                setIsTimelineOpen(false);
+                setIsTimelinePlaying(false);
+              }}
+            />
+          )}
+        </div>
 
         {/* Right Inspector & Provenance Panel */}
         <InspectorPanel
