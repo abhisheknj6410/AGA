@@ -11,6 +11,7 @@ import { ImportModal } from './components/modals/ImportModal';
 import { ResolutionModal } from './components/modals/ResolutionModal';
 import { AuditModal } from './components/modals/AuditModal';
 import { NewCaseModal } from './components/modals/NewCaseModal';
+import { DiagnosticsModal } from './components/modals/DiagnosticsModal';
 import {
   Case,
   GraphPayload,
@@ -76,6 +77,7 @@ export const App: React.FC = () => {
   const [resolutionModalOpen, setResolutionModalOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [newCaseModalOpen, setNewCaseModalOpen] = useState(false);
+  const [diagnosticsModalOpen, setDiagnosticsModalOpen] = useState(false);
 
   // Load initial cases
   useEffect(() => {
@@ -308,7 +310,11 @@ export const App: React.FC = () => {
       </div>
 
       {/* Bottom Status Bar */}
-      <StatusBar graph={graph} validation={validation} />
+      <StatusBar
+        graph={graph}
+        validation={validation}
+        onOpenDiagnostics={() => setDiagnosticsModalOpen(true)}
+      />
 
       {/* Modals */}
       {currentCase && (
@@ -347,6 +353,13 @@ export const App: React.FC = () => {
             isOpen={auditModalOpen}
             onClose={() => setAuditModalOpen(false)}
             caseId={currentCase.id}
+          />
+
+          <DiagnosticsModal
+            isOpen={diagnosticsModalOpen}
+            onClose={() => setDiagnosticsModalOpen(false)}
+            caseId={currentCase.id}
+            onSelectNode={nodeId => setSelectedElement({ type: 'node', id: nodeId })}
           />
         </>
       )}

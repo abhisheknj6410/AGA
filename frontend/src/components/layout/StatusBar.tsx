@@ -1,13 +1,14 @@
 import React from 'react';
-import { ShieldCheck, AlertTriangle, Layers, GitCommit, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Layers, GitCommit, CheckCircle2, Activity } from 'lucide-react';
 import { GraphPayload } from '../../types/graph';
 
 interface StatusBarProps {
   graph: GraphPayload | null;
   validation: { valid: boolean; errors: string[] } | null;
+  onOpenDiagnostics?: () => void;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ graph, validation }) => {
+export const StatusBar: React.FC<StatusBarProps> = ({ graph, validation, onOpenDiagnostics }) => {
   if (!graph) return null;
 
   const observedEdges = graph.edges.filter(e => e.status === 'OBSERVED').length;
@@ -50,18 +51,37 @@ export const StatusBar: React.FC<StatusBarProps> = ({ graph, validation }) => {
         )}
       </div>
 
-      {/* Right: Validation & Integrity Status */}
+      {/* Right: Validation, Diagnostics & Integrity Status */}
       <div className="flex items-center gap-3">
+        {onOpenDiagnostics && (
+          <button
+            onClick={onOpenDiagnostics}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-800/60 transition"
+            title="Inspect Graph Topology & Algorithm Readiness"
+          >
+            <Activity className="w-3 h-3 text-indigo-400" />
+            <span>Topology & Diagnostics</span>
+          </button>
+        )}
+
         {validation?.valid ? (
-          <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
+          <button
+            onClick={onOpenDiagnostics}
+            className="flex items-center gap-1.5 text-emerald-400 font-medium hover:underline transition"
+            title="Click to view full graph structural diagnostics"
+          >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Strict Graph Constraints Validated</span>
-          </div>
+          </button>
         ) : validation && !validation.valid ? (
-          <div className="flex items-center gap-1.5 text-red-400 font-medium" title={validation.errors.join('; ')}>
+          <button
+            onClick={onOpenDiagnostics}
+            className="flex items-center gap-1.5 text-red-400 font-medium hover:underline transition"
+            title={validation.errors.join('; ')}
+          >
             <AlertTriangle className="w-3.5 h-3.5" />
             <span>{validation.errors.length} Integrity Warnings</span>
-          </div>
+          </button>
         ) : null}
 
         <div className="h-3 w-[1px] bg-slate-800" />

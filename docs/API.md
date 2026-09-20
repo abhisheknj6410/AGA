@@ -135,6 +135,17 @@ Returns the complete visualization-ready payload:
 ### `GET /cases/:caseId/graph/validate`
 Executes full integrity validation and returns `{ "valid": true, "errors": [] }`.
 
+### `GET /cases/:caseId/graph/diagnostics`
+Executes comprehensive graph topology analysis and Phase 2 algorithm compatibility checks:
+- **Overview**: Node count, edge count, graph density, isolated node count.
+- **Connectivity**: Weakly connected components count and component sizes.
+- **Degree Distribution & Hubs**: Max in/out-degree and top hub vertices (potential articulation points/bridges).
+- **Causal DAG Analysis**: DFS cycle detection on causal relationships (`CAUSED`, `PRECEDED`, `TRIGGERED`) to guarantee acyclicity and detect causal loops.
+- **Temporal Causality Validation**: Verifies that for every causal edge $u \to v$, $\text{start}(u) \le \text{start}(v)$ without negative time travel.
+- **Cost & Weight Properties**: Confirms non-negative edge costs ($w \ge 0$) required for Dijkstra and minimum spanning tree/Steiner tree algorithms.
+- **Contradictions**: Lists explicit evidence contradiction edges (`CONTRADICTS`).
+- **Phase 2 Readiness**: Deterministic evaluation of compatibility with Dijkstra, topological sorting, and min-cut/max-flow.
+
 ---
 
 ## 5. Import & Resolution

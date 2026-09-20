@@ -99,6 +99,12 @@ export async function validateGraph(caseId: string): Promise<{ valid: boolean; e
   return res.json();
 }
 
+export async function fetchGraphDiagnostics(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/graph/diagnostics`);
+  if (!res.ok) throw new Error('Failed to fetch graph diagnostics.');
+  return res.json();
+}
+
 export async function importJsonDataset(caseId: string, payload: any): Promise<any> {
   const res = await fetch(`${API_BASE}/cases/${caseId}/import/json`, {
     method: 'POST',
