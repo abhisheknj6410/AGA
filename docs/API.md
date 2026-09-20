@@ -156,3 +156,30 @@ Marks candidate nodes as distinct entities.
 
 ### `GET /cases/:caseId/audit`
 Returns the append-only audit trail for the case.
+
+---
+
+## 6. AI Extraction Boundary & Snapshot Export
+
+### `POST /cases/:caseId/extract`
+Extracts untrusted structured candidates (entities, events, relationships, evidence) from raw text/log lines.
+- **Request Body**:
+  ```json
+  {
+    "rawText": "Accepted publickey for rkumar-adm from 10.0.4.15 port 22 ssh2",
+    "sourceName": "server-auth.log",
+    "evidenceType": "LOG"
+  }
+  ```
+- **Response (200 OK)**:
+  Returns candidate items with `metadata.aiExtracted = true`.
+  *All candidates must subsequently pass the strict schema, direction, and provenance validation before persistence via `/cases/:caseId/import/json`.*
+
+### `GET /cases/:caseId/export?format=json|graphml|dot`
+Exports the investigation case in one of three industry-standard formats:
+- `json` (default): Complete investigation snapshot with case metadata, full graph, audit logs, and resolution candidates.
+- `graphml`: GraphML XML format for Gephi, NetworkX, and Cytoscape Desktop.
+- `dot`: DOT graph format for Graphviz visualization and rendering.
+
+### `POST /cases/import-snapshot`
+Restores a complete exported JSON snapshot into a new or restored investigation case.

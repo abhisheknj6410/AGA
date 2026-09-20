@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "Production-Ready Evidence-Constrained Graph Investigation System (Phase 1)",
   "private": true,
+  "type": "module",
   "scripts": {
+    "start": "node scripts/start-all.js",
+    "dev": "node scripts/start-all.js",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:backend": "npm --prefix backend run build",

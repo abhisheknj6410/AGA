@@ -6,6 +6,7 @@ import { GraphService } from '../../application/graph-service.js';
 import { AuditRepository } from '../../infrastructure/repositories/audit-repository.js';
 import { ResolutionRepository } from '../../infrastructure/repositories/resolution-repository.js';
 import { runInTransaction } from '../../infrastructure/db.js';
+import { GraphExporter } from '../../application/graph-exporter.js';
 
 export function createSnapshotRouter(
   db: DatabaseSync,
@@ -16,12 +17,30 @@ export function createSnapshotRouter(
   const auditRepo = new AuditRepository(db);
   const resRepo = new ResolutionRepository(db);
 
-  // GET /cases/:caseId/export - Export Full Investigation Snapshot
+  // GET /cases/:caseId/export - Export Investigation in JSON, GraphML, or DOT format
   router.get('/:caseId/export', (req: Request, res: Response, next: NextFunction) => {
     try {
       const { caseId } = req.params;
+      const format = (req.query.format as string || 'json').toLowerCase();
       const caseData = caseService.getCase(caseId);
       const graph = graphService.getGraph(caseId);
+
+      if (format === 'graphml') {
+        const xml = GraphExporter.toGraphML(graph);
+        res.setHeader('Content-Type', 'application/xml');
+        res.setHeader('Content-Disposition', `attachment; filename="case-${caseId.slice(0, 8)}.graphml"`);
+        res.send(xml);
+        return;
+      }
+
+      if (format === 'dot' || format === 'graphviz') {
+        const dot = GraphExporter.toDot(graph);
+        res.setHeader('Content-Type', 'text/vnd.graphviz');
+        res.setHeader('Content-Disposition', `attachment; filename="case-${caseId.slice(0, 8)}.dot"`);
+        res.send(dot);
+        return;
+      }
+
       const audit = auditRepo.getByCaseId(caseId, 500);
       const resolution = resRepo.getByCaseId(caseId);
 
@@ -34,6 +53,7 @@ export function createSnapshotRouter(
         resolution
       };
 
+      res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="case-${caseId.slice(0, 8)}-snapshot.json"`);
       res.json(snapshot);
     } catch (err) {
