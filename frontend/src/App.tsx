@@ -28,8 +28,10 @@ import {
   fetchCases,
   fetchCaseGraph,
   createNode,
+  updateNode,
   deleteNode,
   createEdge,
+  updateEdge,
   deleteEdge,
   validateGraph,
   fetchResolutionCandidates
@@ -227,6 +229,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleUpdateNode = async (nodeId: string, updates: Partial<GraphNode>) => {
+    if (!currentCase) return;
+    await updateNode(currentCase.id, nodeId, updates);
+    await loadCaseData();
+  };
+
+  const handleUpdateEdge = async (edgeId: string, updates: Partial<GraphEdge>) => {
+    if (!currentCase) return;
+    await updateEdge(currentCase.id, edgeId, updates);
+    await loadCaseData();
+  };
+
   const pendingResolutionCount = resolutionCandidates.filter(c => c.status === 'PENDING').length;
 
   return (
@@ -306,6 +320,8 @@ export const App: React.FC = () => {
           onSelectElement={setSelectedElement}
           onDeleteNode={handleDeleteNode}
           onDeleteEdge={handleDeleteEdge}
+          onUpdateNode={handleUpdateNode}
+          onUpdateEdge={handleUpdateEdge}
         />
       </div>
 

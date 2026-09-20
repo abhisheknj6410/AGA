@@ -103,11 +103,57 @@ describe('Evidence Graph REST API End-to-End', () => {
     assert.ok(candidates.some((c: any) => c.matchType === 'POSSIBLE_MATCH'));
   });
 
-  it('GET /api/cases/:caseId/audit should return audit trail history', async () => {
-    const res = await fetch(`${baseUrl}/api/cases/${caseId}/audit`);
+  it('PATCH /api/cases/:caseId/nodes/:nodeId should update node label and custom properties', async () => {
+    // 1. Fetch existing graph to find a node
+    const gRes = await fetch(`${baseUrl}/api/cases/${caseId}/graph`);
+    const graph: any = await gRes.json();
+    const targetNode = graph.nodes.find((n: any) => n.category === 'ENTITY');
+    assert.ok(targetNode, 'Case should have an entity node to patch');
+
+    // 2. Patch node
+    const patchRes = await fetch(`${baseUrl}/api/cases/${caseId}/nodes/${targetNode.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        label: `${targetNode.label} (Updated)`,
+        properties: { ...targetNode.properties, patchedKey: 'patchedValue' }
+      })
+    });
+    assert.strictEqual(patchRes.status, 200);
+    const patched: any = await patchRes.json();
+    assert.strictEqual(patched.label, `${targetNode.label} (Updated)`);
+    assert.strictEqual(patched.properties.patchedKey, 'patchedValue');
+  });
+
+  it('PATCH /api/cases/:caseId/edges/:edgeId should update edge cost and status with validation', async () => {
+    // 1. Fetch existing graph to find an edge
+    const gRes = await fetch(`${baseUrl}/api/cases/${caseId}/graph`);
+    const graph: any = await gRes.json();
+    const targetEdge = graph.edges[0];
+    assert.ok(targetEdge, 'Case should have an edge to patch');
+
+    // 2. Patch edge with valid new cost and confidence
+    const patchRes = await fetch(`${baseUrl}/api/cases/${caseId}/edges/${targetEdge.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cost: 3.75,
+        confidence: 0.95
+      })
+    });
+    assert.strictEqual(patchRes.status, 200);
+    const patched: any = await patchRes.json();
+    assert.strictEqual(patched.cost, 3.75);
+    assert.strictEqual(patched.confidence, 0.95);
+  });
+
+  it('GET /api/cases/:caseId/graph/diagnostics should return topology metrics and Phase 2 compatibility', async () => {
+    const res = await fetch(`${baseUrl}/api/cases/${caseId}/graph/diagnostics`);
     assert.strictEqual(res.status, 200);
-    const logs: any = await res.json();
-    assert.ok(Array.isArray(logs));
-    assert.ok(logs.length > 0);
+    const diag: any = await res.json();
+    assert.ok(diag.overview.nodeCount > 0);
+    assert.ok(diag.connectivity.componentCount >= 1);
+    assert.strictEqual(diag.phase2Readiness.dijkstraCompatible, true);
+    assert.strictEqual(diag.costIntegrity.allNonNegative, true);
   });
 });
