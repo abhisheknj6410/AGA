@@ -19,6 +19,8 @@ interface CytoscapeCanvasProps {
   onSelectElement: (element: { type: 'node' | 'edge'; id: string } | null) => void;
   layoutType: 'dagre' | 'cose' | 'concentric' | 'circle';
   theme: 'light' | 'dark';
+  highlightNodeIds?: string[];
+  highlightEdgeIds?: string[];
 }
 
 export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
@@ -27,7 +29,9 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   selectedElement,
   onSelectElement,
   layoutType,
-  theme
+  theme,
+  highlightNodeIds,
+  highlightEdgeIds
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -364,7 +368,19 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
 
     cy.elements().unselect();
 
-    if (selectedElement) {
+    if (highlightNodeIds?.length || highlightEdgeIds?.length) {
+      cy.elements().addClass('dimmed').removeClass('highlighted');
+      if (highlightNodeIds) {
+        highlightNodeIds.forEach(id => {
+          cy.getElementById(id).removeClass('dimmed').addClass('highlighted');
+        });
+      }
+      if (highlightEdgeIds) {
+        highlightEdgeIds.forEach(id => {
+          cy.getElementById(id).removeClass('dimmed').addClass('highlighted');
+        });
+      }
+    } else if (selectedElement) {
       const el = cy.getElementById(selectedElement.id);
       if (el.length > 0) {
         el.select();
@@ -380,7 +396,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     } else {
       cy.elements().removeClass('dimmed').removeClass('highlighted');
     }
-  }, [selectedElement, neighborhoodMode]);
+  }, [selectedElement, neighborhoodMode, highlightNodeIds, highlightEdgeIds]);
 
   // Controls
   const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() * 1.25);

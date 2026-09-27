@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CytoscapeCanvas } from '../graph/CytoscapeCanvas';
 import {
   Workflow,
   GitBranch,
@@ -64,6 +65,56 @@ export const CasePipelineView: React.FC<CasePipelineViewProps> = ({ caseId }) =>
       setLoading(false);
     }
   };
+
+  
+  const getGraphForWhyAnswer = () => {
+    if (!report || !selectedWhyAnswer) return null;
+    let matchedBranch = report.branches.find(b => b.possibilities.some(p => p.id === selectedWhyAnswer.targetId));
+    if (!matchedBranch) {
+      matchedBranch = report.branches.find(b => b.interpretationId === selectedWhyAnswer.targetId);
+    }
+    if (!matchedBranch) {
+      matchedBranch = report.branches.find(b => b.algorithmExecutions?.some(e => e.id === selectedWhyAnswer.targetId));
+    }
+    if (!matchedBranch && report.branches.length > 0) {
+      matchedBranch = report.branches[0];
+    }
+    return matchedBranch?.graph || null;
+  };
+
+  const currentGraph = getGraphForWhyAnswer();
+  
+  const getHighlightedElements = () => {
+    if (!selectedWhyAnswer || !currentGraph) return { nodes: [], edges: [] };
+    
+    // Check if targetId is an edge or node
+    const exactNode = currentGraph.nodes.find(n => n.id === selectedWhyAnswer.targetId);
+    const exactEdge = currentGraph.edges.find(e => e.id === selectedWhyAnswer.targetId);
+    
+    const highlightNodes = new Set<string>();
+    const highlightEdges = new Set<string>();
+    
+    if (exactNode) highlightNodes.add(exactNode.id);
+    if (exactEdge) highlightEdges.add(exactEdge.id);
+    
+    // Highlight edges supporting facts
+    if (selectedWhyAnswer.supportingFacts.length > 0) {
+      for (const e of currentGraph.edges) {
+        if (e.evidenceRefs && e.evidenceRefs.some(ref => selectedWhyAnswer.supportingFacts.includes(ref))) {
+          highlightEdges.add(e.id);
+          highlightNodes.add(e.source);
+          highlightNodes.add(e.target);
+        }
+      }
+    }
+    
+    return {
+      nodes: Array.from(highlightNodes),
+      edges: Array.from(highlightEdges)
+    };
+  };
+  
+  const highlights = getHighlightedElements();
 
   useEffect(() => {
     loadPipelineData();
@@ -413,10 +464,11 @@ export const CasePipelineView: React.FC<CasePipelineViewProps> = ({ caseId }) =>
             )}
 
             {/* SUBTAB 3: "WHY?" INSPECTOR CONSOLE */}
+            
             {activeSubTab === 'WHY_INSPECTOR' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto h-[620px]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-[1400px] mx-auto h-[700px]">
                 {/* Left list of questions */}
-                <div className="md:col-span-1 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 flex flex-col h-full overflow-hidden">
+                <div className="lg:col-span-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 flex flex-col h-full overflow-hidden">
                   <div className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2 flex items-center justify-between">
                     <span>Why? Question Catalog</span>
                     <span className="font-mono text-[10px] text-zinc-400">{filteredWhyAnswers.length}</span>
@@ -457,8 +509,8 @@ export const CasePipelineView: React.FC<CasePipelineViewProps> = ({ caseId }) =>
                   </div>
                 </div>
 
-                {/* Right answer detail */}
-                <div className="md:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col h-full overflow-y-auto space-y-4">
+                {/* Middle answer detail */}
+                <div className="lg:col-span-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col h-full overflow-y-auto space-y-4">
                   {selectedWhyAnswer ? (
                     <>
                       <div className="pb-3 border-b border-zinc-200 dark:border-zinc-800">
@@ -518,10 +570,39 @@ export const CasePipelineView: React.FC<CasePipelineViewProps> = ({ caseId }) =>
                     </div>
                   )}
                 </div>
+                
+                {/* Right Interactive Graph Highlighting */}
+                <div className="lg:col-span-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col h-full overflow-hidden">
+                   <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 flex justify-between items-center">
+                     <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Interactive Causal Graph</span>
+                     {highlights.nodes.length > 0 && (
+                       <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                         {highlights.nodes.length} Nodes Highlighted
+                       </span>
+                     )}
+                   </div>
+                   <div className="flex-1 relative bg-zinc-50 dark:bg-black/20">
+                     {currentGraph ? (
+                        <CytoscapeCanvas 
+                          nodes={currentGraph.nodes} 
+                          edges={currentGraph.edges} 
+                          selectedElement={null} 
+                          onSelectElement={() => {}} 
+                          layoutType="dagre" 
+                          theme="light" 
+                          highlightNodeIds={highlights.nodes.length > 0 ? highlights.nodes : undefined}
+                          highlightEdgeIds={highlights.edges.length > 0 ? highlights.edges : undefined}
+                        />
+                     ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-xs text-zinc-500">
+                           No graph data available for this branch.
+                        </div>
+                     )}
+                   </div>
+                </div>
               </div>
             )}
 
-            {/* SUBTAB 4: UNIVERSAL CONCLUSIONS */}
             {activeSubTab === 'CONCLUSIONS' && (
               <div className="space-y-4 max-w-6xl mx-auto">
                 <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
