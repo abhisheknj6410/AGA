@@ -113,6 +113,19 @@ export const App: React.FC = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  // Advanced Studio Mode State (default false: Agent Mode)
+  const [advancedMode, setAdvancedMode] = useState<boolean>(() => {
+    return localStorage.getItem('gis-advanced-mode') === 'true';
+  });
+
+  const toggleAdvancedMode = () => {
+    setAdvancedMode(prev => {
+      const next = !prev;
+      localStorage.setItem('gis-advanced-mode', String(next));
+      return next;
+    });
+  };
+
   // Load initial cases
   useEffect(() => {
     fetchCases().then(list => {
@@ -308,7 +321,7 @@ export const App: React.FC = () => {
   const pendingResolutionCount = resolutionCandidates.filter(c => c.status === 'PENDING').length;
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-100">
       {/* Investigation Header */}
       <Header
         cases={cases}
@@ -338,6 +351,8 @@ export const App: React.FC = () => {
         possibilityCount={possibilities.length}
         theme={theme}
         onToggleTheme={toggleTheme}
+        advancedMode={advancedMode}
+        onToggleAdvancedMode={toggleAdvancedMode}
       />
 
       {/* Main Workspace Layout by Active View */}
@@ -345,15 +360,15 @@ export const App: React.FC = () => {
         <div className="flex flex-1 overflow-hidden relative">
           {/* Active Possibility Overlay Banner */}
           {activePossibility && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-800 shadow-md backdrop-blur-md text-xs">
-              <span className="font-semibold text-indigo-600 dark:text-indigo-400">Overlay:</span>
-              <span className="text-slate-800 dark:text-slate-200 font-medium">{activePossibility.name}</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-medium border border-emerald-200 dark:border-emerald-800">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-zinc-900/95 border border-zinc-200 dark:border-zinc-800 shadow-md backdrop-blur-md text-xs">
+              <span className="font-semibold text-teal-600 dark:text-teal-400">Overlay:</span>
+              <span className="text-zinc-800 dark:text-zinc-200 font-medium">{activePossibility.name}</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-xs text-emerald-700 dark:text-emerald-400 font-mono font-medium border border-emerald-200 dark:border-emerald-800">
                 {activePossibility.status}
               </span>
               <button
                 onClick={() => setActivePossibility(null)}
-                className="ml-1 px-2 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-[11px] font-medium transition"
+                className="ml-1 px-2 py-0.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 text-xs font-medium transition cursor-pointer"
               >
                 Reset
               </button>
@@ -380,45 +395,49 @@ export const App: React.FC = () => {
               theme={theme}
             />
 
-            {/* Floating Vercel Top Control Dock */}
+            {/* Floating Top Control Dock */}
             <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-full shadow-lg text-xs font-semibold text-zinc-800 dark:text-zinc-200">
               <button
                 onClick={() => setFilters(prev => ({ ...prev, layout: prev.layout === 'dagre' ? 'cose' : 'dagre' }))}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs cursor-pointer"
                 title="Toggle Graph Layout (Flow vs Organic)"
               >
                 <Layers className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                 <span>{filters.layout === 'dagre' ? 'Flow Layout' : 'Organic'}</span>
               </button>
 
-              <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+              {/* Studio Mode Manual Fact Controls */}
+              {advancedMode && (
+                <>
+                  <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+                  <button
+                    onClick={() => {
+                      setNodeModalCategory('ENTITY');
+                      setNodeModalOpen(true);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs cursor-pointer"
+                    title="Add Node Fact (Studio Mode)"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Fact</span>
+                  </button>
 
-              <button
-                onClick={() => {
-                  setNodeModalCategory('ENTITY');
-                  setNodeModalOpen(true);
-                }}
-                className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs"
-                title="Add Node Fact"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Fact</span>
-              </button>
-
-              <button
-                onClick={() => setEdgeModalOpen(true)}
-                className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs"
-                title="Connect Relationship"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Connect</span>
-              </button>
+                  <button
+                    onClick={() => setEdgeModalOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs cursor-pointer"
+                    title="Connect Relationship (Studio Mode)"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Connect</span>
+                  </button>
+                </>
+              )}
 
               <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
 
               <button
                 onClick={() => setIsTimelineOpen(!isTimelineOpen)}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full transition text-xs ${
+                className={`flex items-center gap-1 px-3 py-1 rounded-full transition text-xs cursor-pointer ${
                   isTimelineOpen
                     ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-semibold'
                     : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'

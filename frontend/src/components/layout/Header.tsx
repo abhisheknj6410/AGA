@@ -22,6 +22,7 @@ import {
   FileCheck,
   Calendar,
   Layers,
+  Sliders,
   X
 } from 'lucide-react';
 
@@ -47,6 +48,8 @@ interface HeaderProps {
   possibilityCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  advancedMode?: boolean;
+  onToggleAdvancedMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -70,7 +73,9 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   possibilityCount,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  advancedMode = false,
+  onToggleAdvancedMode
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -290,12 +295,12 @@ export const Header: React.FC<HeaderProps> = ({
                         setShowSearchResults(false);
                         setSearchQuery('');
                       }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between transition border-t border-slate-100 dark:border-slate-800"
+                      className="w-full text-left px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between transition border-t border-zinc-100 dark:border-zinc-800"
                     >
-                      <span className="text-slate-600 dark:text-slate-300 truncate">
+                      <span className="text-zinc-600 dark:text-zinc-300 truncate">
                         {edge.type}
                       </span>
-                      <span className="text-[10px] text-indigo-500 font-mono">{edge.status}</span>
+                      <span className="text-xs text-teal-600 dark:text-teal-400 font-mono">{edge.status}</span>
                     </button>
                   ))}
                 </>
@@ -304,70 +309,86 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Unified + Add Fact Dropdown - Vercel Monochrome */}
-        <div ref={addMenuRef} className="relative">
-          <button
-            onClick={() => setShowAddMenu(!showAddMenu)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Fact</span>
-            <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
-          </button>
+        {/* Studio Mode Toggle (Agent Mode vs Studio Mode) */}
+        <button
+          onClick={onToggleAdvancedMode}
+          title={advancedMode ? "Switch to Automated Agent Mode" : "Switch to Studio Mode (Manual Editing)"}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+            advancedMode
+              ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100 shadow-xs'
+              : 'bg-zinc-100 text-zinc-600 border-zinc-200 hover:text-zinc-900 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700 dark:hover:text-zinc-100'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5 text-teal-500" />
+          <span>{advancedMode ? 'Studio Mode' : 'Agent Mode'}</span>
+        </button>
 
-          {showAddMenu && (
-            <div className="absolute right-0 top-9 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs font-medium">
-              <button
-                onClick={() => {
-                  onAddNode('ENTITY');
-                  setShowAddMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
-                <span>Add Entity...</span>
-              </button>
-              <button
-                onClick={() => {
-                  onAddNode('EVENT');
-                  setShowAddMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                <span>Add Event Node...</span>
-              </button>
-              <button
-                onClick={() => {
-                  onAddNode('EVIDENCE');
-                  setShowAddMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span>Add Evidence Item...</span>
-              </button>
-              <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
-              <button
-                onClick={() => {
-                  onAddEdge();
-                  setShowAddMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
-              >
-                <Link2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                <span>Connect Relationship...</span>
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Unified + Add Fact Dropdown - Studio Mode Only */}
+        {advancedMode && (
+          <div ref={addMenuRef} className="relative">
+            <button
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Fact</span>
+              <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
+            </button>
+
+            {showAddMenu && (
+              <div className="absolute right-0 top-9 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs font-medium">
+                <button
+                  onClick={() => {
+                    onAddNode('ENTITY');
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+                  <span>Add Entity...</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onAddNode('EVENT');
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <span>Add Event Node...</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onAddNode('EVIDENCE');
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span>Add Evidence Item...</span>
+                </button>
+                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+                <button
+                  onClick={() => {
+                    onAddEdge();
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+                >
+                  <Link2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                  <span>Connect Relationship...</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tools Menu (Import, Resolution, Timeline, Diagnostics, Export) */}
         <div ref={toolsMenuRef} className="relative">
           <button
             onClick={() => setShowToolsMenu(!showToolsMenu)}
             title="Investigation Tools"
-            className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition relative"
+            className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition relative"
           >
             <MoreHorizontal className="w-4 h-4" />
             {pendingResolutionCount > 0 && (
@@ -376,20 +397,20 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {showToolsMenu && (
-            <div className="absolute right-0 top-8 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 z-50 text-xs font-medium">
+            <div className="absolute right-0 top-8 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs font-medium">
               <button
                 onClick={() => {
                   onOpenResolution();
                   setShowToolsMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between text-zinc-700 dark:text-zinc-200 transition"
               >
-                <div className="flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-2.5">
+                  <Users className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Entity Resolution</span>
                 </div>
                 {pendingResolutionCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 font-mono text-[10px]">
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 font-mono text-xs">
                     {pendingResolutionCount}
                   </span>
                 )}
@@ -400,10 +421,10 @@ export const Header: React.FC<HeaderProps> = ({
                   if (onToggleTimeline) onToggleTimeline();
                   setShowToolsMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between text-zinc-700 dark:text-zinc-200 transition"
               >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Timeline Playback</span>
                 </div>
                 {isTimelineOpen && (
@@ -416,22 +437,22 @@ export const Header: React.FC<HeaderProps> = ({
                   onOpenDiagnostics();
                   setShowToolsMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <Activity className="w-3.5 h-3.5 text-slate-400" />
+                <Activity className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Topology & Diagnostics</span>
               </button>
 
-              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
 
               <button
                 onClick={() => {
                   onOpenImport();
                   setShowToolsMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <Upload className="w-3.5 h-3.5 text-slate-400" />
+                <Upload className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Import Dataset (JSON/CSV)</span>
               </button>
 
@@ -440,9 +461,9 @@ export const Header: React.FC<HeaderProps> = ({
                   onOpenAudit();
                   setShowToolsMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <History className="w-3.5 h-3.5 text-slate-400" />
+                <History className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Forensic Audit Trail</span>
               </button>
 
@@ -453,9 +474,9 @@ export const Header: React.FC<HeaderProps> = ({
                   }
                   setShowToolsMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Export Snapshot (JSON)</span>
               </button>
             </div>
@@ -466,7 +487,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleTheme}
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-          className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition"
+          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition"
         >
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>

@@ -3,7 +3,6 @@ import {
   X,
   ShieldCheck,
   Clock,
-  Link,
   ArrowRight,
   Trash2,
   ExternalLink,
@@ -62,7 +61,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const node = isNode ? nodes.find(n => n.id === selectedElement.id) : null;
   const edge = !isNode && selectedElement ? edges.find(e => e.id === selectedElement.id) : null;
 
-  // Initialize edit fields whenever selectedElement changes
   useEffect(() => {
     setIsEditing(false);
     setEditError(null);
@@ -83,18 +81,13 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     }
   }, [selectedElement, node, edge, isNode]);
 
-  if (!selectedElement) {
-    return null;
-  }
-
+  if (!selectedElement) return null;
   if (isNode && !node) return null;
   if (!isNode && !edge) return null;
 
-  // Node relationship helpers
   const outgoingEdges = isNode ? edges.filter(e => e.source === node!.id) : [];
   const incomingEdges = isNode ? edges.filter(e => e.target === node!.id) : [];
 
-  // Supporting & Contradicting evidence for node
   const supportingEvidenceEdges = isNode
     ? edges.filter(e => e.target === node!.id && e.type === 'SUPPORTS')
     : [];
@@ -186,110 +179,110 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <aside className="w-84 max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xl flex flex-col max-h-[calc(100vh-6rem)] select-none z-30 overflow-hidden">
+    <aside className="w-96 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col max-h-[calc(100vh-6rem)] select-none z-30 overflow-hidden">
       {/* Inspector Header */}
-      <div className="h-10 px-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
-        <div className="flex items-center gap-2 truncate">
+      <div className="h-14 px-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
+        <div className="flex items-center gap-2.5 truncate">
           <span
-            className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold uppercase ${
+            className={`text-xs px-2.5 py-1 rounded-md font-mono font-bold uppercase tracking-wider ${
               isNode
                 ? node?.category === 'ENTITY'
-                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                  ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700'
                   : node?.category === 'EVENT'
                   ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                   : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                : 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
             }`}
           >
             {isNode ? node?.category : 'RELATION'}
           </span>
-          <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
+          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
             {isNode ? node?.label : edge?.type}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {(onUpdateNode || onUpdateEdge) && (
             <button
               onClick={() => {
                 setEditError(null);
                 setIsEditing(!isEditing);
               }}
-              className={`p-1 rounded text-xs transition ${
+              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
                 isEditing
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-teal-600 text-white'
+                  : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
               }`}
               title={isEditing ? 'Cancel Edit' : 'Edit Attributes'}
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              <Edit2 className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
             title="Close Panel"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Error alert if edit failed */}
       {editError && (
-        <div className="p-2.5 mx-3 mt-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-md text-[11px] text-rose-700 dark:text-rose-300 flex items-center gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+        <div className="p-3 mx-4 mt-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
           <span className="truncate">{editError}</span>
         </div>
       )}
 
       {/* Inspector Body */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm scrollbar-thin">
         {isEditing ? (
           /* --- EDIT MODE --- */
-          <div className="space-y-3">
+          <div className="space-y-4">
             {isNode && node ? (
               <>
                 <div>
-                  <label className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
+                  <label className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1.5">
                     Label
                   </label>
                   <input
                     type="text"
                     value={editLabel}
                     onChange={e => setEditLabel(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2.5 py-1 text-slate-800 dark:text-slate-200 text-xs focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-zinc-800 dark:text-zinc-200 text-sm focus:outline-hidden focus:border-teal-500"
                   />
                 </div>
 
                 {node.category === 'EVENT' && (
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
-                    <span className="text-[10px] text-amber-700 dark:text-amber-400 uppercase font-bold block">
+                  <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/40 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                    <span className="text-xs text-amber-700 dark:text-amber-400 uppercase font-bold tracking-wider block">
                       Temporal Interval
                     </span>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">Start Time</label>
+                      <label className="text-xs text-zinc-400 block mb-1">Start Time</label>
                       <input
                         type="datetime-local"
                         value={editStartTime}
                         onChange={e => setEditStartTime(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200"
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">End Time</label>
+                      <label className="text-xs text-zinc-400 block mb-1">End Time</label>
                       <input
                         type="datetime-local"
                         value={editEndTime}
                         onChange={e => setEditEndTime(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200"
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">Precision</label>
+                      <label className="text-xs text-zinc-400 block mb-1">Precision</label>
                       <select
                         value={editPrecision}
                         onChange={e => setEditPrecision(e.target.value as any)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200"
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                       >
                         {['SECOND', 'MINUTE', 'HOUR', 'DAY', 'UNKNOWN'].map(p => (
                           <option key={p} value={p}>{p}</option>
@@ -300,254 +293,217 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 )}
 
                 {node.category === 'EVIDENCE' && (
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 uppercase font-bold block">
-                      Evidence Source
+                  <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/40 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                    <span className="text-xs text-emerald-700 dark:text-emerald-400 uppercase font-bold tracking-wider block">
+                      Provenance Source
                     </span>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">Source Name</label>
+                      <label className="text-xs text-zinc-400 block mb-1">Source Name</label>
                       <input
                         type="text"
                         value={editSourceName}
                         onChange={e => setEditSourceName(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-[11px] text-slate-800 dark:text-slate-200"
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-0.5">
-                        Reliability ({Math.round(editReliability * 100)}%)
-                      </label>
+                      <label className="text-xs text-zinc-400 block mb-1">Source Type</label>
+                      <select
+                        value={editSourceKind}
+                        onChange={e => setEditSourceKind(e.target.value)}
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
+                      >
+                        {['LOG', 'SYSTEM', 'HUMAN', 'REPORT', 'SENSOR'].map(k => (
+                          <option key={k} value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 block mb-1">Reliability (0.0 to 1.0)</label>
                       <input
-                        type="range"
+                        type="number"
+                        step="0.05"
                         min="0"
                         max="1"
-                        step="0.05"
                         value={editReliability}
                         onChange={e => setEditReliability(parseFloat(e.target.value))}
-                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded accent-emerald-500"
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                       />
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <label className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                    Custom Properties (JSON)
+                  <label className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1.5">
+                    Properties (JSON)
                   </label>
                   <textarea
                     rows={4}
                     value={editPropertiesText}
                     onChange={e => setEditPropertiesText(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md p-2 text-slate-800 dark:text-slate-200 font-mono text-[11px] focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 font-mono text-xs text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:border-teal-500"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={handleSaveNode}
-                    disabled={editLoading}
-                    className="flex-1 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{editLoading ? 'Saving...' : 'Save'}</span>
-                  </button>
+                <div className="pt-2 flex items-center justify-end gap-2">
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs transition"
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition cursor-pointer"
                   >
                     Cancel
                   </button>
+                  <button
+                    onClick={handleSaveNode}
+                    disabled={editLoading}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{editLoading ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
                 </div>
               </>
-            ) : edge ? (
+            ) : !isNode && edge ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/40 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
                   <div>
-                    <label className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                      Cost (w &ge; 0)
-                    </label>
+                    <label className="text-xs text-zinc-400 block mb-1">Status</label>
+                    <select
+                      value={editStatus}
+                      onChange={e => setEditStatus(e.target.value as EdgeStatus)}
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
+                    >
+                      <option value="OBSERVED">OBSERVED (Direct Proof)</option>
+                      <option value="DERIVED">DERIVED (Algorithmic)</option>
+                      <option value="HYPOTHESIZED">HYPOTHESIZED (Speculative)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-400 block mb-1">Traversal Cost</label>
                     <input
                       type="number"
                       step="0.1"
                       min="0"
                       value={editCost}
                       onChange={e => setEditCost(parseFloat(e.target.value))}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-slate-800 dark:text-slate-200 text-xs"
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                      Confidence
-                    </label>
+                    <label className="text-xs text-zinc-400 block mb-1">Confidence (Optional, 0.0 - 1.0)</label>
                     <input
-                      type="text"
-                      placeholder="0.0 - 1.0"
+                      type="number"
+                      step="0.05"
+                      min="0"
+                      max="1"
                       value={editConfidence}
                       onChange={e => setEditConfidence(e.target.value)}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-slate-800 dark:text-slate-200 text-xs"
+                      placeholder="e.g. 0.85"
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={editStatus}
-                    onChange={e => setEditStatus(e.target.value as any)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-slate-800 dark:text-slate-200 text-xs"
-                  >
-                    <option value="OBSERVED">OBSERVED</option>
-                    <option value="DERIVED">DERIVED</option>
-                    <option value="HYPOTHESIZED">HYPOTHESIZED</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                    Custom Properties (JSON)
+                  <label className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1.5">
+                    Properties (JSON)
                   </label>
                   <textarea
                     rows={4}
                     value={editPropertiesText}
                     onChange={e => setEditPropertiesText(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md p-2 text-slate-800 dark:text-slate-200 font-mono text-[11px]"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 font-mono text-xs text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:border-teal-500"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
                   <button
                     onClick={handleSaveEdge}
                     disabled={editLoading}
-                    className="flex-1 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>{editLoading ? 'Saving...' : 'Save'}</span>
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs transition"
-                  >
-                    Cancel
+                    <span>{editLoading ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                 </div>
               </>
             ) : null}
           </div>
         ) : (
-          /* --- READ / INSPECTION VIEW --- */
-          <>
-            {/* Node Details */}
+          /* --- VIEW MODE --- */
+          <div className="space-y-5">
             {isNode && node && (
               <>
-                {/* Basic Info */}
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Label</span>
-                    <span className="text-slate-900 dark:text-slate-100 font-semibold text-sm">{node.label}</span>
+                {/* Node Metadata Cards */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800">
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1">
+                      Type
+                    </span>
+                    <span className="text-zinc-900 dark:text-zinc-100 font-mono font-semibold text-xs">
+                      {node.type}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Type</span>
-                      <span className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">{node.type}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">ID</span>
-                      <span className="text-slate-400 font-mono text-[10px] truncate block" title={node.id}>
-                        {node.id}
-                      </span>
-                    </div>
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 truncate">
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1">
+                      Identifier
+                    </span>
+                    <span className="text-zinc-700 dark:text-zinc-300 font-mono text-xs truncate block" title={node.id}>
+                      {node.id}
+                    </span>
                   </div>
                 </div>
 
-                {/* Event Specific: Temporal Info */}
+                {/* Event Interval */}
                 {node.category === 'EVENT' && node.time && (
-                  <div className="p-2.5 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold text-[11px]">
-                      <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      <span>Temporal Interval</span>
-                    </div>
-                    <div className="space-y-1 text-[11px]">
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Start:</span>
-                        <span className="text-slate-700 dark:text-slate-300 font-mono">{node.time.start || 'Unspecified'}</span>
-                      </div>
-                      {node.time.end && (
-                        <div>
-                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">End:</span>
-                          <span className="text-slate-700 dark:text-slate-300 font-mono">{node.time.end}</span>
-                        </div>
-                      )}
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Precision:</span>
-                        <span className="text-slate-600 dark:text-slate-400 font-mono">{node.time.precision}</span>
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-2">
+                    <span className="text-xs text-amber-700 dark:text-amber-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      Temporal Bounds
+                    </span>
+                    <div className="text-xs space-y-1 text-zinc-700 dark:text-zinc-300 font-mono">
+                      <div>Start: {node.time.start ? new Date(node.time.start).toLocaleString() : 'N/A'}</div>
+                      {node.time.end && <div>End: {new Date(node.time.end).toLocaleString()}</div>}
+                      <div className="text-zinc-400">Precision: {node.time.precision}</div>
                     </div>
                   </div>
                 )}
 
-                {/* Evidence Specific: Source & Reliability */}
+                {/* Evidence Provenance */}
                 {node.category === 'EVIDENCE' && (
-                  <div className="p-2.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-2">
-                    <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-semibold text-[11px]">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Evidence Provenance</span>
-                    </div>
-                    <div className="space-y-1.5 text-[11px]">
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Source:</span>
-                        <span className="text-slate-800 dark:text-slate-200 font-medium">{node.source?.name}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Kind:</span>
-                        <span className="text-slate-600 dark:text-slate-400 font-mono">{node.source?.kind}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Reliability:</span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-500 rounded-full"
-                              style={{ width: `${(node.reliability ?? 1.0) * 100}%` }}
-                            />
-                          </div>
-                          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">
-                            {Math.round((node.reliability ?? 1.0) * 100)}%
-                          </span>
-                        </div>
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 space-y-2">
+                    <span className="text-xs text-emerald-700 dark:text-emerald-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Provenance & Reliability
+                    </span>
+                    <div className="text-xs space-y-1 text-zinc-700 dark:text-zinc-300">
+                      <div>Source: <span className="font-semibold">{node.source?.name || 'Manual'}</span> ({node.source?.kind || 'SYSTEM'})</div>
+                      <div>Reliability: <span className="font-mono font-semibold">{((node.reliability ?? 1.0) * 100).toFixed(0)}%</span></div>
                     </div>
                   </div>
                 )}
 
                 {/* Properties */}
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                    Properties
-                  </span>
-                  <div className="bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px] font-mono max-h-36 overflow-y-auto">
-                    {Object.keys(node.properties || {}).length === 0 ? (
-                      <span className="text-slate-400 dark:text-slate-500 italic">No custom attributes</span>
-                    ) : (
-                      <dl className="space-y-1">
-                        {Object.entries(node.properties).map(([k, v]) => (
-                          <div key={k} className="flex justify-between gap-2">
-                            <dt className="text-slate-500 truncate">{k}:</dt>
-                            <dd className="text-slate-800 dark:text-slate-200 font-medium truncate">
-                              {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
-                    )}
+                {node.properties && Object.keys(node.properties).length > 0 && (
+                  <div>
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-2">
+                      Structured Properties
+                    </span>
+                    <pre className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-mono text-xs text-zinc-800 dark:text-zinc-200 overflow-x-auto">
+                      {JSON.stringify(node.properties, null, 2)}
+                    </pre>
                   </div>
-                </div>
+                )}
 
-                {/* Provenance: Supporting / Contradicting Evidence */}
+                {/* Direct Evidence Links */}
                 {(supportingEvidenceEdges.length > 0 || contradictingEvidenceEdges.length > 0) && (
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">
+                  <div className="space-y-2">
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block">
                       Direct Evidence Links
                     </span>
 
@@ -557,17 +513,17 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <button
                           key={e.id}
                           onClick={() => onSelectElement({ type: 'node', id: e.source })}
-                          className="w-full text-left p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between transition"
+                          className="w-full text-left p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between transition cursor-pointer"
                         >
                           <div className="truncate">
-                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold block">
+                            <span className="text-xs text-emerald-700 dark:text-emerald-400 font-bold block">
                               SUPPORTS
                             </span>
-                            <span className="text-slate-800 dark:text-slate-200 font-medium truncate block">
+                            <span className="text-zinc-800 dark:text-zinc-200 font-medium text-xs truncate block">
                               {evNode?.label || e.source}
                             </span>
                           </div>
-                          <ExternalLink className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         </button>
                       );
                     })}
@@ -578,43 +534,43 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <button
                           key={e.id}
                           onClick={() => onSelectElement({ type: 'node', id: e.source })}
-                          className="w-full text-left p-2 rounded-lg bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 flex items-center justify-between transition"
+                          className="w-full text-left p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 flex items-center justify-between transition cursor-pointer"
                         >
                           <div className="truncate">
-                            <span className="text-[10px] text-rose-700 dark:text-rose-400 font-bold block">
+                            <span className="text-xs text-rose-700 dark:text-rose-400 font-bold block">
                               CONTRADICTS
                             </span>
-                            <span className="text-slate-800 dark:text-slate-200 font-medium truncate block">
+                            <span className="text-zinc-800 dark:text-zinc-200 font-medium text-xs truncate block">
                               {evNode?.label || e.source}
                             </span>
                           </div>
-                          <ExternalLink className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
+                          <ExternalLink className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
                         </button>
                       );
                     })}
                   </div>
                 )}
 
-                {/* Connected Relationships Navigation */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">
+                {/* Connected Relationships */}
+                <div className="space-y-2">
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block">
                     Connections ({outgoingEdges.length + incomingEdges.length})
                   </span>
 
                   {outgoingEdges.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 block">Outgoing:</span>
+                    <div className="space-y-1.5">
+                      <span className="text-xs text-zinc-400 block font-medium">Outgoing:</span>
                       {outgoingEdges.map(e => {
                         const targetNode = nodes.find(n => n.id === e.target);
                         return (
                           <button
                             key={e.id}
                             onClick={() => onSelectElement({ type: 'edge', id: e.id })}
-                            className="w-full text-left px-2 py-1.5 rounded-md bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-between transition text-[11px]"
+                            className="w-full text-left px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between transition text-xs cursor-pointer"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 font-mono truncate">{e.type}</span>
-                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 truncate max-w-[120px]">
-                              <ArrowRight className="w-3 h-3 text-slate-400" />
+                            <span className="text-teal-600 dark:text-teal-400 font-mono font-semibold truncate">{e.type}</span>
+                            <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300 truncate max-w-[150px]">
+                              <ArrowRight className="w-3 h-3 text-zinc-400" />
                               <span className="truncate">{targetNode?.label || e.target}</span>
                             </div>
                           </button>
@@ -624,19 +580,19 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   )}
 
                   {incomingEdges.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 block">Incoming:</span>
+                    <div className="space-y-1.5">
+                      <span className="text-xs text-zinc-400 block font-medium">Incoming:</span>
                       {incomingEdges.map(e => {
                         const sourceNode = nodes.find(n => n.id === e.source);
                         return (
                           <button
                             key={e.id}
                             onClick={() => onSelectElement({ type: 'edge', id: e.id })}
-                            className="w-full text-left px-2 py-1.5 rounded-md bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-between transition text-[11px]"
+                            className="w-full text-left px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between transition text-xs cursor-pointer"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 font-mono truncate">{e.type}</span>
-                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 truncate max-w-[120px]">
-                              <span className="text-slate-400">from</span>
+                            <span className="text-teal-600 dark:text-teal-400 font-mono font-semibold truncate">{e.type}</span>
+                            <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300 truncate max-w-[150px]">
+                              <span className="text-zinc-400">from</span>
                               <span className="truncate">{sourceNode?.label || e.source}</span>
                             </div>
                           </button>
@@ -647,71 +603,59 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800">
                   <button
                     onClick={() => onDeleteNode(node.id)}
-                    className="w-full py-1.5 px-3 rounded-md bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 font-medium flex items-center justify-center gap-1.5 transition text-xs"
+                    className="w-full py-2.5 px-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 font-semibold flex items-center justify-center gap-2 transition text-xs cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Node</span>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Node Fact</span>
                   </button>
                 </div>
               </>
             )}
 
-            {/* Edge Details */}
             {!isNode && edge && (
               <>
-                {/* Edge Basic Info */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">
-                      Relationship
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1">
+                      Relationship Type
                     </span>
-                    <span className="text-slate-900 dark:text-slate-100 font-mono font-bold text-sm">{edge.type}</span>
+                    <span className="text-zinc-900 dark:text-zinc-100 font-mono font-bold text-base">{edge.type}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Status</span>
-                      <span
-                        className={`font-mono text-[11px] font-bold ${
-                          edge.status === 'OBSERVED'
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : edge.status === 'DERIVED'
-                            ? 'text-purple-600 dark:text-purple-400'
-                            : 'text-amber-600 dark:text-amber-400'
-                        }`}
-                      >
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800">
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1">Status</span>
+                      <span className="font-mono text-xs font-bold text-teal-600 dark:text-teal-400">
                         {edge.status}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">
-                        Cost
-                      </span>
-                      <span className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">{edge.cost}</span>
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800">
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1">Cost</span>
+                      <span className="text-zinc-700 dark:text-zinc-300 font-mono text-xs font-semibold">{edge.cost}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Connected Nodes */}
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">
+                {/* Endpoints */}
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-2">
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block">
                     Endpoints
                   </span>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {(() => {
                       const src = nodes.find(n => n.id === edge.source);
                       return (
                         <button
                           onClick={() => onSelectElement({ type: 'node', id: edge.source })}
-                          className="w-full text-left p-1.5 rounded-md hover:bg-slate-200/50 dark:hover:bg-slate-800 flex items-center justify-between transition"
+                          className="w-full text-left p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800 flex items-center justify-between transition cursor-pointer"
                         >
                           <div>
-                            <span className="text-[10px] text-slate-400 block">Source</span>
-                            <span className="text-slate-800 dark:text-slate-200 font-medium">{src?.label || edge.source}</span>
+                            <span className="text-xs text-zinc-400 block">Source</span>
+                            <span className="text-zinc-800 dark:text-zinc-200 font-medium text-xs">{src?.label || edge.source}</span>
                           </div>
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                          <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
                         </button>
                       );
                     })()}
@@ -721,55 +665,43 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       return (
                         <button
                           onClick={() => onSelectElement({ type: 'node', id: edge.target })}
-                          className="w-full text-left p-1.5 rounded-md hover:bg-slate-200/50 dark:hover:bg-slate-800 flex items-center justify-between transition"
+                          className="w-full text-left p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800 flex items-center justify-between transition cursor-pointer"
                         >
                           <div>
-                            <span className="text-[10px] text-slate-400 block">Target</span>
-                            <span className="text-slate-800 dark:text-slate-200 font-medium">{tgt?.label || edge.target}</span>
+                            <span className="text-xs text-zinc-400 block">Target</span>
+                            <span className="text-zinc-800 dark:text-zinc-200 font-medium text-xs">{tgt?.label || edge.target}</span>
                           </div>
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                          <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
                         </button>
                       );
                     })()}
                   </div>
                 </div>
 
-                {/* Provenance: Supporting Evidence References */}
+                {/* Evidence References */}
                 <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold mb-1.5 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider mb-2 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     Evidence References ({edge.evidenceRefs.length})
                   </span>
-
                   {edge.evidenceRefs.length === 0 ? (
-                    <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 italic">
-                      {edge.status === 'OBSERVED'
-                        ? 'No evidence linked'
-                        : 'Hypothesized / Derived relationship without primary evidence.'}
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-400 italic">
+                      {edge.status === 'OBSERVED' ? 'No direct evidence linked.' : 'Derived or hypothesized relation.'}
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      {edge.evidenceRefs.map(evId => {
-                        const evNode = nodes.find(n => n.id === evId);
+                    <div className="space-y-1.5">
+                      {edge.evidenceRefs.map(refId => {
+                        const evNode = nodes.find(n => n.id === refId);
                         return (
                           <button
-                            key={evId}
-                            onClick={() => onSelectElement({ type: 'node', id: evId })}
-                            className="w-full text-left p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-between transition"
+                            key={refId}
+                            onClick={() => onSelectElement({ type: 'node', id: refId })}
+                            className="w-full text-left p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between transition text-xs cursor-pointer"
                           >
-                            <div className="truncate">
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                <span className="font-medium text-slate-800 dark:text-slate-200 text-xs truncate">
-                                  {evNode?.label || evId}
-                                </span>
-                              </div>
-                              <span className="text-[10px] text-slate-400 block mt-0.5">
-                                {evNode?.source?.name || 'Unknown'} (
-                                {Math.round((evNode?.reliability ?? 1.0) * 100)}% reliability)
-                              </span>
-                            </div>
-                            <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="text-emerald-800 dark:text-emerald-300 font-medium truncate">
+                              {evNode?.label || refId}
+                            </span>
+                            <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           </button>
                         );
                       })}
@@ -777,42 +709,19 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   )}
                 </div>
 
-                {/* Properties */}
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block mb-1">
-                    Properties
-                  </span>
-                  <div className="bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800 p-2 text-[11px] font-mono max-h-36 overflow-y-auto">
-                    {Object.keys(edge.properties || {}).length === 0 ? (
-                      <span className="text-slate-400 dark:text-slate-500 italic">No custom attributes</span>
-                    ) : (
-                      <dl className="space-y-1">
-                        {Object.entries(edge.properties).map(([k, v]) => (
-                          <div key={k} className="flex justify-between gap-2">
-                            <dt className="text-slate-500 truncate">{k}:</dt>
-                            <dd className="text-slate-800 dark:text-slate-200 font-medium truncate">
-                              {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
-                    )}
-                  </div>
-                </div>
-
                 {/* Actions */}
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800">
                   <button
                     onClick={() => onDeleteEdge(edge.id)}
-                    className="w-full py-1.5 px-3 rounded-md bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 font-medium flex items-center justify-center gap-1.5 transition text-xs"
+                    className="w-full py-2.5 px-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 font-semibold flex items-center justify-center gap-2 transition text-xs cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                     <span>Delete Relationship</span>
                   </button>
                 </div>
               </>
             )}
-          </>
+          </div>
         )}
       </div>
     </aside>
