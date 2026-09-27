@@ -44,14 +44,31 @@ export class PossibilityEngine {
 
     const candidates: Array<Omit<Possibility, 'id' | 'createdAt' | 'updatedAt'>> = [];
 
-    // Identify primary actors and targets
-    const personNodes = baseGraph.nodes.filter(n => n.category === 'ENTITY' && (n.type === 'PERSON' || n.type === 'ACCOUNT'));
-    const targetNodes = baseGraph.nodes.filter(
-      n => n.category === 'ENTITY' && (n.type === 'SERVER' || n.type === 'FILE' || n.type === 'DATABASE_RECORD')
-    );
+    // Identify primary actors and targets domain-independently using graph topology
+    // Sources: entities with high out-degree / low in-degree (actors, origins)
+    // Sinks: entities with high in-degree / low out-degree (targets, impacts, assets)
+    const entityNodes = baseGraph.nodes.filter(n => n.category === 'ENTITY');
+    const inDegrees = new Map<string, number>();
+    const outDegrees = new Map<string, number>();
+    for (const e of baseGraph.edges) {
+      outDegrees.set(e.source, (outDegrees.get(e.source) || 0) + 1);
+      inDegrees.set(e.target, (inDegrees.get(e.target) || 0) + 1);
+    }
 
-    const sourceId = options.sourceNodeId || (personNodes[0]?.id);
-    const targetId = options.targetNodeId || (targetNodes[0]?.id);
+    const candidateSources = [...entityNodes].sort((a, b) => {
+      const aScore = (outDegrees.get(a.id) || 0) - (inDegrees.get(a.id) || 0);
+      const bScore = (outDegrees.get(b.id) || 0) - (inDegrees.get(b.id) || 0);
+      return bScore - aScore;
+    });
+
+    const candidateTargets = [...entityNodes].sort((a, b) => {
+      const aScore = (inDegrees.get(a.id) || 0) - (outDegrees.get(a.id) || 0);
+      const bScore = (inDegrees.get(b.id) || 0) - (outDegrees.get(b.id) || 0);
+      return bScore - aScore;
+    });
+
+    const sourceId = options.sourceNodeId || candidateSources[0]?.id;
+    const targetId = options.targetNodeId || candidateTargets.find(t => t.id !== sourceId)?.id;
 
     // --- 1. Alternative Graph Paths Generation ---
     if (options.includeAlternativePaths !== false && sourceId && targetId && sourceId !== targetId) {
@@ -189,20 +206,20 @@ export class PossibilityEngine {
         const targetNode = baseGraph.nodes.find(n => n.id === ce.target);
 
         if (sourceEvidence && targetNode) {
-          // Branch 1: Remote Compromise / Credential Abuse
-          const sigC1 = this.computeSignature('CONTRADICT_SPOOF', ce.id, [ce.source, ce.target]);
+          // Branch 1: Alternative Actor / Proxy Execution
+          const sigC1 = this.computeSignature('CONTRADICT_PROXY', ce.id, [ce.source, ce.target]);
           if (!seenSignatures.has(sigC1)) {
             seenSignatures.add(sigC1);
             candidates.push({
               caseId,
-              name: `Credential Compromise Hypothesis (${targetNode.label})`,
-              description: `Primary evidence '${sourceEvidence.label}' contradicts target fact '${targetNode.label}'. Indicates credential spoofing or remote hijacking while legitimate user was elsewhere.`,
+              name: `Proxy Execution Hypothesis (${targetNode.label})`,
+              description: `Primary evidence '${sourceEvidence.label}' contradicts target fact '${targetNode.label}'. Indicates proxy execution, impersonation, or secondary intermediary while primary subject was elsewhere.`,
               baseGraphVersion: baseVersion,
               status: 'VALID',
               generationMethod: 'CONTRADICTION_BRANCHING',
               assumptions: [
-                `Evidence '${sourceEvidence.label}' is factually accurate.`,
-                `Target activity was executed by an unauthorized third party using legitimate credentials.`
+                `Evidence '${sourceEvidence.label}' is factually verified.`,
+                `Target activity '${targetNode.label}' was executed by an unauthorized third party or automated agent.`
               ],
               graphChanges: {
                 addedNodes: [],
@@ -215,25 +232,25 @@ export class PossibilityEngine {
               constraints: { conflictingEdgeId: ce.id, privilegedEvidenceId: sourceEvidence.id },
               supportingEvidence: [sourceEvidence.id],
               conflictingEvidence: [targetNode.id],
-              unresolvedQuestions: [`Who had physical access to the device or network token at the time?`],
+              unresolvedQuestions: [`What intermediary had physical or operational capability at that time?`],
               canonicalSignature: sigC1
             });
           }
 
-          // Branch 2: Physical / Direct Access Conflict
-          const sigC2 = this.computeSignature('CONTRADICT_PHYSICAL', ce.id, [ce.source, ce.target]);
+          // Branch 2: Direct Execution with Contradicted Record
+          const sigC2 = this.computeSignature('CONTRADICT_DIRECT', ce.id, [ce.source, ce.target]);
           if (!seenSignatures.has(sigC2)) {
             seenSignatures.add(sigC2);
             candidates.push({
               caseId,
-              name: `Direct Attribution with Evidence Conflict`,
-              description: `Attributes actions directly to identity principal while acknowledging conflicting evidence '${sourceEvidence.label}'.`,
+              name: `Direct Attribution with Conflicting Record`,
+              description: `Attributes actions directly to primary entity while acknowledging conflicting evidence '${sourceEvidence.label}'.`,
               baseGraphVersion: baseVersion,
               status: 'CONFLICTING',
               generationMethod: 'CONTRADICTION_BRANCHING',
               assumptions: [
-                `Assumes target activity was directly executed by subject.`,
-                `Requires evidence '${sourceEvidence.label}' to be dismissed, spoofed, or mis-timestamped.`
+                `Assumes target activity was directly executed by subject entity.`,
+                `Requires evidence '${sourceEvidence.label}' to be dismissed, forged, or mis-calibrated.`
               ],
               graphChanges: {
                 addedNodes: [],
@@ -246,7 +263,7 @@ export class PossibilityEngine {
               constraints: { conflictingEdgeId: ce.id, dismissedEvidenceId: sourceEvidence.id },
               supportingEvidence: [],
               conflictingEvidence: [sourceEvidence.id],
-              unresolvedQuestions: [`Why does CCTV/sensor recording contradict the logged event?`],
+              unresolvedQuestions: [`Why does observational evidence contradict the recorded event?`],
               canonicalSignature: sigC2
             });
           }
