@@ -42,8 +42,8 @@ interface HeaderProps {
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
-  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'AGENT';
-  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'AGENT') => void;
+  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
+  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
   possibilityCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Left: Brand & Case Selector */}
       <div className="flex items-center gap-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 shadow-sm">
+          <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white shadow-sm">
             <Network className="w-4 h-4" />
           </div>
           <span className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white">
@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-1.5">
           <div className="relative flex items-center">
             <select
-              className="appearance-none bg-zinc-100 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-500 cursor-pointer max-w-[200px] truncate transition-colors"
+              className="appearance-none bg-zinc-100 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer max-w-[200px] truncate transition-colors"
               value={currentCase?.id || ''}
               onChange={e => {
                 const selected = cases.find(c => c.id === e.target.value);
@@ -164,13 +164,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Center: Vercel Segmented Navigation */}
+      {/* Center: Vercel Teal Segmented Navigation */}
       <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-medium">
         <button
           onClick={() => onTabChange('GRAPH')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
             activeTab === 'GRAPH'
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
               : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
@@ -180,9 +180,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => onTabChange('POSSIBILITIES')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
             activeTab === 'POSSIBILITIES' || activeTab === 'COMPARISON'
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
               : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
@@ -197,9 +197,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => onTabChange('ANALYSIS')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
             activeTab === 'ANALYSIS'
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
               : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
@@ -208,15 +208,27 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <button
-          onClick={() => onTabChange('AGENT')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
-            activeTab === 'AGENT'
-              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+          onClick={() => onTabChange('INGEST')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'INGEST'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          <span>Ingest Agent</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('QUERY')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'QUERY'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
               : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
           <Bot className="w-3.5 h-3.5" />
-          <span>AI Agent & Ingestion</span>
+          <span>Query Agent</span>
         </button>
       </div>
 
@@ -296,7 +308,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div ref={addMenuRef} className="relative">
           <button
             onClick={() => setShowAddMenu(!showAddMenu)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 shadow-sm transition"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Fact</span>

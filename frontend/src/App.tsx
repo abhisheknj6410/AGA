@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Layers, Plus, Sparkles, Bot, Clock } from 'lucide-react';
+import { Layers, Plus, Sparkles, Bot, Clock, Upload } from 'lucide-react';
 import { Header } from './components/layout/Header';
 import { SidebarFilters, FilterState } from './components/layout/SidebarFilters';
 import { CytoscapeCanvas } from './components/graph/CytoscapeCanvas';
@@ -16,7 +16,8 @@ import { DiagnosticsModal } from './components/modals/DiagnosticsModal';
 import { PossibilitiesView } from './components/possibilities/PossibilitiesView';
 import { ComparisonView } from './components/possibilities/ComparisonView';
 import { AnalysisView } from './components/analysis/AnalysisView';
-import { InvestigationAgentView } from './components/agent/InvestigationAgentView';
+import { CaseIngestionView } from './components/agent/CaseIngestionView';
+import { InvestigationQueryView } from './components/agent/InvestigationQueryView';
 import {
   Case,
   GraphPayload,
@@ -75,8 +76,7 @@ export const App: React.FC = () => {
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  // Phase 2 Primary Views & Possibility State
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'AGENT'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [activePossibility, setActivePossibility] = useState<Possibility | null>(null);
   const [comparisonData, setComparisonData] = useState<PossibilityComparison | null>(null);
@@ -433,12 +433,21 @@ export const App: React.FC = () => {
 
               {/* Direct Ingestion & Query Agent buttons */}
               <button
-                onClick={() => setActiveTab('AGENT')}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 transition text-xs font-semibold shadow-xs"
-                title="Input Case Documents & Query Agent"
+                onClick={() => setActiveTab('INGEST')}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 transition text-xs font-semibold shadow-xs cursor-pointer"
+                title="Input Case Documents & Extract Facts"
+              >
+                <Upload className="w-3.5 h-3.5 text-teal-400 dark:text-teal-600" />
+                <span>Ingest Agent</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('QUERY')}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-600 text-white hover:bg-teal-700 transition text-xs font-semibold shadow-xs cursor-pointer"
+                title="Query Graph & Reason with Agent"
               >
                 <Bot className="w-3.5 h-3.5" />
-                <span>AI Ingest & Query</span>
+                <span>Query Agent</span>
               </button>
             </div>
 
@@ -506,10 +515,17 @@ export const App: React.FC = () => {
         />
       )}
 
-      {activeTab === 'AGENT' && (
-        <InvestigationAgentView
+      {activeTab === 'INGEST' && (
+        <CaseIngestionView
           caseId={currentCase?.id || ''}
           onDataIngested={loadCaseData}
+          onSwitchToGraph={() => setActiveTab('GRAPH')}
+        />
+      )}
+
+      {activeTab === 'QUERY' && (
+        <InvestigationQueryView
+          caseId={currentCase?.id || ''}
           onSwitchToGraph={() => setActiveTab('GRAPH')}
         />
       )}

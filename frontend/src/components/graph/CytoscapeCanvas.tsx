@@ -100,14 +100,14 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             'color': isLight ? '#14532d' : '#bbf7d0'
           }
         },
-        // Selected Node - Vercel High-Contrast Monochrome Ring
+        // Selected Node - Crisp Teal Accent Ring
         {
           selector: 'node:selected',
           style: {
-            'border-color': isLight ? '#09090b' : '#ffffff',
+            'border-color': '#0d9488',
             'border-width': 3,
             'shadow-blur': 16,
-            'shadow-color': isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.35)',
+            'shadow-color': 'rgba(13, 148, 136, 0.45)',
             'shadow-opacity': 1
           }
         },
@@ -174,15 +174,15 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             'line-style': 'solid'
           }
         },
-        // Selected Edge - Vercel Black/White Focus
+        // Selected Edge - Crisp Teal Focus
         {
           selector: 'edge:selected',
           style: {
-            'line-color': isLight ? '#09090b' : '#ffffff',
-            'target-arrow-color': isLight ? '#09090b' : '#ffffff',
+            'line-color': '#0d9488',
+            'target-arrow-color': '#0d9488',
             'width': 2.8,
-            'text-background-color': isLight ? '#09090b' : '#ffffff',
-            'color': isLight ? '#ffffff' : '#09090b'
+            'text-background-color': '#0d9488',
+            'color': '#ffffff'
           }
         },
         // Neighborhood Dimmed Class
