@@ -21,6 +21,7 @@ import { InvestigationQueryView } from './components/agent/InvestigationQueryVie
 import { PossibilityEvolutionView } from './components/possibilities/PossibilityEvolutionView';
 import { ResolutionLabView } from './components/resolution/ResolutionLabView';
 import { InvestigationPlanView } from './components/planning/InvestigationPlanView';
+import { AlgorithmLabView } from './components/effectiveness/AlgorithmLabView';
 import {
   Case,
   GraphPayload,
@@ -551,10 +552,9 @@ export const App: React.FC = () => {
         />
       )}
 
-      {activeTab === 'ANALYSIS' && (
-        <AnalysisView
-          caseId={currentCase?.id || ''}
-          graph={graph}
+      {activeTab === 'ANALYSIS' && currentCase && (
+        <AlgorithmLabView
+          caseId={currentCase.id}
         />
       )}
 

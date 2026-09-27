@@ -330,16 +330,39 @@ export class ResolutionReasoningEngine {
       type: 'CRITICAL_CUT'
     }));
 
+    const traversedNodeIds = (possibility.constraints as any)?.traversedNodeIds as string[] | undefined;
+    const traversedEdgeIds = (possibility.constraints as any)?.traversedEdgeIds as string[] | undefined;
+
+    let relevantNodes = matGraph.nodes;
+    let relevantEdges = matGraph.edges;
+
+    if (traversedNodeIds && traversedNodeIds.length > 0) {
+      relevantNodes = matGraph.nodes.filter(n => traversedNodeIds.includes(n.id));
+    } else if (possibility.generationMethod === 'ALTERNATIVE_PATHS') {
+      const seqAssumption = possibility.assumptions?.find(a => a.startsWith('Path relies on sequence:'));
+      if (seqAssumption) {
+        const labels = seqAssumption.replace('Path relies on sequence:', '').split('→').map(s => s.trim());
+        relevantNodes = matGraph.nodes.filter(n => labels.includes(n.label));
+      }
+    }
+
+    if (traversedEdgeIds && traversedEdgeIds.length > 0) {
+      relevantEdges = matGraph.edges.filter(e => traversedEdgeIds.includes(e.id));
+    } else if (possibility.generationMethod === 'ALTERNATIVE_PATHS') {
+      const relevantNodeIdSet = new Set(relevantNodes.map(n => n.id));
+      relevantEdges = matGraph.edges.filter(e => relevantNodeIdSet.has(e.source) && relevantNodeIdSet.has(e.target));
+    }
+
     return {
       possibilityId: possibility.id,
       possibilityName: possibility.name,
-      nodes: matGraph.nodes.map(n => ({
+      nodes: relevantNodes.map(n => ({
         id: n.id,
         label: n.label,
         type: n.type,
         category: n.category
       })),
-      edges: matGraph.edges.map(e => ({
+      edges: relevantEdges.map(e => ({
         id: e.id,
         source: e.source,
         target: e.target,
@@ -377,9 +400,8 @@ export class ResolutionReasoningEngine {
         if (assumption) {
           const hops = assumption.replace('Path relies on sequence:', '').split('→').map(s => s.trim());
           if (hops.length >= 3) {
-            // Family signature is based on the primary intermediary gateway
-            const primaryIntermediary = hops[1];
-            backboneKey = `CORRIDOR_VIA_${primaryIntermediary.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+            const intermediaries = hops.slice(1, -1);
+            backboneKey = `CORRIDOR_VIA_${intermediaries.join('_TO_').toUpperCase().replace(/[^A-Z0-9_]/g, '_')}`;
           } else {
             backboneKey = `CORRIDOR_DIRECT`;
           }
@@ -746,9 +768,107 @@ export class ResolutionReasoningEngine {
     const candidates: ResolutionCandidate[] = [];
     let rId = 1;
 
-    // 1. Resolution candidates from distinguishing nodes / alternative corridors
+    // 1. Resolution candidates from Dominator divergence & unavoidable choke points
+    for (const fam of families) {
+      const rep = valid.find(p => p.id === fam.representativePossibilityId);
+      if (rep && rep.criticalDependency && rep.criticalDependency.length > 0) {
+        for (const cd of rep.criticalDependency) {
+          const presentP = valid.filter(p => p.criticalDependency?.some(d => d.nodeId === cd.nodeId)).map(p => p.id);
+          const absentP = valid.map(p => p.id).filter(pid => !presentP.includes(pid));
+
+          if (presentP.length > 0 && !candidates.some(c => c.targetEntities.includes(cd.nodeId))) {
+            const familyCoverage = 1.0;
+            const balance = absentP.length > 0
+              ? (1.0 - Math.abs(presentP.length - absentP.length) / totalPossibilities)
+              : 0.6;
+            const rawScore = 2.0 * familyCoverage + 1.5 * balance + 1.0 * 1.0 + 0.5 * 0.8;
+            const utilityScore = Math.min(100, Math.round((rawScore / 5.0) * 100));
+
+            candidates.push({
+              id: `R${rId++}`,
+              targetType: 'NODE',
+              targetLabel: `Choke Point: ${cd.label}`,
+              targetEntities: [cd.nodeId],
+              why: absentP.length > 0
+                ? `Node '${cd.label}' is an unavoidable dominator for family '${fam.familyLabel}'. Verification isolates or confirms this entire corridor family.`
+                : `Node '${cd.label}' is an unavoidable dominator choke point across all surviving corridors. Refutation eliminates all hypotheses routing through this bottleneck.`,
+              affectedPossibilityIds: [...presentP, ...absentP],
+              distinguishedFamilyIds: [fam.familyId],
+              graphBasis: 'DOMINATOR_DIVERGENCE',
+              suggestedEvidenceClass: 'Forensic System Image / Building Entry Audit',
+              resolutionUtilityScore: utilityScore,
+              utilityBreakdown: {
+                familyCoverage: 1.0,
+                possibilityCoverage: 1.0,
+                structuralSeparation: Math.round(balance * 100) / 100,
+                temporalSpecificity: 0.8
+              },
+              partition: {
+                ifPresentValidPossibilityIds: presentP,
+                ifAbsentValidPossibilityIds: absentP
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Resolution candidates from Min-Cut separating boundaries
+    for (const p of valid) {
+      if (p.criticalCut && p.criticalCut.length > 0) {
+        for (const cc of p.criticalCut) {
+          if (!cc.source || !cc.target || !nodeMap.has(cc.source) || !nodeMap.has(cc.target)) {
+            continue;
+          }
+          if (!candidates.some(c => c.targetEntities.includes(cc.source) && c.targetEntities.includes(cc.target))) {
+            const srcNode = nodeMap.get(cc.source);
+            const tgtNode = nodeMap.get(cc.target);
+            const srcLabel = srcNode?.label || cc.source;
+            const tgtLabel = tgtNode?.label || cc.target;
+
+            const presentP = valid.filter(vp => vp.criticalCut?.some(c => c.source === cc.source && c.target === cc.target)).map(vp => vp.id);
+            const absentP = valid.map(vp => vp.id).filter(pid => !presentP.includes(pid));
+
+            const familyCoverage = 1.0;
+            const balance = absentP.length > 0
+              ? (1.0 - Math.abs(presentP.length - absentP.length) / totalPossibilities)
+              : 0.6;
+            const rawScore = 2.0 * familyCoverage + 1.5 * balance + 1.0 * 1.0 + 0.5 * 0.7;
+            const utilityScore = Math.min(100, Math.round((rawScore / 5.0) * 100));
+
+            candidates.push({
+              id: `R${rId++}`,
+              targetType: 'EDGE',
+              targetLabel: `Cut Boundary: ${srcLabel} -> ${tgtLabel}`,
+              targetEntities: [cc.source, cc.target],
+              why: `Edge '${srcLabel} -> ${tgtLabel}' forms a critical min-cut separating barrier in the flow network. Interdicting or verifying this boundary isolates alternative transit corridors.`,
+              affectedPossibilityIds: [...presentP, ...absentP],
+              distinguishedFamilyIds: families.map(f => f.familyId),
+              graphBasis: 'MIN_CUT_SEPARATION',
+              suggestedEvidenceClass: 'Communication / Network Capture / Telemetry',
+              resolutionUtilityScore: utilityScore,
+              utilityBreakdown: {
+                familyCoverage: 1.0,
+                possibilityCoverage: 1.0,
+                structuralSeparation: Math.round(balance * 100) / 100,
+                temporalSpecificity: 0.7
+              },
+              partition: {
+                ifPresentValidPossibilityIds: presentP,
+                ifAbsentValidPossibilityIds: absentP
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Resolution candidates from distinguishing nodes / alternative corridors
     for (const dist of distinguishing) {
       if (dist.elementType === 'NODE') {
+        if (candidates.some(c => c.targetEntities.includes(dist.elementId))) {
+          continue;
+        }
         const node = nodeMap.get(dist.elementId);
         const ifPresent = dist.presentInPossibilityIds;
         const ifAbsent = dist.absentInPossibilityIds;
@@ -826,51 +946,9 @@ export class ResolutionReasoningEngine {
       }
     }
 
-    // 2. Resolution candidates from Dominator divergence
-    // If a node is a dominator in Family 1 but not present in Family 2, it is a high-utility checkpoint!
-    for (const fam of families) {
-      const rep = valid.find(p => p.id === fam.representativePossibilityId);
-      if (rep && rep.criticalDependency && rep.criticalDependency.length > 0) {
-        for (const cd of rep.criticalDependency) {
-          const presentP = valid.filter(p => p.criticalDependency?.some(d => d.nodeId === cd.nodeId)).map(p => p.id);
-          const absentP = valid.map(p => p.id).filter(pid => !presentP.includes(pid));
-
-          if (presentP.length > 0 && absentP.length > 0 && !candidates.some(c => c.targetEntities.includes(cd.nodeId))) {
-            const familyCoverage = 1.0;
-            const balance = 1.0 - Math.abs(presentP.length - absentP.length) / totalPossibilities;
-            const rawScore = 2.0 * familyCoverage + 1.5 * balance + 1.0 * 1.0 + 0.5 * 0.8;
-            const utilityScore = Math.min(100, Math.round((rawScore / 5.0) * 100));
-
-            candidates.push({
-              id: `R${rId++}`,
-              targetType: 'NODE',
-              targetLabel: `Choke Point: ${cd.label}`,
-              targetEntities: [cd.nodeId],
-              why: `Node '${cd.label}' is an unavoidable dominator for family '${fam.familyLabel}'. Verification isolates or confirms this entire corridor family.`,
-              affectedPossibilityIds: [...presentP, ...absentP],
-              distinguishedFamilyIds: [fam.familyId],
-              graphBasis: 'DOMINATOR_DIVERGENCE',
-              suggestedEvidenceClass: 'Forensic System Image / Building Entry Audit',
-              resolutionUtilityScore: utilityScore,
-              utilityBreakdown: {
-                familyCoverage: 1.0,
-                possibilityCoverage: 1.0,
-                structuralSeparation: Math.round(balance * 100) / 100,
-                temporalSpecificity: 0.8
-              },
-              partition: {
-                ifPresentValidPossibilityIds: presentP,
-                ifAbsentValidPossibilityIds: absentP
-              }
-            });
-          }
-        }
-      }
-    }
-
     // Sort descending by resolution utility score
     candidates.sort((a, b) => b.resolutionUtilityScore - a.resolutionUtilityScore);
-    return candidates.slice(0, 10);
+    return candidates.slice(0, 15);
   }
 
   /**
@@ -927,14 +1005,52 @@ export class ResolutionReasoningEngine {
    * Generates structural families, universal invariants, differentiators,
    * prioritized resolution candidates, and the binary resolution matrix.
    */
-  runResolutionAnalysis(caseId: string, baseGraph: GraphPayload): ResolutionReasoningResult {
-    const possibilities = this.possibilityRepo.findByCaseId(caseId);
+  runResolutionAnalysis(
+    caseId: string,
+    baseGraph: GraphPayload,
+    options?: {
+      disableDominators?: boolean;
+      disableMinCut?: boolean;
+      disableFamilies?: boolean;
+      customPossibilities?: Possibility[];
+    }
+  ): ResolutionReasoningResult {
+    const possibilities = options?.customPossibilities || this.possibilityRepo.findByCaseId(caseId);
     const valid = possibilities.filter(p => p.status !== 'INVALID');
 
-    const structuralFamilies = this.clusterStructuralFamilies(valid, baseGraph);
+    let structuralFamilies = this.clusterStructuralFamilies(valid, baseGraph);
+    if (options?.disableFamilies && valid.length > 0) {
+      structuralFamilies = [
+        {
+          familyId: 'FAM-1',
+          familyLabel: 'Monolithic Undifferentiated Family',
+          backboneSignature: 'MONOLITHIC_CLUSTER',
+          possibilityIds: valid.map(p => p.id),
+          representativePossibilityId: valid[0].id,
+          keySharedFeatures: ['All surviving possibilities in single unpartitioned cluster'],
+          differentiatingFromOtherFamilies: []
+        }
+      ];
+    }
+
     const commonInvariants = this.extractCommonInvariants(valid, baseGraph);
+    if (options?.disableDominators) {
+      commonInvariants.commonUnavoidableDominatorNodes = [];
+    }
+    if (options?.disableMinCut) {
+      commonInvariants.commonCriticalCutEdges = [];
+    }
+
     const distinguishingStructures = this.computeDistinguishingStructures(valid, structuralFamilies, baseGraph);
-    const resolutionCandidates = this.generateResolutionCandidates(valid, structuralFamilies, baseGraph);
+    let resolutionCandidates = this.generateResolutionCandidates(valid, structuralFamilies, baseGraph);
+
+    if (options?.disableDominators) {
+      resolutionCandidates = resolutionCandidates.filter(c => c.graphBasis !== 'DOMINATOR_DIVERGENCE');
+    }
+    if (options?.disableMinCut) {
+      resolutionCandidates = resolutionCandidates.filter(c => c.graphBasis !== 'MIN_CUT_SEPARATION');
+    }
+
     const resolutionMatrix = this.buildResolutionMatrix(resolutionCandidates, valid, structuralFamilies);
     const contradictionImpacts = this.analyzeContradictions(caseId, baseGraph, possibilities);
 

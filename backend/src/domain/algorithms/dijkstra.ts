@@ -64,22 +64,25 @@ export class DijkstraAlgorithm {
       dist.set(n.id, Infinity);
     }
     dist.set(sourceId, 0);
+    const frontier = new Set<string>([sourceId]);
 
-    while (visited.size < nodes.length) {
-      // Find unvisited node with smallest distance
+    while (frontier.size > 0) {
+      // Find frontier node with smallest distance
       let u: string | null = null;
       let minD = Infinity;
-      for (const [nid, d] of dist.entries()) {
-        if (!visited.has(nid) && d < minD) {
+      for (const nid of frontier) {
+        const d = dist.get(nid) ?? Infinity;
+        if (d < minD) {
           minD = d;
           u = nid;
         }
       }
 
       if (u === null || minD === Infinity) break;
-      if (u === targetId) break;
-
+      frontier.delete(u);
       visited.add(u);
+
+      if (u === targetId) break;
 
       const neighbors = adj.get(u) || [];
       for (const { target: v, edge, cost } of neighbors) {
@@ -87,9 +90,10 @@ export class DijkstraAlgorithm {
         const alt = minD + cost;
         if (options.maxCost !== undefined && alt > options.maxCost) continue;
 
-        if (alt < dist.get(v)!) {
+        if (alt < (dist.get(v) ?? Infinity)) {
           dist.set(v, alt);
           prev.set(v, { nodeId: u, edge });
+          frontier.add(v);
         }
       }
     }

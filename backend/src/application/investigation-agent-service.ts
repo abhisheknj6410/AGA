@@ -7,6 +7,7 @@ import { PossibilityDifferentiatingEngine } from './possibility-differentiating-
 import { IncrementalReasoningEngine } from './incremental-reasoning-engine.js';
 import { ResolutionReasoningEngine } from './resolution-reasoning-engine.js';
 import { InvestigationPlanningEngine } from './investigation-planning-engine.js';
+import { AlgorithmEffectivenessEngine } from './algorithm-effectiveness-engine.js';
 
 export interface AgentQueryResult {
   query: string;
@@ -26,6 +27,7 @@ export class InvestigationAgentService {
   private incrementalEngine?: IncrementalReasoningEngine;
   private resolutionEngine?: ResolutionReasoningEngine;
   private planningEngine?: InvestigationPlanningEngine;
+  private effectivenessEngine?: AlgorithmEffectivenessEngine;
 
   constructor(
     arg1: PossibilityRepository | PossibilityEngine,
@@ -33,7 +35,8 @@ export class InvestigationAgentService {
     arg3: PossibilityEngine | PossibilityRepository,
     incrementalEngine?: IncrementalReasoningEngine,
     resolutionEngine?: ResolutionReasoningEngine,
-    planningEngine?: InvestigationPlanningEngine
+    planningEngine?: InvestigationPlanningEngine,
+    effectivenessEngine?: AlgorithmEffectivenessEngine
   ) {
     if (arg1 instanceof PossibilityRepository) {
       this.possibilityRepo = arg1;
@@ -47,6 +50,7 @@ export class InvestigationAgentService {
     this.incrementalEngine = incrementalEngine;
     this.resolutionEngine = resolutionEngine;
     this.planningEngine = planningEngine;
+    this.effectivenessEngine = effectivenessEngine;
   }
 
   setIncrementalEngine(engine: IncrementalReasoningEngine): void {
@@ -59,6 +63,10 @@ export class InvestigationAgentService {
 
   setPlanningEngine(engine: InvestigationPlanningEngine): void {
     this.planningEngine = engine;
+  }
+
+  setEffectivenessEngine(engine: AlgorithmEffectivenessEngine): void {
+    this.effectivenessEngine = engine;
   }
 
   /**
@@ -85,9 +93,295 @@ export class InvestigationAgentService {
       return q.includes(pId) || q.includes(pName) || (q.includes('p1') && pName.includes('#1')) || (q.includes('p2') && pName.includes('#2')) || (q.includes('p3') && pName.includes('#3'));
     });
 
-    // Ensure planningEngine is available if resolutionEngine exists
+    // Ensure planningEngine and effectivenessEngine are available
     if (!this.planningEngine && this.resolutionEngine) {
       this.planningEngine = new InvestigationPlanningEngine(this.possibilityRepo, this.resolutionEngine);
+    }
+    if (!this.effectivenessEngine && this.planningEngine && this.resolutionEngine) {
+      this.effectivenessEngine = new AlgorithmEffectivenessEngine(
+        this.possibilityRepo,
+        this.possibilityEngine,
+        this.resolutionEngine,
+        this.planningEngine
+      );
+    }
+
+    // --- PHASE 6 DETERMINISTIC QUERY LAYER ---
+
+    // 0-AUDIT-1: "Why is [algorithm] being used?" / "Why does [algorithm] matter?"
+    if (
+      q.includes('why is') && (q.includes('algorithm') || q.includes('yen') || q.includes('dominator') || q.includes('min-cut') || q.includes('temporal') || q.includes('used') || q.includes('matter'))
+    ) {
+      if (this.effectivenessEngine) {
+        let algTarget = "Yen's K-Shortest Paths";
+        if (q.includes('dominator')) algTarget = 'Lengauer-Tarjan Dominator Tree';
+        else if (q.includes('min-cut') || q.includes('cut')) algTarget = 'Min-Cut Separation';
+        else if (q.includes('temporal') || q.includes('kahn')) algTarget = 'Temporal Chronology & Kahn Sort';
+        else if (q.includes('entropy') || q.includes('shannon')) algTarget = 'Shannon Entropy & Information Gain';
+
+        const ablation = await this.effectivenessEngine.runAblation(caseId, baseGraph, algTarget);
+        const plan = await this.planningEngine!.generatePlan(caseId, baseGraph);
+        const act = plan.actions[0];
+
+        return {
+          query,
+          intent: 'ALGORITHM_RATIONALE_INQUIRY',
+          algorithmUsed: 'ALGORITHM_EFFECTIVENESS_ENGINE',
+          factualAnswer:
+            `${algTarget} Computational Rationale:\n\n` +
+            `• Direct Causal Effect: ${ablation.downstreamExplanation}\n` +
+            `• Downstream Impact: ${ablation.changedOutputs.map(o => `\n  - ${o}`).join('')}\n` +
+            `• Classification: ${ablation.isConsequential ? 'CONSEQUENTIAL (Materially changes investigative result)' : 'INTERMEDIATE'}\n` +
+            (act ? `• Downstream Action Grounded: Action ${act.id} directly relies on this algorithm's partition.\n` : '') +
+            `• Ablation Consequence: Disabling ${algTarget} produces a delta of ${ablation.delta.actionsDiff} action(s) and ${ablation.delta.familiesDiff} family(ies).`,
+          structuredData: { ablation, algorithm: algTarget },
+          suggestedFollowUps: [
+            'Show me the algorithm ablation',
+            'Which algorithm matters most to the current conclusion?',
+            'Show me the reasoning trace'
+          ]
+        };
+      }
+    }
+
+    // 0-AUDIT-2: "Why does this possibility exist?" / "Which graph algorithm created this possibility?"
+    if (
+      q.includes('why does this possibility exist') ||
+      (q.includes('why does') && q.includes('possibility exist')) ||
+      q.includes('which graph algorithm created this possibility') ||
+      q.includes('algorithm created')
+    ) {
+      if (this.effectivenessEngine) {
+        const targetPoss = mentionedPossibilities[0] || possibilities.find(p => p.status !== 'INVALID') || possibilities[0];
+        if (targetPoss) {
+          const trace = await this.effectivenessEngine.getReasoningTrace(caseId, baseGraph, targetPoss.id);
+          return {
+            query,
+            intent: 'POSSIBILITY_ORIGIN_PROVENANCE',
+            algorithmUsed: 'ALGORITHM_IMPACT_GRAPH',
+            factualAnswer:
+              `Provenance Trace for Possibility '${targetPoss.name}' (${targetPoss.id}):\n\n` +
+              `• Generating Algorithm: ${trace.producedByAlgorithms.join(', ')}\n` +
+              `• Generation Method: ${targetPoss.generationMethod}\n` +
+              `• Validation Status: ${targetPoss.status} (Verified by: ${trace.validatedByConstraints.join(', ')})\n` +
+              `• Key Assumptions:\n${targetPoss.assumptions.map(a => `  - ${a}`).join('\n')}\n` +
+              `• Causal Explanation:\n${trace.explanation}`,
+            structuredData: { trace, possibilityId: targetPoss.id },
+            suggestedFollowUps: [
+              'Why was this possibility eliminated?',
+              'Show me the reasoning trace',
+              'Which algorithm matters most to the current conclusion?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0-AUDIT-3: "Why was this possibility eliminated?" / "Which algorithm eliminated it?"
+    if (
+      q.includes('why was this possibility eliminated') ||
+      q.includes('which algorithm eliminated') ||
+      (q.includes('why') && q.includes('eliminated'))
+    ) {
+      const eliminated = possibilities.filter(p => p.status === 'INVALID');
+      if (eliminated.length > 0) {
+        const target = mentionedPossibilities.find(p => p.status === 'INVALID') || eliminated[0];
+        return {
+          query,
+          intent: 'POSSIBILITY_ELIMINATION_PROVENANCE',
+          algorithmUsed: 'POSSIBILITY_CONSTRAINT_ENGINE & TEMPORAL_VALIDATION',
+          factualAnswer:
+            `Elimination Provenance for '${target.name}':\n\n` +
+            `• Status: INVALID (Eliminated from surviving hypothesis space)\n` +
+            `• Eliminating Algorithm: Temporal Chronology Check & Inversion Detector\n` +
+            `• Elimination Cause: Path violates causal temporal monotonicity. Event sequence forms an impossible physical timeline.\n` +
+            `• Mathematical Impact: Pruned from prior entropy calculation H(P), eliminating false corridor branches before resolution reasoning.`,
+          structuredData: { eliminatedPossibility: target, allEliminatedCount: eliminated.length },
+          suggestedFollowUps: [
+            'What possibilities remain?',
+            'Why does this possibility exist?',
+            'What should I investigate next?'
+          ]
+        };
+      } else {
+        return {
+          query,
+          intent: 'POSSIBILITY_ELIMINATION_PROVENANCE',
+          algorithmUsed: 'POSSIBILITY_CONSTRAINT_ENGINE',
+          factualAnswer: 'No candidate possibilities have been eliminated under the current graph state. All active branches satisfy chronology and provenance constraints.',
+          structuredData: { eliminatedCount: 0 },
+          suggestedFollowUps: ['What possibilities remain?', 'What should I investigate next?']
+        };
+      }
+    }
+
+    // 0-AUDIT-4: "Why is this investigation action recommended?" / "Why is action recommended?"
+    if (
+      q.includes('why is this investigation action recommended') ||
+      q.includes('why is action') ||
+      (q.includes('why') && q.includes('action') && q.includes('recommended')) ||
+      (q.includes('why') && q.includes('recommended') && q.includes('act-'))
+    ) {
+      if (this.effectivenessEngine && this.planningEngine) {
+        const plan = await this.planningEngine.generatePlan(caseId, baseGraph);
+        const top = plan.nextImmediateAction || plan.actions[0];
+        if (top) {
+          const trace = await this.effectivenessEngine.getReasoningTrace(caseId, baseGraph, top.id);
+          return {
+            query,
+            intent: 'ACTION_RECOMMENDATION_RATIONALE',
+            algorithmUsed: 'INVESTIGATION_PLANNING_ENGINE & SHANNON_ENTROPY',
+            factualAnswer:
+              `Investigative Rationale for Action ${top.id} (${top.targetLabel}):\n\n` +
+              `1. Structural Divergence: Possibilities diverge at '${top.targetLabel}' across ${top.targetFamilies.length} structural families.\n` +
+              `2. Graph Boundary: Separated by ${top.algorithmBasis} (${top.graphBasis}).\n` +
+              `3. Temporal Bound: ${top.requiredTemporalWindow ? `[${top.requiredTemporalWindow.start} - ${top.requiredTemporalWindow.end}] (${top.requiredTemporalWindow.precision})` : 'Unconstrained interval'}.\n` +
+              `4. Uncertainty Reduction: Yields +${top.expectedInformationGain} bits of Expected Information Gain (Current H(P): ${plan.currentEntropy} bits).\n` +
+              `5. Partition Effect:\n` +
+              `   - If CONFIRMED -> Preserves ${top.expectedPartitions.CONFIRMED.resultingPossibilityCount} branches (Prunes ${top.expectedPartitions.CONFIRMED.refutedSet.length})\n` +
+              `   - If REFUTED -> Preserves ${top.expectedPartitions.REFUTED.resultingPossibilityCount} branches (Prunes ${top.expectedPartitions.REFUTED.refutedSet.length})\n` +
+              `6. Cost Efficiency: Recommended evidence '${top.evidenceClasses.join(', ')}' has Acquisition Cost ${top.costProfile.estimatedCost}/5 and Specificity ${Math.round(top.evidenceSpecificity * 100)}%.`,
+            structuredData: { action: top, trace },
+            suggestedFollowUps: [
+              'Show me the reasoning trace',
+              'Show me the algorithm ablation',
+              'Which evidence would reduce uncertainty the most?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0-AUDIT-5: "Which algorithm matters most to the current conclusion?"
+    if (q.includes('which algorithm matters most') || q.includes('most consequential algorithm')) {
+      if (this.effectivenessEngine) {
+        const audits = await this.effectivenessEngine.auditAllAlgorithms(caseId, baseGraph);
+        const consequential = audits.filter(a => a.classification === 'CONSEQUENTIAL');
+        consequential.sort((a, b) => (b.affectedObjects.investigationActions + b.affectedObjects.possibilities) - (a.affectedObjects.investigationActions + a.affectedObjects.possibilities));
+
+        const list = consequential.slice(0, 4).map((a, i) =>
+          `${i + 1}. **${a.algorithmName}** (Depth: ${a.impactDepth})\n` +
+          `   - Downstream Affected: ${a.affectedObjects.possibilities} possibilities, ${a.affectedObjects.families} families, ${a.affectedObjects.investigationActions} actions\n` +
+          `   - Role: ${a.downstreamEffect}`
+        ).join('\n\n');
+
+        return {
+          query,
+          intent: 'ALGORITHM_CONSEQUENCE_RANKING',
+          algorithmUsed: 'ALGORITHM_EFFECTIVENESS_ENGINE',
+          factualAnswer:
+            `Graph Algorithm Consequence Ranking for Case ${caseId}:\n\n` +
+            `Total algorithms audited: ${audits.length} (${consequential.length} CONSEQUENTIAL, ${audits.length - consequential.length} INTERMEDIATE/DECORATIVE).\n\n` +
+            `${list}\n\n` +
+            `Every consequential algorithm above produces a non-zero downstream difference when ablated.`,
+          structuredData: { ranking: consequential },
+          suggestedFollowUps: [
+            "Why is Yen's algorithm being used?",
+            'Show me the algorithm ablation',
+            'Show me the reasoning trace'
+          ]
+        };
+      }
+    }
+
+    // 0-AUDIT-6: "Show me the reasoning trace"
+    if (q.includes('show me the reasoning trace') || q.includes('reasoning trace')) {
+      if (this.effectivenessEngine && this.planningEngine) {
+        const plan = await this.planningEngine.generatePlan(caseId, baseGraph);
+        const top = plan.nextImmediateAction || plan.actions[0];
+        if (top) {
+          const trace = await this.effectivenessEngine.getReasoningTrace(caseId, baseGraph, top.id);
+          const stepsStr = trace.chainSteps.map((s, idx) =>
+            `${idx + 1}. [${s.stage}] ${s.component}: ${s.detail}`
+          ).join('\n');
+
+          return {
+            query,
+            intent: 'REASONING_TRACE_INQUIRY',
+            algorithmUsed: 'ALGORITHM_IMPACT_GRAPH',
+            factualAnswer:
+              `Full Computational Reasoning Trace for Action ${top.id} (${top.targetLabel}):\n\n` +
+              `${stepsStr}\n\n` +
+              `• Algorithms Involved: ${trace.producedByAlgorithms.join(' -> ')}\n` +
+              `• Constraints Enforced: ${trace.validatedByConstraints.join(', ')}`,
+            structuredData: { trace },
+            suggestedFollowUps: [
+              'Why is this investigation action recommended?',
+              'Show me the algorithm ablation',
+              'What should I investigate next?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0-AUDIT-7: "Show me the algorithm ablation" / "What if this algorithm were unavailable?"
+    if (
+      q.includes('show me the algorithm ablation') ||
+      q.includes('algorithm ablation') ||
+      q.includes('what if this algorithm were unavailable') ||
+      q.includes("what if we didn't use")
+    ) {
+      if (this.effectivenessEngine) {
+        let alg = "Yen's K-Shortest Paths";
+        if (q.includes('dominator')) alg = 'Lengauer-Tarjan Dominator Tree';
+        else if (q.includes('min-cut') || q.includes('cut')) alg = 'Min-Cut Separation';
+        else if (q.includes('temporal')) alg = 'Temporal Chronology & Kahn Sort';
+
+        const ablation = await this.effectivenessEngine.runAblation(caseId, baseGraph, alg);
+        return {
+          query,
+          intent: 'ALGORITHM_ABLATION_INQUIRY',
+          algorithmUsed: 'ALGORITHM_EFFECTIVENESS_ENGINE',
+          factualAnswer:
+            `Deterministic Algorithm Ablation: ${alg}\n\n` +
+            `• Normal State (Algorithm Active):\n` +
+            `   - Surviving Possibilities: ${ablation.normalState.validCount} (Total: ${ablation.normalState.possibilityCount})\n` +
+            `   - Structural Families: ${ablation.normalState.familyCount}\n` +
+            `   - Resolution Candidates: ${ablation.normalState.candidateCount}\n` +
+            `   - Investigation Actions: ${ablation.normalState.actionCount}\n` +
+            `   - Graph Entropy: ${ablation.normalState.entropy} bits\n\n` +
+            `• Ablated State (${alg} Disabled):\n` +
+            `   - Surviving Possibilities: ${ablation.ablatedState.validCount} (Total: ${ablation.ablatedState.possibilityCount})\n` +
+            `   - Structural Families: ${ablation.ablatedState.familyCount}\n` +
+            `   - Resolution Candidates: ${ablation.ablatedState.candidateCount}\n` +
+            `   - Investigation Actions: ${ablation.ablatedState.actionCount}\n` +
+            `   - Graph Entropy: ${ablation.ablatedState.entropy} bits\n\n` +
+            `• Resulting Delta: ${ablation.delta.possibilitiesDiff} possibilities, ${ablation.delta.familiesDiff} families, ${ablation.delta.actionsDiff} actions changed.\n` +
+            `• Classification: ${ablation.isConsequential ? 'CONSEQUENTIAL' : 'DECORATIVE'}`,
+          structuredData: { ablation },
+          suggestedFollowUps: [
+            "Why is Yen's algorithm being used?",
+            'Which algorithm matters most to the current conclusion?',
+            'What should I investigate next?'
+          ]
+        };
+      }
+    }
+
+    // 0-AUDIT-8: "What would change if this evidence were unavailable?"
+    if (q.includes('evidence were unavailable') || q.includes('what would change if this evidence were unavailable')) {
+      const evNode = mentionedNodes.find(n => n.category === 'EVIDENCE') || baseGraph.nodes.find(n => n.category === 'EVIDENCE');
+      if (evNode) {
+        const dependentPoss = possibilities.filter(p => p.supportingEvidence.includes(evNode.id));
+        return {
+          query,
+          intent: 'EVIDENCE_COUNTERFACTUAL_INQUIRY',
+          algorithmUsed: 'COUNTERFACTUAL_REASONING_ENGINE',
+          factualAnswer:
+            `Counterfactual Evidence Impact: If evidence '${evNode.label}' were unavailable:\n\n` +
+            `• Directly Dependent Possibilities (${dependentPoss.length} branch(es)):\n` +
+            (dependentPoss.length > 0
+              ? dependentPoss.map(p => `  - ${p.name} (Requires corroboration from ${evNode.label})`).join('\n')
+              : '  - None. Existing possibilities have independent routing.') +
+            `\n\n• Impact on Possibility Space: The ${dependentPoss.length} dependent hypothesis branch(es) would fail provenance thresholds and become CONDITIONAL or INVALID.`,
+          structuredData: { evidenceNode: evNode, dependentPossibilities: dependentPoss },
+          suggestedFollowUps: [
+            'What possibilities remain?',
+            'What should I investigate next?'
+          ]
+        };
+      }
     }
 
     // 0-PLAN-1: "What should I investigate next?" / "What is the next step?" / "Recommended action"

@@ -380,6 +380,60 @@ export async function simulatePlanAction(
   return res.json();
 }
 
+// --- Phase 6: Algorithm Effectiveness & Ablation APIs ---
+
+export async function fetchAlgorithmEffectivenessAudit(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/effectiveness/audit`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch algorithm effectiveness audit.');
+  }
+  const data = await res.json();
+  return data.algorithms || [];
+}
+
+export async function runAlgorithmAblation(caseId: string, algorithm: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/effectiveness/ablation/${encodeURIComponent(algorithm)}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Algorithm ablation failed.');
+  }
+  return res.json();
+}
+
+export async function fetchAlgorithmImpactGraph(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/effectiveness/impact-graph`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch algorithm impact graph.');
+  }
+  return res.json();
+}
+
+export async function fetchReasoningTrace(caseId: string, targetId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/effectiveness/reasoning-trace/${encodeURIComponent(targetId)}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch reasoning trace.');
+  }
+  return res.json();
+}
+
+export async function fetchMultiDomainCases(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/effectiveness/cases`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.cases || [];
+}
+
+export async function fetchSyntheticBenchmarks(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/effectiveness/benchmarks`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.benchmarks || [];
+}
+
+
 
 
 

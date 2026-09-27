@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { GraphPayload, GraphNode, GraphEdge, ResolutionCandidate } from '../domain/types.js';
 import {
   Possibility,
@@ -203,7 +203,12 @@ export class PossibilityEngine {
             removedEdgeIds: [],
             modifiedEdges: []
           },
-          constraints: { maxCost: path.totalCost, pathLength: path.nodeIds.length },
+          constraints: {
+            maxCost: path.totalCost,
+            pathLength: path.nodeIds.length,
+            traversedNodeIds: path.nodeIds,
+            traversedEdgeIds: path.edgeIds
+          },
           supportingEvidence: Array.from(evidenceRefs),
           conflictingEvidence: [],
           unresolvedQuestions: path.nodes.length > 4 ? ['Are all intermediate hops direct causal actions?'] : [],
@@ -591,10 +596,12 @@ export class PossibilityEngine {
         label: u.label
       })) || [];
 
-      const criticalCut = minCut?.cutEdges?.map((eid: string) => {
-        const e = possibilityGraph.edges.find(x => x.id === eid);
-        return { edgeId: eid, source: e?.source || '', target: e?.target || '' };
-      }) || [];
+      const criticalCut = minCut?.cutEdges?.map((ce: any) => {
+        const edgeId = typeof ce === 'string' ? ce : ce.edgeId;
+        const source = ce?.sourceId || possibilityGraph.edges.find(x => x.id === edgeId)?.source || '';
+        const target = ce?.targetId || possibilityGraph.edges.find(x => x.id === edgeId)?.target || '';
+        return { edgeId, source, target };
+      }).filter((c: any) => c.source && c.target) || [];
 
       const independentSupportPaths = disjoint?.pathCount ?? 1;
 
@@ -615,7 +622,7 @@ export class PossibilityEngine {
         const now = new Date().toISOString();
         p = {
           ...c,
-          id: `sim-possibility-${uuidv4()}`,
+          id: `sim-possibility-${randomUUID()}`,
           status,
           generationTrace: finalTrace,
           criticalDependency,

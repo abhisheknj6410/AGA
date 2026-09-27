@@ -105,7 +105,15 @@ export class InvestigationPlanningEngine {
   /**
    * Generates a fully deterministic, graph-grounded Investigation Plan.
    */
-  async generatePlan(caseId: string, baseGraph: GraphPayload): Promise<InvestigationPlan> {
+  async generatePlan(
+    caseId: string,
+    baseGraph: GraphPayload,
+    options?: {
+      disableEntropy?: boolean;
+      customResolution?: ResolutionReasoningResult;
+      customPossibilities?: Possibility[];
+    }
+  ): Promise<InvestigationPlan> {
     const traceSteps: string[] = [];
     const basisMap: Record<string, string> = {};
     const timestamp = new Date().toISOString();
@@ -113,8 +121,8 @@ export class InvestigationPlanningEngine {
     traceSteps.push(`[T0] Initializing Investigation Planning for case ${caseId}`);
 
     // Step 1: Run Resolution Reasoning to get candidates, structural families, invariants, contradictions
-    const resolution = this.resolutionEngine.runResolutionAnalysis(caseId, baseGraph);
-    const validPossibilities = this.possibilityRepo.findByCaseId(caseId);
+    const resolution = options?.customResolution || this.resolutionEngine.runResolutionAnalysis(caseId, baseGraph);
+    const validPossibilities = options?.customPossibilities || this.possibilityRepo.findByCaseId(caseId);
     const survivingPossibilities = validPossibilities.filter(p => p.status !== 'INVALID');
 
     traceSteps.push(
@@ -188,7 +196,7 @@ export class InvestigationPlanningEngine {
       const hConf = nConf > 1 ? Math.log2(nConf) : 0;
       const hRef = nRef > 1 ? Math.log2(nRef) : 0;
       const expectedHAfter = pConf * hConf + pRef * hRef;
-      const informationGain = Math.max(0, Number((currentEntropy - expectedHAfter).toFixed(4)));
+      const informationGain = options?.disableEntropy ? 0 : Math.max(0, Number((currentEntropy - expectedHAfter).toFixed(4)));
 
       // Investigation Value calculation
       // Combines information gain, utility, evidence specificity, and penalizes high acquisition cost
@@ -423,18 +431,19 @@ export class InvestigationPlanningEngine {
     const nodeMap = new Map<string, GraphNode>(baseGraph.nodes.map(n => [n.id, n]));
 
     for (const id of cand.targetEntities) {
+      if (!id) continue;
       const node = nodeMap.get(id);
       if (node) {
         refs.push({
           id: node.id,
-          label: node.label,
-          role: node.category
+          label: node.label || node.id,
+          role: node.category || cand.targetType || 'ENTITY'
         });
       } else {
         refs.push({
           id,
           label: id,
-          role: cand.targetType
+          role: cand.targetType || 'ENTITY'
         });
       }
     }
