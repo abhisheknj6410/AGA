@@ -537,4 +537,32 @@ export async function fetchCaseGeneralization(caseId: string): Promise<any> {
   return res.json();
 }
 
+export async function fetchAdaptiveReport(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/adaptive`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch adaptive reasoning report');
+  }
+  return res.json();
+}
+
+export async function fetchAdaptiveTopology(topoId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/adaptive/topologies/${topoId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to fetch adaptive analysis for topology ${topoId}`);
+  }
+  return res.json();
+}
+
+export async function fetchAdaptiveBenchmark(): Promise<any> {
+  const res = await fetch(`${API_BASE}/adaptive/benchmark`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch adaptive benchmark');
+  }
+  return res.json();
+}
+
+
 

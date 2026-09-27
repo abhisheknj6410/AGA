@@ -45,6 +45,7 @@ import { createValidationRouter } from './routes/validation-routes.js';
 import { AlgorithmComparativeEngine } from '../application/algorithm-comparative-engine.js';
 import { createComparativeRouter } from './routes/comparative-routes.js';
 import { createGeneralizationRouter } from './routes/generalization-routes.js';
+import { createAdaptiveRouter } from './routes/adaptive-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -130,6 +131,8 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases', createComparativeRouter(comparativeEngine, graphService));
   app.use('/api/cases', createGeneralizationRouter(graphService));
   app.use('/api/algorithms', createGeneralizationRouter(graphService));
+  app.use('/api/cases', createAdaptiveRouter(graphService));
+  app.use('/api/adaptive', createAdaptiveRouter(graphService));
 
   // Case-Scoped Nested Routes
   app.use('/api/cases/:caseId/nodes', createNodeRouter(graphService));
