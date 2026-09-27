@@ -9,6 +9,7 @@ import { ResolutionReasoningEngine } from './resolution-reasoning-engine.js';
 import { InvestigationPlanningEngine } from './investigation-planning-engine.js';
 import { AlgorithmEffectivenessEngine } from './algorithm-effectiveness-engine.js';
 import { EvidenceImpactEngine } from './evidence-impact-engine.js';
+import { InvestigationDecisionEngine } from './investigation-decision-engine.js';
 
 export interface AgentQueryResult {
   query: string;
@@ -30,6 +31,7 @@ export class InvestigationAgentService {
   private planningEngine?: InvestigationPlanningEngine;
   private effectivenessEngine?: AlgorithmEffectivenessEngine;
   private evidenceImpactEngine?: EvidenceImpactEngine;
+  private decisionEngine?: InvestigationDecisionEngine;
 
   constructor(
     arg1: PossibilityRepository | PossibilityEngine,
@@ -75,6 +77,10 @@ export class InvestigationAgentService {
     this.evidenceImpactEngine = engine;
   }
 
+  setDecisionEngine(engine: InvestigationDecisionEngine): void {
+    this.decisionEngine = engine;
+  }
+
   /**
    * Processes natural language investigative inquiries deterministically against the graph & possibility space.
    */
@@ -99,7 +105,7 @@ export class InvestigationAgentService {
       return q.includes(pId) || q.includes(pName) || (q.includes('p1') && pName.includes('#1')) || (q.includes('p2') && pName.includes('#2')) || (q.includes('p3') && pName.includes('#3'));
     });
 
-    // Ensure planningEngine and effectivenessEngine are available
+    // Ensure planningEngine, effectivenessEngine, and decisionEngine are available
     if (!this.planningEngine && this.resolutionEngine) {
       this.planningEngine = new InvestigationPlanningEngine(this.possibilityRepo, this.resolutionEngine);
     }
@@ -110,6 +116,230 @@ export class InvestigationAgentService {
         this.resolutionEngine,
         this.planningEngine
       );
+    }
+    if (!this.decisionEngine && this.planningEngine && this.resolutionEngine) {
+      this.decisionEngine = new InvestigationDecisionEngine(
+        this.possibilityRepo,
+        this.resolutionEngine,
+        this.planningEngine
+      );
+    }
+
+    // --- PHASE 8 INVESTIGATIVE DECISION INTELLIGENCE QUERIES ---
+
+    // 8-1: "What is the most important unresolved question?"
+    if (
+      q.includes('most important unresolved question') ||
+      q.includes('what is the unresolved question') ||
+      (q.includes('unresolved question') && (q.includes('most important') || q.includes('next') || q.includes('top') || q.includes('what is')))
+    ) {
+      if (this.decisionEngine) {
+        const decision = await this.decisionEngine.evaluateDecisions(caseId, baseGraph);
+        const topQ = decision.unresolvedQuestions[0];
+        if (topQ) {
+          return {
+            query,
+            intent: 'MOST_IMPORTANT_UNRESOLVED_QUESTION',
+            algorithmUsed: topQ.algorithmBasis,
+            factualAnswer:
+              `Top Unresolved Investigative Question (Importance: ${topQ.importanceScore}/100):\n\n` +
+              `• **Question**: ${topQ.question}\n` +
+              `• **Structural Distinction**: ${topQ.distinction}\n` +
+              `• **Target Element**: ${topQ.target.elementLabel} (${topQ.target.targetType})\n` +
+              (topQ.target.temporalWindow?.start ? `• **Temporal Window**: ${topQ.target.temporalWindow.start} to ${topQ.target.temporalWindow.end || 'ongoing'}\n` : '') +
+              `• **Recommended Evidence Class**: ${topQ.target.suggestedEvidenceClass}\n` +
+              `• **Graph Basis**: ${topQ.target.structuralRole} (${topQ.algorithmBasis})\n\n` +
+              `Resolving this question eliminates the primary ambiguity between possibility ${topQ.target.separates.possibilityA} and ${topQ.target.separates.possibilityB}.`,
+            structuredData: { topQuestion: topQ, allQuestions: decision.unresolvedQuestions },
+            suggestedFollowUps: [
+              'Why does this question matter?',
+              'What evidence would distinguish these possibilities?',
+              'Show me alternative ways to resolve this.'
+            ]
+          };
+        } else {
+          return {
+            query,
+            intent: 'MOST_IMPORTANT_UNRESOLVED_QUESTION',
+            algorithmUsed: 'INVESTIGATION_DECISION_ENGINE',
+            factualAnswer: 'There are currently no unresolved structural questions. The possibility space is either fully determined or contains at most one valid hypothesis.',
+            structuredData: { unresolvedQuestions: [] },
+            suggestedFollowUps: ['Show the investigation plan']
+          };
+        }
+      }
+    }
+
+    // 8-2: "Why does this question matter?"
+    if (
+      q.includes('why does this question matter') ||
+      q.includes('why this question matters') ||
+      (q.includes('why') && q.includes('question') && q.includes('matter'))
+    ) {
+      if (this.decisionEngine) {
+        const decision = await this.decisionEngine.evaluateDecisions(caseId, baseGraph);
+        const topQ = decision.unresolvedQuestions[0];
+        const topStrat = decision.topRecommendation;
+        if (topQ && topStrat) {
+          return {
+            query,
+            intent: 'WHY_QUESTION_MATTERS',
+            algorithmUsed: topQ.algorithmBasis,
+            factualAnswer:
+              `Why This Question Matters:\n\n` +
+              `1. **Structural Separation**: It targets '${topQ.target.elementLabel}', which acts as a ${topQ.target.structuralRole}.\n` +
+              `2. **Possibility Partitioning**: If confirmed or refuted, it directly decides between hypothesis ${topQ.target.separates.possibilityA} and ${topQ.target.separates.possibilityB}.\n` +
+              `3. **Information Gain**: Resolving it yields up to ${topStrat.expectedEntropyReduction} bits of Shannon entropy reduction, cutting the active search space.\n` +
+              `4. **Resource Efficiency**: Investigating this specific target avoids wasting resources on branches that are mutually exclusive.\n\n` +
+              `Algorithm Provenance: Generated via ${topStrat.algorithmBasis}.`,
+            structuredData: { target: topQ.target, strategy: topStrat },
+            suggestedFollowUps: [
+              'What evidence would distinguish these possibilities?',
+              'Show me alternative ways to resolve this.',
+              'Which graph algorithm produced this recommendation?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 8-3: "What evidence would distinguish these possibilities?"
+    if (
+      q.includes('what evidence would distinguish') ||
+      q.includes('what evidence will distinguish') ||
+      (q.includes('evidence') && q.includes('distinguish') && (q.includes('possibilit') || q.includes('these')))
+    ) {
+      if (this.decisionEngine) {
+        const decision = await this.decisionEngine.evaluateDecisions(caseId, baseGraph);
+        const targets = decision.unresolvedQuestions.map(uq => uq.target);
+        const details = targets.slice(0, 3).map((t, i) =>
+          `${i + 1}. **Target: ${t.elementLabel}** (${t.targetType})\n` +
+          `   - Separates: ${t.separates.possibilityA} vs ${t.separates.possibilityB}\n` +
+          `   - **Required Evidence**: ${t.suggestedEvidenceClass}\n` +
+          (t.temporalWindow?.start ? `   - **Temporal Window**: ${t.temporalWindow.start} to ${t.temporalWindow.end || 'ongoing'}\n` : '') +
+          `   - **Verification Objective**: ${t.exactVerificationQuestion}`
+        ).join('\n\n');
+
+        return {
+          query,
+          intent: 'EVIDENCE_TO_DISTINGUISH_POSSIBILITIES',
+          algorithmUsed: 'INVESTIGATION_DECISION_ENGINE',
+          factualAnswer:
+            `Evidence Targets to Distinguish Active Possibilities:\n\n` +
+            `${details}\n\n` +
+            `Every target directly corresponds to an unobserved edge, choke point, or interval boundary in the graph.`,
+          structuredData: { evidenceTargets: targets },
+          suggestedFollowUps: [
+            'What is the most important unresolved question?',
+            'Show me alternative ways to resolve this.',
+            'Which graph algorithm produced this recommendation?'
+          ]
+        };
+      }
+    }
+
+    // 8-4: "Show me alternative ways to resolve this."
+    if (
+      q.includes('alternative ways to resolve') ||
+      q.includes('alternative ways') ||
+      q.includes('alternative strategies') ||
+      (q.includes('alternative') && (q.includes('strategy') || q.includes('resolve') || q.includes('investigat')))
+    ) {
+      if (this.decisionEngine) {
+        const decision = await this.decisionEngine.evaluateDecisions(caseId, baseGraph);
+        const strats = decision.strategies.map((s, i) =>
+          `• **${s.id}: ${s.name}**\n` +
+          `  - Objective: ${s.objective}\n` +
+          `  - Primary Action: ${s.primaryAction.question}\n` +
+          `  - Expected Entropy Reduction: ${s.expectedEntropyReduction} bits | Cost: ${s.totalEstimatedCost}/5\n` +
+          `  - Pros: ${s.tradeoffSummary.pros[0] || 'Direct resolution'}\n` +
+          `  - Cons: ${s.tradeoffSummary.cons[0] || 'Requires verification'}`
+        ).join('\n\n');
+
+        return {
+          query,
+          intent: 'ALTERNATIVE_INVESTIGATION_STRATEGIES',
+          algorithmUsed: 'INVESTIGATION_DECISION_ENGINE',
+          factualAnswer:
+            `Alternative Investigation Strategies (${decision.strategies.length} generated):\n\n` +
+            `${strats}\n\n` +
+            `Choose Strategy A for fastest entropy reduction, Strategy B for low-cost digital evidence, or Strategy C to test choke-point bottlenecks.`,
+          structuredData: { strategies: decision.strategies },
+          suggestedFollowUps: [
+            'What happens if I pursue strategy A instead of B?',
+            'Why does this question matter?',
+            'Which graph algorithm produced this recommendation?'
+          ]
+        };
+      }
+    }
+
+    // 8-5: "What happens if I pursue strategy A instead of B?"
+    if (
+      q.includes('strategy a instead of') ||
+      q.includes('pursue strategy a') ||
+      (q.includes('strategy a') && (q.includes('strategy b') || q.includes('instead'))) ||
+      q.includes('compare strateg')
+    ) {
+      if (this.decisionEngine) {
+        const simA = await this.decisionEngine.simulateStrategy(caseId, baseGraph, 'STRAT-A', 'CONFIRMED');
+        const simB = await this.decisionEngine.simulateStrategy(caseId, baseGraph, 'STRAT-B', 'CONFIRMED');
+
+        return {
+          query,
+          intent: 'STRATEGY_COMPARISON_SIMULATION',
+          algorithmUsed: 'STRATEGY_SIMULATION_ENGINE',
+          factualAnswer:
+            `Comparative Strategy Simulation (Strategy A vs Strategy B):\n\n` +
+            `• **Strategy A (Maximum Information Gain)**:\n` +
+            `  - Confirmed Outcome: ${simA.survivingPossibilityIds.length} survive ([${simA.survivingPossibilityIds.join(', ')}]), ${simA.eliminatedPossibilityIds.length} eliminated ([${simA.eliminatedPossibilityIds.join(', ')}])\n` +
+            `  - Entropy Reduction: ${simA.entropyReduction} bits (${simA.entropyBefore} → ${simA.entropyAfter})\n` +
+            `  - Surviving Families: ${simA.survivingFamilies.join(', ')}\n\n` +
+            `• **Strategy B (Low-Cost Telemetry First)**:\n` +
+            `  - Confirmed Outcome: ${simB.survivingPossibilityIds.length} survive ([${simB.survivingPossibilityIds.join(', ')}]), ${simB.eliminatedPossibilityIds.length} eliminated ([${simB.eliminatedPossibilityIds.join(', ')}])\n` +
+            `  - Entropy Reduction: ${simB.entropyReduction} bits (${simB.entropyBefore} → ${simB.entropyAfter})\n` +
+            `  - Surviving Families: ${simB.survivingFamilies.join(', ')}\n\n` +
+            `**Recommendation**: Strategy A eliminates uncertainty faster (${simA.entropyReduction} bits vs ${simB.entropyReduction} bits). Use Strategy B if physical evidence acquisition is delayed or restricted.`,
+          structuredData: { strategyA: simA, strategyB: simB },
+          suggestedFollowUps: [
+            'What is the most important unresolved question?',
+            'Which graph algorithm produced this recommendation?'
+          ]
+        };
+      }
+    }
+
+    // 8-6: "Which graph algorithm produced this recommendation?"
+    if (
+      q.includes('which graph algorithm produced this recommendation') ||
+      (q.includes('which algorithm') && (q.includes('recommendation') || q.includes('decision'))) ||
+      q.includes('algorithm produced this')
+    ) {
+      if (this.decisionEngine) {
+        const decision = await this.decisionEngine.evaluateDecisions(caseId, baseGraph);
+        const trace = decision.decisionTrace;
+        if (trace) {
+          return {
+            query,
+            intent: 'RECOMMENDATION_ALGORITHM_PROVENANCE',
+            algorithmUsed: trace.algorithmUsed,
+            factualAnswer:
+              `Algorithm → Decision Provenance Trace:\n\n` +
+              `1. **Graph Structure**: ${trace.graphStructure}\n` +
+              `2. **Algorithm Execution**: ${trace.algorithmUsed}\n` +
+              `   - Result: ${trace.algorithmResult}\n` +
+              `3. **Possibility Distinction**: ${trace.possibilityDistinction}\n` +
+              `4. **Evidence Target**: ${trace.evidenceTarget}\n` +
+              `5. **Investigation Action**: ${trace.investigationAction}\n\n` +
+              `Every recommendation is mathematically derived from the graph topology and cannot be generated arbitrarily.`,
+            structuredData: { decisionTrace: trace },
+            suggestedFollowUps: [
+              'What is the most important unresolved question?',
+              'Show me alternative ways to resolve this.'
+            ]
+          };
+        }
+      }
     }
 
     // --- PHASE 7 CLOSED-LOOP INVESTIGATION QUERIES ---

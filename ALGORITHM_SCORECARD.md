@@ -108,7 +108,9 @@ The algorithm pipeline has been empirically verified across 5 distinct domains u
 
 * **Phase 6 Test Suite**: 30/30 tests passing (`backend/src/tests/algorithm-effectiveness.test.ts`).
 * **Phase 7 Closed-Loop Test Suite**: 15/15 tests passing (`backend/src/tests/closed-loop-investigation.test.ts`).
-* **Total Backend Test Suite**: 175/175 tests passing (`npm test`).
+* **Phase 8 Investigative Decision Test Suite**: 18/18 tests passing (`backend/src/tests/investigative-decision.test.ts`).
+* **Total Backend Test Suite**: 193/193 tests passing across 9 test suites (`npm test`).
 * **Frontend Production Build**: Zero compilation or lint errors (`npm --prefix frontend run build`).
 * **Architectural Invariant**: Zero decorative algorithms; 100% of active algorithms directly generate, prune, isolate, or rank the investigation space.
+
 

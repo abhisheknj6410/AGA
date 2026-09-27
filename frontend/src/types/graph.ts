@@ -887,6 +887,104 @@ export interface SyntheticBenchmarkResult {
   memoryUsedMb: number;
 }
 
+// Phase 8: Investigative Decision Intelligence Types
+export interface GraphEvidenceTarget {
+  targetType: 'NODE' | 'EDGE' | 'EVENT' | 'INTERVAL';
+  elementId: string;
+  elementLabel: string;
+  sourceId?: string;
+  targetId?: string;
+  temporalWindow?: {
+    start?: string;
+    end?: string;
+    precision: string;
+    reason: string;
+  };
+  structuralRole: string;
+  separates: {
+    possibilityA: string;
+    possibilityB: string;
+    familyA?: string;
+    familyB?: string;
+  };
+  suggestedEvidenceClass: string;
+  exactVerificationQuestion: string;
+}
+
+export interface AlgorithmDecisionTrace {
+  graphStructure: string;
+  algorithmUsed: string;
+  algorithmResult: string;
+  possibilityDistinction: string;
+  evidenceTarget: string;
+  investigationAction: string;
+}
+
+export type StrategyType =
+  | 'MAX_INFORMATION_GAIN'
+  | 'LOW_COST_TELEMETRY'
+  | 'BOTTLENECK_VERIFICATION'
+  | 'PAIRWISE_DISCRIMINATION';
+
+export interface InvestigationStrategy {
+  id: string;
+  name: string;
+  type: StrategyType;
+  objective: string;
+  targetedPossibilities: string[];
+  targetedDistinction: string;
+  primaryAction: any;
+  actionSequence: any[];
+  evidenceTargets: GraphEvidenceTarget[];
+  decisionTrace: AlgorithmDecisionTrace;
+  expectedEntropyReduction: number;
+  totalEstimatedCost: number;
+  tradeoffSummary: {
+    pros: string[];
+    cons: string[];
+  };
+  algorithmBasis: string;
+}
+
+export interface StrategySimulationResult {
+  strategyId: string;
+  strategyName: string;
+  simulatedOutcome: 'CONFIRMED' | 'REFUTED';
+  beforePossibilityCount: number;
+  afterPossibilityCount: number;
+  survivingPossibilityIds: string[];
+  eliminatedPossibilityIds: string[];
+  entropyBefore: number;
+  entropyAfter: number;
+  entropyReduction: number;
+  survivingFamilies: string[];
+  eliminatedFamilies: string[];
+  affectedResolutionCandidates: string[];
+  downstreamNextActions: string[];
+  explanation: string;
+}
+
+export interface UnresolvedInvestigativeQuestion {
+  id: string;
+  question: string;
+  target: GraphEvidenceTarget;
+  importanceScore: number;
+  distinction: string;
+  algorithmBasis: string;
+}
+
+export interface InvestigativeDecisionResult {
+  caseId: string;
+  timestamp: string;
+  currentEntropy: number;
+  survivingPossibilities: Array<{ id: string; name: string; familyId: string }>;
+  unresolvedQuestions: UnresolvedInvestigativeQuestion[];
+  strategies: InvestigationStrategy[];
+  topRecommendation: InvestigationStrategy | null;
+  decisionTrace: AlgorithmDecisionTrace | null;
+}
+
+
 
 
 

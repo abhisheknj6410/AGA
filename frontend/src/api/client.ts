@@ -478,6 +478,30 @@ export async function fetchClosedLoopVersions(caseId: string): Promise<any[]> {
   return res.json();
 }
 
+export async function fetchInvestigativeDecisions(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/decision`);
+  if (!res.ok) throw new Error('Failed to fetch investigative decisions');
+  return res.json();
+}
+
+export async function simulateInvestigativeStrategy(
+  caseId: string,
+  strategyId: string,
+  outcome: 'CONFIRMED' | 'REFUTED'
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/decision/simulate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ strategyId, outcome })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to simulate strategy');
+  }
+  return res.json();
+}
+
+
 
 
 
