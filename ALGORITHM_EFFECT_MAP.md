@@ -212,3 +212,75 @@ This document defines every graph algorithm implemented in the Graphical Investi
 | **Dominator Analysis** | Surviving possibility paths | Possibility set changed (routes added, removed, or rerouted) | `INSPECTOR_VIEWS`, `AGENT_BOTTLENECK_QUERIES` | Recomputed only for modified possibilities |
 | **Min-Cut Interdiction** | Directed edge capacities / weights | Possibility set changed, or edge cost/confidence modified | `CRITICAL_INTERDICTION_CARDS` | Recomputed only for modified possibilities |
 | **Common Invariants Engine** | All valid possibilities in space | Any possibility added, removed, or modified | `COMMON_INVARIANTS_PANEL`, `AGENT_QUERIES` | Recomputed globally on surviving possibility space |
+
+---
+
+## 13. Phase 4 Algorithm Audit, Primary Classification & Resolution Reasoning Layer
+
+### 13.1 Algorithm Execution Map
+
+```text
+                  Case Evidence & Graph Topology
+                               ↓
+                 [GENERATIVE] Yen's K-Shortest Paths
+                               ↓
+                       Candidate Corridors
+                               ↓
+                 [FILTERING] Temporal Validation & Kahn DAG
+                               ↓
+                 [FILTERING] Evidence Provenance Engine
+                               ↓
+                    Surviving Possibility Set
+            (VALID, CONDITIONAL, CONFLICTING; INVALID pruned)
+                               ↓
+                 [STRUCTURAL] Dominator Analysis (Choke Points)
+                 [STRUCTURAL] Disjoint Paths (Corroboration)
+                 [RESOLUTION] Min-Cut Analysis (Separating Edges)
+                               ↓
+                 [DIFFERENTIATING] Common Invariants & Structural Diff
+                               ↓
+                 [RESOLUTION] Resolution Reasoning Engine
+                 ├── Topology Backbone Clustering (Structural Families)
+                 ├── Universal Invariant Extraction (100% Shared Intersection)
+                 ├── Candidate Partitioning (Confirmed vs Pruned Sets)
+                 └── Resolution Utility Scoring (0-100 Multi-Factor Formula)
+                               ↓
+          ┌────────────────────┴────────────────────┐
+          ↓                                         ↓
+ [RESOLUTION LAB UI]                      [INVESTIGATION AGENT]
+ • Structural Family Cards                • Deterministic Query Answers
+ • Invariant Choke Point Badges           • Unavoidable Dominator Explanations
+ • Partition Matrix (Candidates vs P_j)   • Family Distinguishing Evidence
+ • Interactive Counterfactual Simulation  • Counterfactual Impact Summaries
+```
+
+### 13.2 Formal Algorithm Classification & Impact Table
+
+| Algorithm | Primary Role | Input | Output | Direct Effect | Downstream Effect | Ablation Result | User-Visible Value | Complexity |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| **Yen's K-Shortest Paths** | `GENERATIVE` | Graph, source, target, K, edge costs | Up to $K$ ordered loopless paths | Spawns alternative candidate corridors | Fed into temporal and provenance filters | 0 alternative candidates generated | Card `ALTERNATIVE_CORRIDOR` in Possibilities & Evolution | $\mathcal{O}(K \cdot \|V\| (\|E\| + \|V\|\log\|V\|))$ |
+| **Dijkstra's Algorithm** | `GENERATIVE` | Graph, source, target, edge weights | Lowest cost path sequence | Routing spine for Yen's algorithm and shortest paths | Subroutine for candidate generation | K-shortest path generation fails | Connection path inspector & agent routing | $\mathcal{O}(\|E\| + \|V\|\log\|V\|)$ |
+| **Temporal Monotonicity & Kahn Sort** | `FILTERING` | GraphNode[], GraphEdge[] with timestamps | Chronology violations & topological order | Prunes candidate paths with inverted causality | Assigns `INVALID` status | Inverted false routes survive as VALID | `INVALID` badge with timestamp delta | $\mathcal{O}(\|V\| + \|E\|)$ |
+| **Possibility Constraint Engine** | `FILTERING` | Materialized graph, provenance rules | Epistemic status evaluation | Enforces evidence coverage thresholds | Gates entry into surviving possibility set | Uncorroborated paths marked VALID | Epistemic status badges (VALID, CONDITIONAL) | $\mathcal{O}(\|V\| + \|E\|)$ |
+| **Dominator Tree (Lengauer-Tarjan)** | `STRUCTURAL` | Graph, source root, target sink | Immediate dominators & unavoidable nodes | Identifies universal choke points | Supplies invariant choke points to Resolution Engine | Invariant critical nodes confused with differentiators | Unavoidable choke point badges in Resolution Lab | $\mathcal{O}(\|V\| (\|V\| + \|E\|))$ |
+| **Articulation Points (DFS)** | `STRUCTURAL` | Graph with discovery/low-link indices | Cut-vertices / bridge entities | Pinpoints structural vulnerabilities | Informs risk and failure analysis | Network single-points-of-failure undetected | Topology diagnostics & agent bottleneck answers | $\mathcal{O}(\|V\| + \|E\|)$ |
+| **Disjoint Paths (Suurballe)** | `STRUCTURAL` | Graph, source, target, mode | Count & paths of vertex-disjoint routes | Evaluates multi-route corroboration | Records independent support count on possibilities | Single-thread vs corroborated paths indistinguishable | Independent support count badge | $\mathcal{O}(\|V\| (\|E\| + \|V\|\log\|V\|))$ |
+| **Min-Cut Separation** | `RESOLUTION` | Graph, source, sink, edge capacities | Minimum separating edge cut | Finds bottleneck interdiction boundary | Supplies separating edge resolution candidates | Cannot identify minimal boundary edges separating corridors | Critical separating edge candidates in Resolution Lab | $\mathcal{O}(\|V\| \cdot \|E\|^2)$ |
+| **Possibility Differentiating Engine** | `DIFFERENTIATING` | BaseGraph, Possibility[] | Invariants & pairwise structural diffs | Computes symmetric graph differences | Feeds comparison matrix & candidate generator | Possibilities viewable only in complete isolation | Side-by-side comparison matrix | $\mathcal{O}(P \cdot (\|V\| + \|E\|))$ |
+| **Affected Subgraph Engine** | `EVOLUTIONARY` | GraphMutation, BaseGraph, Possibility[] | Active propagation zone | Limits recomputation to affected $k$-hop subgraph | Drives selective algorithm cache invalidation | Every change forces global recomputation | Lineage ribbon active propagation zone badge | $\mathcal{O}(k \cdot (\|V\| + \|E\|))$ |
+| **Algorithm Dependency Graph** | `EVOLUTIONARY` | GraphMutationDelta, AffectedSubgraph | Invalidation cascade & reused list | Selectively clears dependent algorithm caches | Preserves valid results on unaffected regions | All caches wiped on every mutation | Cache hit rate & invalidation metrics | $\mathcal{O}(\|V_{\text{dep}}\| + \|E_{\text{dep}}\|)$ |
+| **Possibility Evolution Engine** | `EVOLUTIONARY` | $V_n$ vs $V_{n+1}$ possibilities | Added, Removed, Modified, Unchanged diff | Categorizes possibility space transitions | Explains causes behind possibility shifts | Evolution between versions unexplained | Evolution cards (+, -, ~, =) & What-If lab | $\mathcal{O}(P_{n} + P_{n+1})$ |
+| **Resolution Reasoning Engine** | `RESOLUTION` | Surviving Possibilities, BaseGraph | Families, Invariants, Candidates, Matrix | Partitions space & computes Resolution Utility | Drives counterfactual simulation & agent answers | No guidance on what evidence distinguishes theories | Resolution Lab UI, Partition Matrix, Simulate What-If | $\mathcal{O}(P \cdot (\|V\| + \|E\|))$ |
+
+### 13.3 Audit of Previously Decorative Algorithms & Connection to Resolution
+
+1. **Dominators Algorithm**:
+   - *Previous state*: Computed unavoidable nodes and displayed them on cards, but had no causal role in distinguishing theories.
+   - *Phase 4 connection*: Integrated directly into `ResolutionReasoningEngine`. The engine separates **universal dominator invariants** (nodes that dominate in 100% of paths, which need no further investigation) from **divergent dominators** (nodes that dominate in Family 1 but are bypassed in Family 2, forming top-tier resolution targets).
+2. **Min-Cut Algorithm**:
+   - *Previous state*: Computed min-cut capacity and displayed a number.
+   - *Phase 4 connection*: Converted into `MIN_CUT_SEPARATION` resolution candidates. The cut edges represent the minimal graph boundary separating alternative corridors.
+3. **Disjoint Paths Algorithm**:
+   - *Previous state*: Stored a number (`independentCorroborationCount`).
+   - *Phase 4 connection*: Quantifies evidentiary robustness in canonical possibility structures and weights candidate evidence classes.
+

@@ -5,6 +5,7 @@ import { PossibilityEngine } from './possibility-engine.js';
 import { PossibilityDifferentiatingEngine } from './possibility-differentiating-engine.js';
 
 import { IncrementalReasoningEngine } from './incremental-reasoning-engine.js';
+import { ResolutionReasoningEngine } from './resolution-reasoning-engine.js';
 
 export interface AgentQueryResult {
   query: string;
@@ -22,12 +23,14 @@ export class InvestigationAgentService {
   private analysisEngine: GraphAnalysisEngine;
   private possibilityEngine: PossibilityEngine;
   private incrementalEngine?: IncrementalReasoningEngine;
+  private resolutionEngine?: ResolutionReasoningEngine;
 
   constructor(
     arg1: PossibilityRepository | PossibilityEngine,
     arg2: GraphAnalysisEngine,
     arg3: PossibilityEngine | PossibilityRepository,
-    incrementalEngine?: IncrementalReasoningEngine
+    incrementalEngine?: IncrementalReasoningEngine,
+    resolutionEngine?: ResolutionReasoningEngine
   ) {
     if (arg1 instanceof PossibilityRepository) {
       this.possibilityRepo = arg1;
@@ -39,10 +42,15 @@ export class InvestigationAgentService {
       this.possibilityRepo = arg3 as PossibilityRepository;
     }
     this.incrementalEngine = incrementalEngine;
+    this.resolutionEngine = resolutionEngine;
   }
 
   setIncrementalEngine(engine: IncrementalReasoningEngine): void {
     this.incrementalEngine = engine;
+  }
+
+  setResolutionEngine(engine: ResolutionReasoningEngine): void {
+    this.resolutionEngine = engine;
   }
 
   /**
@@ -68,6 +76,126 @@ export class InvestigationAgentService {
       const pId = p.id.toLowerCase();
       return q.includes(pId) || q.includes(pName) || (q.includes('p1') && pName.includes('#1')) || (q.includes('p2') && pName.includes('#2')) || (q.includes('p3') && pName.includes('#3'));
     });
+
+    // 0a. "What possibilities remain?" / "surviving possibilities"
+    if (!q.includes('common') && !q.includes('distinguish') && (q.includes('possibilities remain') || q.includes('surviving possibilities') || q.includes('remaining possibilities') || (q.includes('what') && q.includes('possibilit') && q.includes('remain')))) {
+      const valid = possibilities.filter(p => p.status !== 'INVALID');
+      const families = this.resolutionEngine ? this.resolutionEngine.clusterStructuralFamilies(valid, baseGraph) : [];
+      const famSummary = families.map(f => `• ${f.familyLabel} (${f.possibilityIds.length} branch(es)): ${f.keySharedFeatures[0] || f.backboneSignature}`).join('\n');
+      return {
+        query,
+        intent: 'SURVIVING_POSSIBILITIES_QUERY',
+        algorithmUsed: 'RESOLUTION_REASONING_ENGINE & POSSIBILITY_CONSTRAINT_ENGINE',
+        factualAnswer: `There are currently ${valid.length} surviving valid possibility branch(es) across ${families.length || 1} structural families:\n\n${famSummary || valid.map(p => `• ${p.name} (Status: ${p.status})`).join('\n')}`,
+        structuredData: { survivingCount: valid.length, families },
+        suggestedFollowUps: [
+          'What do all surviving possibilities have in common?',
+          'What information would distinguish the current possibility families?',
+          'Which node is unavoidable across all valid paths?'
+        ]
+      };
+    }
+
+    // 0a2. "What information would distinguish the current possibility families?"
+    if (q.includes('distinguish') && (q.includes('families') || q.includes('information') || q.includes('resolve') || q.includes('candidate'))) {
+      const valid = possibilities.filter(p => p.status !== 'INVALID');
+      if (this.resolutionEngine) {
+        const families = this.resolutionEngine.clusterStructuralFamilies(valid, baseGraph);
+        const candidates = this.resolutionEngine.generateResolutionCandidates(valid, families, baseGraph);
+        if (candidates.length > 0) {
+          const topList = candidates.slice(0, 3).map(c =>
+            `• Candidate ${c.id}: ${c.targetLabel} (Utility: ${c.resolutionUtilityScore}/100)\n  - Basis: ${c.graphBasis}\n  - Partitions: Confirms ${c.partition.ifPresentValidPossibilityIds.length} vs eliminates ${c.partition.ifAbsentValidPossibilityIds.length} branch(es)\n  - Suggested Evidence: ${c.suggestedEvidenceClass}`
+          ).join('\n\n');
+
+          return {
+            query,
+            intent: 'FAMILY_DISTINGUISHING_INFORMATION',
+            algorithmUsed: 'RESOLUTION_REASONING_ENGINE',
+            factualAnswer: `The Resolution Reasoning Engine identified ${candidates.length} graph distinctions capable of resolving the ${families.length} structural families:\n\n${topList}`,
+            structuredData: { candidates, families },
+            suggestedFollowUps: [
+              'What would happen if that evidence were added?',
+              'What do all surviving possibilities have in common?',
+              'Which node is unavoidable across all valid paths?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0a3. "Which contradiction affects the most possibilities?"
+    if (q.includes('contradiction') && (q.includes('most') || q.includes('affects') || q.includes('impact'))) {
+      if (this.resolutionEngine) {
+        const impacts = this.resolutionEngine.analyzeContradictions(caseId, baseGraph, possibilities);
+        if (impacts.length > 0) {
+          impacts.sort((a, b) => b.affectedPossibilityIds.length - a.affectedPossibilityIds.length);
+          const top = impacts[0];
+          return {
+            query,
+            intent: 'CONTRADICTION_MAX_IMPACT',
+            algorithmUsed: 'CONTRADICTION_ANALYSIS_ENGINE',
+            factualAnswer: `Contradiction '${top.contradictionId}' affects the most possibilities (${top.affectedPossibilityIds.length} branch(es)):\n\n` +
+              `• Disputed Facts: '${top.conflictingEvidence[0]?.label}' vs '${top.conflictingEvidence[1]?.label}'\n` +
+              `• Affected Possibilities: ${top.affectedPossibilityIds.join(', ')}\n` +
+              `• Independent / Unaffected: ${top.unaffectedPossibilityIds.join(', ') || 'None'}\n` +
+              `• Causal Reason: ${top.reason}`,
+            structuredData: { topContradiction: top, allContradictions: impacts },
+            suggestedFollowUps: [
+              'What information would distinguish the current possibility families?',
+              'What do all surviving possibilities have in common?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0a4. "Which edge is a critical cut?" / "minimum cut"
+    if (q.includes('critical cut') || q.includes('minimum cut') || q.includes('min cut') || (q.includes('cut') && q.includes('edge'))) {
+      const valid = possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL');
+      const cuts = valid.flatMap(p => p.criticalCut || []);
+      const cutEdgeSummary = cuts.length > 0
+        ? Array.from(new Set(cuts.map(c => `${c.source} → ${c.target}`))).map(s => `• Cut Edge: ${s}`).join('\n')
+        : '• No single edge critical cut isolates the network corridors.';
+
+      return {
+        query,
+        intent: 'CRITICAL_CUT_INQUIRY',
+        algorithmUsed: 'MIN_CUT_SEPARATION_ALGORITHM',
+        factualAnswer: `Min-Cut analysis isolates the following critical separating edge(s) across possibility corridors:\n\n${cutEdgeSummary}\n\nSevering or verifying these edges fundamentally partitions alternative corridors.`,
+        structuredData: { criticalCuts: cuts },
+        suggestedFollowUps: [
+          'Which node is unavoidable across all valid paths?',
+          'What information would distinguish the current possibility families?'
+        ]
+      };
+    }
+
+    // 0a5. "What would happen if that evidence were added?" / "Which possibility families would disappear under that assumption?"
+    if (q.includes('what would happen') || (q.includes('families') && q.includes('disappear'))) {
+      if (this.resolutionEngine) {
+        const analysis = this.resolutionEngine.runResolutionAnalysis(caseId, baseGraph);
+        const topCandidate = analysis.resolutionCandidates[0];
+        if (topCandidate) {
+          const sim = await this.resolutionEngine.simulateCounterfactualResolution(caseId, topCandidate.id, baseGraph, 'CONFIRM_ELEMENT');
+          return {
+            query,
+            intent: 'COUNTERFACTUAL_RESOLUTION_INQUIRY',
+            algorithmUsed: 'RESOLUTION_SIMULATION_ENGINE',
+            factualAnswer: `Counterfactual Resolution Simulation: Confirming '${topCandidate.targetLabel}' (${topCandidate.suggestedEvidenceClass}):\n\n` +
+              `• Possibility Space: ${sim.beforePossibilityIds.length} → ${sim.afterPossibilityIds.length} surviving branches.\n` +
+              `• Eliminated Possibilities: ${sim.eliminatedPossibilityIds.length} branch(es) dropped (${sim.eliminatedPossibilityIds.join(', ')}).\n` +
+              `• Surviving Families: [${sim.survivingFamilies.join(', ')}]\n` +
+              `• Eliminated Families: [${sim.eliminatedFamilies.join(', ') || 'None'}]\n` +
+              `• Structural Explanation: ${sim.explanation}`,
+            structuredData: { simulation: sim },
+            suggestedFollowUps: [
+              'What information would distinguish the current possibility families?',
+              'What do all surviving possibilities have in common?'
+            ]
+          };
+        }
+      }
+    }
 
     // 0. "What changed?" / "What changed between versions?" / "Show evolution"
     if (q.includes('what changed') || q.includes('show changes') || q.includes('evolution')) {
@@ -196,7 +324,7 @@ export class InvestigationAgentService {
 
     // 0f. "What remains invariant across versions?"
     if (q.includes('invariant across versions') || (q.includes('remain') && q.includes('invariant'))) {
-      const valid = possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL');
+      const valid = possibilities.filter(p => p.status !== 'INVALID');
       const invariants = PossibilityDifferentiatingEngine.extractCommonInvariants(baseGraph, valid);
       return {
         query,
@@ -286,14 +414,20 @@ export class InvestigationAgentService {
 
     // 2. "What do all surviving possibilities have in common?" / Common Invariants
     if (q.includes('common') || q.includes('in common') || q.includes('invariant') || q.includes('universal')) {
-      const validPossibilities = possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL');
+      const validPossibilities = possibilities.filter(p => p.status !== 'INVALID');
       if (validPossibilities.length === 0) {
         return this.fallbackAnswer(query, 'No valid surviving possibilities exist.');
       }
 
-      const invariants = PossibilityDifferentiatingEngine.extractCommonInvariants(baseGraph, validPossibilities);
+      const invariants = this.resolutionEngine
+        ? this.resolutionEngine.extractCommonInvariants(validPossibilities, baseGraph)
+        : PossibilityDifferentiatingEngine.extractCommonInvariants(baseGraph, validPossibilities as any);
+
       const commonNodeNames = invariants.commonNodes.map(n => `• ${n.label} (${n.type})`).join('\n');
       const commonEdgeText = invariants.commonEdges.map(e => `• ${nodeMap.get(e.source)?.label || e.source} -[${e.type}]-> ${nodeMap.get(e.target)?.label || e.target}`).join('\n');
+      const chokePointsText = (invariants as any).commonUnavoidableDominatorNodes?.length > 0
+        ? `\n\nUnavoidable Dominator Choke Points:\n${(invariants as any).commonUnavoidableDominatorNodes.map((d: any) => `• ${d.label} (${d.id})`).join('\n')}`
+        : '';
 
       return {
         query,
@@ -302,7 +436,7 @@ export class InvestigationAgentService {
         factualAnswer: `Structural intersection across all ${validPossibilities.length} surviving possibilities reveals universal invariants:\n\n` +
           `Common Nodes (${invariants.commonNodes.length}):\n${commonNodeNames || 'None'}\n\n` +
           `Common Directed Links (${invariants.commonEdges.length}):\n${commonEdgeText || 'None'}\n\n` +
-          `Common Evidence Items: ${invariants.commonEvidenceRefs.length} item(s) shared across all branches.`,
+          `Common Evidence Items: ${invariants.commonEvidenceRefs.length} item(s) shared across all branches.${chokePointsText}`,
         structuredData: { invariants },
         suggestedFollowUps: [
           'What structurally distinguishes the possibilities?',

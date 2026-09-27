@@ -302,4 +302,46 @@ export async function runWhatIfSimulation(
   return res.json();
 }
 
+// --- Phase 4 Resolution Reasoning APIs ---
+
+export async function fetchResolutionAnalysis(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/resolution/analysis`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch resolution analysis.');
+  }
+  return res.json();
+}
+
+export async function fetchAlgorithmAudit(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/resolution/audit`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.audit || [];
+}
+
+export async function fetchResolutionMatrix(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/resolution/matrix`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function runCounterfactualResolutionSimulation(
+  caseId: string,
+  candidateId: string,
+  action: 'CONFIRM_ELEMENT' | 'REFUTE_ELEMENT' = 'CONFIRM_ELEMENT'
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/resolution/simulate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ candidateId, action })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Counterfactual resolution simulation failed.');
+  }
+  return res.json();
+}
+
+
 

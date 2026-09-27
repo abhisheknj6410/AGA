@@ -19,6 +19,7 @@ import { AnalysisView } from './components/analysis/AnalysisView';
 import { CaseIngestionView } from './components/agent/CaseIngestionView';
 import { InvestigationQueryView } from './components/agent/InvestigationQueryView';
 import { PossibilityEvolutionView } from './components/possibilities/PossibilityEvolutionView';
+import { ResolutionLabView } from './components/resolution/ResolutionLabView';
 import {
   Case,
   GraphPayload,
@@ -77,7 +78,7 @@ export const App: React.FC = () => {
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [activePossibility, setActivePossibility] = useState<Possibility | null>(null);
   const [comparisonData, setComparisonData] = useState<PossibilityComparison | null>(null);
@@ -527,6 +528,12 @@ export const App: React.FC = () => {
           caseId={currentCase?.id || ''}
           graph={graph}
           onRefreshGraph={loadCaseData}
+        />
+      )}
+
+      {activeTab === 'RESOLUTION' && currentCase && (
+        <ResolutionLabView
+          currentCase={currentCase}
         />
       )}
 

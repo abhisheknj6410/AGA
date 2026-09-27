@@ -30,6 +30,7 @@ import { createPossibilityRouter } from './routes/possibility-routes.js';
 import { createAnalysisRouter } from './routes/analysis-routes.js';
 import { createAgentRouter } from './routes/agent-routes.js';
 import { IncrementalReasoningEngine } from '../application/incremental-reasoning-engine.js';
+import { ResolutionReasoningEngine } from '../application/resolution-reasoning-engine.js';
 import { createIncrementalRouter } from './routes/incremental-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
@@ -49,7 +50,8 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   const analysisEngine = new GraphAnalysisEngine(algorithmRepo);
   const possibilityEngine = new PossibilityEngine(possibilityRepo, analysisEngine);
   const incrementalEngine = new IncrementalReasoningEngine(db, possibilityEngine);
-  const agentService = new InvestigationAgentService(possibilityRepo, analysisEngine, possibilityEngine, incrementalEngine);
+  const resolutionEngine = new ResolutionReasoningEngine(possibilityRepo, analysisEngine, incrementalEngine);
+  const agentService = new InvestigationAgentService(possibilityRepo, analysisEngine, possibilityEngine, incrementalEngine, resolutionEngine);
 
   const app = express();
 
@@ -71,7 +73,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases/:caseId/evidence', createEvidenceRouter(graphService));
   app.use('/api/cases/:caseId/graph', createGraphRouter(graphService));
   app.use('/api/cases/:caseId/import', createImportRouter(importService));
-  app.use('/api/cases/:caseId/resolution', createResolutionRouter(resolutionService));
+  app.use('/api/cases/:caseId/resolution', createResolutionRouter(resolutionService, graphService, resolutionEngine));
   app.use('/api/cases/:caseId/audit', createAuditRouter(auditRepo));
   app.use('/api/cases/:caseId/extract', createExtractionRouter(aiService));
   app.use('/api/cases/:caseId/possibilities', createPossibilityRouter(graphService, possibilityEngine, possibilityRepo, resolutionRepo, analysisEngine));
