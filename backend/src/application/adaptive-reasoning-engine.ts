@@ -501,7 +501,7 @@ export class AdaptiveReasoningEngine {
     }
 
     const survivingPossibilities = Math.max(0, paths.length - violationsCount);
-    const resolutionCandidates = survivingPossibilities > 1 ? Math.max(1, familiesCount) : dominatorCount > 0 ? 1 : 0;
+    const resolutionCandidates = survivingPossibilities > 1 ? Math.max(1, familiesCount) : 0;
     const actionsRanked = survivingPossibilities > 1 ? Math.max(1, survivingPossibilities) : paths.length > 0 ? 1 : 0;
 
     return {
@@ -569,8 +569,7 @@ export class AdaptiveReasoningEngine {
 
     const totalRuntimeMs = performance.now() - t0;
 
-    const nonTrivialDominators = fp.isLinearChain ? 0 : dominatorCount;
-    const resolutionCandidates = surviving > 1 ? Math.max(1, familiesCount) : nonTrivialDominators > 0 ? 1 : 0;
+    const resolutionCandidates = surviving > 1 ? Math.max(1, familiesCount) : 0;
     const actionsRanked = surviving > 1 ? Math.max(1, surviving) : paths.length > 0 ? 1 : 0;
 
     return {

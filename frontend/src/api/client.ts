@@ -1,4 +1,15 @@
-import { Case, GraphPayload, GraphNode, GraphEdge, AuditLog, ResolutionCandidate } from '../types/graph';
+import {
+  Case,
+  GraphPayload,
+  GraphNode,
+  GraphEdge,
+  AuditLog,
+  ResolutionCandidate,
+  ReconstructionPipelineReport,
+  EdgeProvenanceTrace,
+  MessyEvidenceBenchmarkReport,
+  EvidenceFact
+} from '../types/graph';
 
 const API_BASE = '/api';
 
@@ -564,5 +575,56 @@ export async function fetchAdaptiveBenchmark(): Promise<any> {
   return res.json();
 }
 
+// ---------------------------------------------------------------------------
+// Phase 13: Evidence-to-Graph Reconstruction & Provenance Reasoning API
+// ---------------------------------------------------------------------------
 
+export async function fetchReconstructionReport(
+  caseId: string,
+  facts?: EvidenceFact[]
+): Promise<ReconstructionPipelineReport> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/reconstruction/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ facts })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to run evidence reconstruction pipeline');
+  }
+  return res.json();
+}
 
+export async function fetchEdgeProvenance(
+  caseId: string,
+  edgeId: string
+): Promise<EdgeProvenanceTrace> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/reconstruction/provenance/${edgeId}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to fetch edge provenance trace for ${edgeId}`);
+  }
+  return res.json();
+}
+
+export async function fetchMessyBenchmark(): Promise<MessyEvidenceBenchmarkReport> {
+  const res = await fetch(`${API_BASE}/reconstruction/benchmark`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch messy evidence benchmark');
+  }
+  return res.json();
+}
+
+export async function fetchMessyBenchmarkDataset(): Promise<{
+  datasetName: string;
+  count: number;
+  facts: EvidenceFact[];
+}> {
+  const res = await fetch(`${API_BASE}/reconstruction/benchmark/dataset`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch messy benchmark dataset');
+  }
+  return res.json();
+}
