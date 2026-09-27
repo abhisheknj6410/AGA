@@ -442,6 +442,8 @@ export const App: React.FC = () => {
       {activeTab === 'AGENT' && (
         <InvestigationAgentView
           caseId={currentCase?.id || ''}
+          onDataIngested={loadCaseData}
+          onSwitchToGraph={() => setActiveTab('GRAPH')}
         />
       )}
 
