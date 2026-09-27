@@ -8,7 +8,10 @@ import {
   ReconstructionPipelineReport,
   EdgeProvenanceTrace,
   MessyEvidenceBenchmarkReport,
-  EvidenceFact
+  EvidenceFact,
+  EndToEndCaseReasoningReport,
+  WhyInspectionAnswer,
+  CompetingInterpretationComparison
 } from '../types/graph';
 
 const API_BASE = '/api';
@@ -625,6 +628,63 @@ export async function fetchMessyBenchmarkDataset(): Promise<{
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Failed to fetch messy benchmark dataset');
+  }
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Phase 14: End-to-End Case Reasoning Pipeline API
+// ---------------------------------------------------------------------------
+
+export async function fetchCasePipelineReport(
+  caseId: string,
+  facts?: EvidenceFact[]
+): Promise<EndToEndCaseReasoningReport> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/pipeline/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ facts })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to run end-to-end case reasoning pipeline');
+  }
+  return res.json();
+}
+
+export async function fetchPipelineBenchmark(): Promise<EndToEndCaseReasoningReport> {
+  const res = await fetch(`${API_BASE}/pipeline/benchmark`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch pipeline benchmark');
+  }
+  return res.json();
+}
+
+export async function fetchWhyInspection(
+  caseId: string,
+  queryType: string,
+  targetId: string
+): Promise<WhyInspectionAnswer> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/pipeline/why`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ queryType, targetId })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to inspect Why query');
+  }
+  return res.json();
+}
+
+export async function fetchPipelineComparison(
+  caseId: string
+): Promise<CompetingInterpretationComparison> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/pipeline/comparison`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch pipeline interpretation comparison');
   }
   return res.json();
 }

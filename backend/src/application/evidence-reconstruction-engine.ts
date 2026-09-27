@@ -355,10 +355,19 @@ export class EvidenceReconstructionEngine {
       });
     }
 
+    const nodes = Array.from(nodeMap.values());
     return {
-      caseId,
-      nodes: Array.from(nodeMap.values()),
-      edges
+      nodes,
+      edges,
+      metadata: {
+        caseId,
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+        entityCount: nodes.filter(n => n.category === 'ENTITY').length,
+        eventCount: nodes.filter(n => n.category === 'EVENT').length,
+        evidenceCount: nodes.filter(n => n.category === 'EVIDENCE').length,
+        generatedAt: new Date().toISOString()
+      }
     };
   }
 
