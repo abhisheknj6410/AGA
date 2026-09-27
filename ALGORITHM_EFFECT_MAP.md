@@ -284,3 +284,27 @@ This document defines every graph algorithm implemented in the Graphical Investi
    - *Previous state*: Stored a number (`independentCorroborationCount`).
    - *Phase 4 connection*: Quantifies evidentiary robustness in canonical possibility structures and weights candidate evidence classes.
 
+---
+
+## 14. Phase 5: Investigation Planning Engine & Shannon Entropy
+
+- **Source Code**:
+  - [`backend/src/domain/planning-types.ts`](file:///home/zius/Projects/Graphical-Investigation-system/backend/src/domain/planning-types.ts)
+  - [`backend/src/application/investigation-planning-engine.ts`](file:///home/zius/Projects/Graphical-Investigation-system/backend/src/application/investigation-planning-engine.ts)
+- **Question Answered**: *"What information or evidence would most effectively reduce the remaining possibility space, what is its cost and information gain, and what should be investigated next?"*
+- **Inputs**:
+  - `survivingPossibilities: Possibility[]`
+  - `structuralFamilies: StructuralFamily[]`
+  - `resolutionCandidates: ResolutionCandidate[]`
+  - `baseGraph: GraphPayload`
+- **Output**: `InvestigationPlan` containing prioritized `InvestigationAction[]`, second-order `InvestigationPlanGraph`, prior entropy $H(P)$, expected information gain $IG$, and `nextImmediateAction`.
+- **Asymptotic Complexity**: $\mathcal{O}(|C| \cdot |P|)$ where $|C|$ is candidate count and $|P|$ is surviving possibility count.
+- **Causal Effect on Possibility Space**:
+  - Grounding resolution candidates in 10 schema evidence classes with realistic acquisition profiles (costs 1-5, availability, temporal precision).
+  - Computing multi-outcome partitions (`CONFIRMED`, `REFUTED`, `CONFLICTING`) and calculating mathematical information gain via Shannon entropy: $IG = H(\text{before}) - \mathbb{E}[H(\text{after})]$.
+  - Creating a second-order plan graph and inferring prerequisite dependencies between entity verification and corridor links.
+  - Feeding the Investigation Agent to answer *"What should I investigate next?"*, *"Which evidence would reduce uncertainty the most?"*, and *"Show the investigation plan"* with 100% mathematical consistency.
+- **Verification Tests**: [`backend/src/tests/investigation-planning.test.ts`](file:///home/zius/Projects/Graphical-Investigation-system/backend/src/tests/investigation-planning.test.ts) (24 tests).
+- **UI Representation**: `InvestigationPlanView` (PLAN tab) featuring summary KPI cards, Priority 1 action spotlight, ranked action queue, multi-outcome breakdown, and interactive What-If action simulation.
+
+

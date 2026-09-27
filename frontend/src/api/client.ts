@@ -343,5 +343,43 @@ export async function runCounterfactualResolutionSimulation(
   return res.json();
 }
 
+// --- Phase 5 Investigation Planning APIs ---
+
+export async function fetchInvestigationPlan(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/planning/plan`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch investigation plan.');
+  }
+  return res.json();
+}
+
+export async function fetchInvestigationActions(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/planning/actions`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch investigation actions.');
+  }
+  return res.json();
+}
+
+export async function simulatePlanAction(
+  caseId: string,
+  actionId: string,
+  outcome: 'CONFIRMED' | 'REFUTED' = 'CONFIRMED'
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/planning/simulate-action`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actionId, outcome })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Action simulation failed.');
+  }
+  return res.json();
+}
+
+
 
 

@@ -6,6 +6,7 @@ import { PossibilityDifferentiatingEngine } from './possibility-differentiating-
 
 import { IncrementalReasoningEngine } from './incremental-reasoning-engine.js';
 import { ResolutionReasoningEngine } from './resolution-reasoning-engine.js';
+import { InvestigationPlanningEngine } from './investigation-planning-engine.js';
 
 export interface AgentQueryResult {
   query: string;
@@ -24,13 +25,15 @@ export class InvestigationAgentService {
   private possibilityEngine: PossibilityEngine;
   private incrementalEngine?: IncrementalReasoningEngine;
   private resolutionEngine?: ResolutionReasoningEngine;
+  private planningEngine?: InvestigationPlanningEngine;
 
   constructor(
     arg1: PossibilityRepository | PossibilityEngine,
     arg2: GraphAnalysisEngine,
     arg3: PossibilityEngine | PossibilityRepository,
     incrementalEngine?: IncrementalReasoningEngine,
-    resolutionEngine?: ResolutionReasoningEngine
+    resolutionEngine?: ResolutionReasoningEngine,
+    planningEngine?: InvestigationPlanningEngine
   ) {
     if (arg1 instanceof PossibilityRepository) {
       this.possibilityRepo = arg1;
@@ -43,6 +46,7 @@ export class InvestigationAgentService {
     }
     this.incrementalEngine = incrementalEngine;
     this.resolutionEngine = resolutionEngine;
+    this.planningEngine = planningEngine;
   }
 
   setIncrementalEngine(engine: IncrementalReasoningEngine): void {
@@ -51,6 +55,10 @@ export class InvestigationAgentService {
 
   setResolutionEngine(engine: ResolutionReasoningEngine): void {
     this.resolutionEngine = engine;
+  }
+
+  setPlanningEngine(engine: InvestigationPlanningEngine): void {
+    this.planningEngine = engine;
   }
 
   /**
@@ -76,6 +84,118 @@ export class InvestigationAgentService {
       const pId = p.id.toLowerCase();
       return q.includes(pId) || q.includes(pName) || (q.includes('p1') && pName.includes('#1')) || (q.includes('p2') && pName.includes('#2')) || (q.includes('p3') && pName.includes('#3'));
     });
+
+    // Ensure planningEngine is available if resolutionEngine exists
+    if (!this.planningEngine && this.resolutionEngine) {
+      this.planningEngine = new InvestigationPlanningEngine(this.possibilityRepo, this.resolutionEngine);
+    }
+
+    // 0-PLAN-1: "What should I investigate next?" / "What is the next step?" / "Recommended action"
+    if (
+      q.includes('investigate next') ||
+      q.includes('what should i investigate') ||
+      q.includes('what should we investigate') ||
+      q.includes('what should we do next') ||
+      q.includes('next action') ||
+      q.includes('next step') ||
+      q.includes('recommended action')
+    ) {
+      if (this.planningEngine) {
+        const plan = await this.planningEngine.generatePlan(caseId, baseGraph);
+        const top = plan.nextImmediateAction || plan.actions[0];
+        if (top) {
+          const winStr = top.requiredTemporalWindow ? `\n• Temporal Window: [${top.requiredTemporalWindow.start || 'N/A'} - ${top.requiredTemporalWindow.end || 'N/A'}] (${top.requiredTemporalWindow.precision})` : '';
+          return {
+            query,
+            intent: 'NEXT_INVESTIGATION_ACTION',
+            algorithmUsed: 'INVESTIGATION_PLANNING_ENGINE & RESOLUTION_REASONING',
+            factualAnswer:
+              `Deterministic Next Investigation Action (${top.id}):\n\n` +
+              `• Objective: ${top.question}\n` +
+              `• Target: ${top.targetLabel} (${top.targetType})\n` +
+              `• Recommended Evidence: ${top.evidenceClasses.join(', ')} (Cost: ${top.costProfile.estimatedCost}/5, Availability: ${top.costProfile.availability})\n` +
+              `• Graph Algorithm Basis: ${top.algorithmBasis} (${top.graphBasis})\n` +
+              `• Expected Information Gain: ${top.expectedInformationGain} bits (H(P): ${plan.currentEntropy} bits)\n` +
+              `• Resolution Utility: ${top.resolutionUtility}/100 | Investigation Value: ${top.investigationValue}\n` +
+              `• Expected Partitions:\n` +
+              `   - If CONFIRMED: ${top.expectedPartitions.CONFIRMED.resultingPossibilityCount} surviving branches (Eliminates: ${top.expectedPartitions.CONFIRMED.refutedSet.join(', ') || 'None'})\n` +
+              `   - If REFUTED: ${top.expectedPartitions.REFUTED.resultingPossibilityCount} surviving branches (Eliminates: ${top.expectedPartitions.REFUTED.refutedSet.join(', ') || 'None'})` +
+              winStr,
+            structuredData: { nextAction: top, planId: plan.planId, currentEntropy: plan.currentEntropy },
+            suggestedFollowUps: [
+              'Which evidence would reduce uncertainty the most?',
+              'Show the investigation plan',
+              'What would happen if that evidence were added?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0-PLAN-2: "Which evidence would reduce uncertainty the most?" / "highest information gain"
+    if (
+      q.includes('reduce uncertainty') ||
+      q.includes('information gain') ||
+      q.includes('highest information') ||
+      q.includes('most information') ||
+      (q.includes('uncertainty') && q.includes('most'))
+    ) {
+      if (this.planningEngine) {
+        const plan = await this.planningEngine.generatePlan(caseId, baseGraph);
+        if (plan.actions.length > 0) {
+          const sortedByGain = [...plan.actions].sort((a, b) => b.expectedInformationGain - a.expectedInformationGain);
+          const topList = sortedByGain.slice(0, 3).map((a, i) =>
+            `${i + 1}. ${a.id} — ${a.targetLabel} (${a.evidenceClasses.join(', ')})\n` +
+            `   • Information Gain: ${a.expectedInformationGain} bits\n` +
+            `   • Outcome Partitions: Confirms ${a.expectedPartitions.CONFIRMED.resultingPossibilityCount} vs Refutes ${a.expectedPartitions.REFUTED.resultingPossibilityCount}\n` +
+            `   • Algorithm Basis: ${a.algorithmBasis}`
+          ).join('\n\n');
+
+          return {
+            query,
+            intent: 'MAX_INFORMATION_GAIN_INQUIRY',
+            algorithmUsed: 'SHANNON_ENTROPY & INVESTIGATION_PLANNING_ENGINE',
+            factualAnswer:
+              `Current Graph Uncertainty (Entropy): H(P) = ${plan.currentEntropy} bits (${plan.currentPossibilityCount} surviving possibilities).\n\n` +
+              `Top actions ranked by Expected Information Gain:\n\n${topList}`,
+            structuredData: { currentEntropy: plan.currentEntropy, actionsByGain: sortedByGain },
+            suggestedFollowUps: [
+              'What should I investigate next?',
+              'Show the investigation plan',
+              'What would happen if that evidence were added?'
+            ]
+          };
+        }
+      }
+    }
+
+    // 0-PLAN-3: "Show the investigation plan" / "investigation plan"
+    if (q.includes('investigation plan') || q.includes('planning graph') || (q.includes('show') && q.includes('plan'))) {
+      if (this.planningEngine) {
+        const plan = await this.planningEngine.generatePlan(caseId, baseGraph);
+        const actionSummary = plan.actions.map(a =>
+          `• [${a.id}] ${a.targetLabel} — Value: ${a.investigationValue}, Gain: ${a.expectedInformationGain}b, Cost: ${a.costProfile.estimatedCost}`
+        ).join('\n');
+
+        return {
+          query,
+          intent: 'INVESTIGATION_PLAN_SUMMARY',
+          algorithmUsed: 'INVESTIGATION_PLANNING_ENGINE',
+          factualAnswer:
+            `Investigation Plan (${plan.planId}):\n` +
+            `• Surviving Possibilities: ${plan.currentPossibilityCount} across ${plan.currentFamilyCount} structural families\n` +
+            `• Structural Entropy: ${plan.currentEntropy} bits\n` +
+            `• Prioritized Actions (${plan.actions.length} total):\n\n${actionSummary}\n\n` +
+            `• Plan Graph: ${plan.planGraph.nodes.length} nodes, ${plan.planGraph.edges.length} causal edges.`,
+          structuredData: { plan },
+          suggestedFollowUps: [
+            'What should I investigate next?',
+            'Which evidence would reduce uncertainty the most?',
+            'What do all surviving possibilities have in common?'
+          ]
+        };
+      }
+    }
 
     // 0a. "What possibilities remain?" / "surviving possibilities"
     if (!q.includes('common') && !q.includes('distinguish') && (q.includes('possibilities remain') || q.includes('surviving possibilities') || q.includes('remaining possibilities') || (q.includes('what') && q.includes('possibilit') && q.includes('remain')))) {

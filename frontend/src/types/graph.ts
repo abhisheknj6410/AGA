@@ -617,4 +617,128 @@ export interface ResolutionReasoningResult {
   contradictionImpacts: ContradictionImpact[];
 }
 
+// --- Phase 5: Investigation Planning Engine Types ---
+
+export type EvidenceClass =
+  | 'CCTV'
+  | 'LOG'
+  | 'DOCUMENT'
+  | 'IMAGE'
+  | 'PHONE_RECORD'
+  | 'TRANSACTION_RECORD'
+  | 'INTERVIEW'
+  | 'DATABASE_RECORD'
+  | 'NETWORK_CAPTURE'
+  | 'SYSTEM_RECORD';
+
+export type AvailabilityLevel = 'IMMEDIATE' | 'MODERATE' | 'RESTRICTED' | 'DELAYED';
+
+export interface EvidenceAcquisitionProfile {
+  evidenceClass: EvidenceClass;
+  estimatedCost: number;
+  availability: AvailabilityLevel;
+  temporalCoverage: {
+    precision: TemporalPrecision;
+    windowCapability: string;
+  };
+  structuralSpecificity: number;
+}
+
+export type ActionOutcome = 'CONFIRMED' | 'REFUTED' | 'CONFLICTING' | 'UNKNOWN';
+
+export interface ExpectedPartition {
+  outcome: ActionOutcome;
+  confirmedSet: string[];
+  refutedSet: string[];
+  conflictingSet: string[];
+  unknownSet: string[];
+  probability: number;
+  resultingPossibilityCount: number;
+  resultingFamilyCount: number;
+}
+
+export type PlanningGraphBasis =
+  | 'MIN_CUT_SEPARATION'
+  | 'DOMINATOR_DIVERGENCE'
+  | 'DISJOINT_SUPPORT'
+  | 'TEMPORAL_DISCRIMINATION'
+  | 'ALTERNATIVE_CORRIDOR'
+  | 'CONTRADICTION_ARBITRATION';
+
+export interface ActionTemporalWindow {
+  start?: string;
+  end?: string;
+  precision: TemporalPrecision;
+  reason: string;
+}
+
+export interface ActionEntityRef {
+  id: string;
+  label: string;
+  role: string;
+}
+
+export type InvestigationActionStatus = 'RECOMMENDED' | 'IN_PROGRESS' | 'EXECUTED' | 'DEFERRED';
+
+export interface InvestigationAction {
+  id: string;
+  targetCandidateId: string;
+  targetType: 'NODE' | 'EDGE' | 'EVIDENCE' | 'IDENTITY' | 'TEMPORAL_ORDER';
+  targetLabel: string;
+  targetPossibilities: string[];
+  targetFamilies: string[];
+  question: string;
+  evidenceClasses: EvidenceClass[];
+  requiredTemporalWindow?: ActionTemporalWindow;
+  requiredEntities: ActionEntityRef[];
+  graphBasis: PlanningGraphBasis;
+  algorithmBasis: string;
+  expectedPartitions: Record<'CONFIRMED' | 'REFUTED' | 'CONFLICTING', ExpectedPartition>;
+  resolutionUtility: number;
+  expectedInformationGain: number;
+  evidenceSpecificity: number;
+  costProfile: EvidenceAcquisitionProfile;
+  investigationValue: number;
+  dependencies: string[];
+  status: InvestigationActionStatus;
+}
+
+export interface PlanGraphNode {
+  id: string;
+  label: string;
+  type: 'POSSIBILITY_SPACE' | 'CANDIDATE' | 'ACTION' | 'OUTCOME';
+  metadata: Record<string, any>;
+}
+
+export interface PlanGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: 'RESOLVES' | 'TRIGGERS' | 'PRUNES' | 'DEPENDS_ON' | 'PARTITIONS';
+  label?: string;
+}
+
+export interface InvestigationPlanGraph {
+  nodes: PlanGraphNode[];
+  edges: PlanGraphEdge[];
+}
+
+export interface InvestigationPlan {
+  planId: string;
+  caseId: string;
+  timestamp: string;
+  currentPossibilityCount: number;
+  currentFamilyCount: number;
+  currentEntropy: number;
+  actions: InvestigationAction[];
+  planGraph: InvestigationPlanGraph;
+  algorithmTrace: {
+    executionTimestamp: string;
+    steps: string[];
+    basisMap: Record<string, string>;
+  };
+  nextImmediateAction: InvestigationAction | null;
+}
+
+
 

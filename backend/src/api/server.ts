@@ -31,7 +31,9 @@ import { createAnalysisRouter } from './routes/analysis-routes.js';
 import { createAgentRouter } from './routes/agent-routes.js';
 import { IncrementalReasoningEngine } from '../application/incremental-reasoning-engine.js';
 import { ResolutionReasoningEngine } from '../application/resolution-reasoning-engine.js';
+import { InvestigationPlanningEngine } from '../application/investigation-planning-engine.js';
 import { createIncrementalRouter } from './routes/incremental-routes.js';
+import { createPlanningRouter } from './routes/planning-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -51,7 +53,15 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   const possibilityEngine = new PossibilityEngine(possibilityRepo, analysisEngine);
   const incrementalEngine = new IncrementalReasoningEngine(db, possibilityEngine);
   const resolutionEngine = new ResolutionReasoningEngine(possibilityRepo, analysisEngine, incrementalEngine);
-  const agentService = new InvestigationAgentService(possibilityRepo, analysisEngine, possibilityEngine, incrementalEngine, resolutionEngine);
+  const planningEngine = new InvestigationPlanningEngine(possibilityRepo, resolutionEngine);
+  const agentService = new InvestigationAgentService(
+    possibilityRepo,
+    analysisEngine,
+    possibilityEngine,
+    incrementalEngine,
+    resolutionEngine,
+    planningEngine
+  );
 
   const app = express();
 
@@ -74,6 +84,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases/:caseId/graph', createGraphRouter(graphService));
   app.use('/api/cases/:caseId/import', createImportRouter(importService));
   app.use('/api/cases/:caseId/resolution', createResolutionRouter(resolutionService, graphService, resolutionEngine));
+  app.use('/api/cases/:caseId/planning', createPlanningRouter(graphService, planningEngine));
   app.use('/api/cases/:caseId/audit', createAuditRouter(auditRepo));
   app.use('/api/cases/:caseId/extract', createExtractionRouter(aiService));
   app.use('/api/cases/:caseId/possibilities', createPossibilityRouter(graphService, possibilityEngine, possibilityRepo, resolutionRepo, analysisEngine));
