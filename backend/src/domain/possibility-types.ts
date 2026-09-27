@@ -108,6 +108,13 @@ export interface PossibilityComparison {
     commonEvidence: string[];
     distinguishingEvidence: Record<string, string[]>;
   };
+  resolvingRecommendations?: Array<{
+    distinguishingElement: string;
+    distinguishingType: 'NODE' | 'EDGE' | 'IDENTITY' | 'TEMPORAL_ORDER';
+    affectedPossibilityIds: string[];
+    recommendedAction: string;
+    rationale: string;
+  }>;
 }
 
 export interface PossibilityGenerationOptions {

@@ -6,7 +6,7 @@ export interface PathResult {
   totalCost: number;
   nodeIds: string[];
   edgeIds: string[];
-  nodes: Array<{ id: string; label: string; category: string; type: string }>;
+  nodes: Array<{ id: string; label: string; category: string; type: string; time?: any }>;
   edges: Array<{ id: string; type: string; cost: number; status: string }>;
 }
 
@@ -121,7 +121,7 @@ export class DijkstraAlgorithm {
 
     const nodeObjs = nodeIds.map(id => {
       const n = nodeMap.get(id)!;
-      return { id: n.id, label: n.label, category: n.category, type: n.type };
+      return { id: n.id, label: n.label, category: n.category, type: n.type, time: n.time };
     });
 
     return {

@@ -106,7 +106,7 @@ export class KShortestPathsAlgorithm {
 
             const fullNodes = totalNodeIds.map(nid => {
               const n = nodeMap.get(nid)!;
-              return { id: n.id, label: n.label, category: n.category, type: n.type };
+              return { id: n.id, label: n.label, category: n.category, type: n.type, time: n.time };
             });
 
             const candidate: PathResult = {

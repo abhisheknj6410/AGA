@@ -1,6 +1,6 @@
 import React from 'react';
 import { PossibilityComparison } from '../../types/graph';
-import { Scale, ArrowLeft, Check, X, AlertTriangle, Layers, ShieldCheck } from 'lucide-react';
+import { Scale, ArrowLeft, Check, X, AlertTriangle, Layers, ShieldCheck, Target } from 'lucide-react';
 
 interface ComparisonViewProps {
   comparison: PossibilityComparison | null;
@@ -23,7 +23,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ comparison, onBa
     );
   }
 
-  const { possibilities, structuralDiff } = comparison;
+  const { possibilities, structuralDiff, resolvingRecommendations = [] } = comparison;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200">
@@ -238,6 +238,41 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ comparison, onBa
             </div>
           </div>
         </div>
+
+        {/* Graph-Driven Resolving Recommendations */}
+        {resolvingRecommendations.length > 0 && (
+          <div className="rounded-2xl border border-teal-200 dark:border-teal-900/50 bg-teal-50/30 dark:bg-teal-950/20 p-5 shadow-xs">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300 flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <span>Recommended Investigative Actions to Differentiate Possibilities</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {resolvingRecommendations.map((rec, idx) => (
+                <div key={idx} className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-2.5 shadow-xs">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-800">
+                        {rec.distinguishingType}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 font-mono truncate max-w-[150px]">
+                        {rec.distinguishingElement}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-snug">
+                      {rec.recommendedAction}
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-normal">
+                      {rec.rationale}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-[10px] text-zinc-400 font-mono">
+                    Affects {rec.affectedPossibilityIds.length} candidate branches
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

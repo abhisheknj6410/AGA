@@ -2,6 +2,7 @@ import { GraphPayload, GraphNode } from '../domain/types.js';
 import { PossibilityRepository } from '../infrastructure/repositories/possibility-repository.js';
 import { GraphAnalysisEngine } from './graph-analysis-engine.js';
 import { PossibilityEngine } from './possibility-engine.js';
+import { PossibilityDifferentiatingEngine } from './possibility-differentiating-engine.js';
 
 export interface AgentQueryResult {
   query: string;
@@ -38,17 +39,215 @@ export class InvestigationAgentService {
       q.includes(n.label.toLowerCase()) || q.includes(n.id.toLowerCase())
     );
 
-    // Find mentioned possibilities in query (e.g. "p01", "possibility #1", etc.)
+    // Find mentioned possibilities in query
     const mentionedPossibilities = possibilities.filter(p => {
-      const pNum = p.name.toLowerCase();
-      return q.includes(p.id.toLowerCase()) || q.includes(pNum) || (q.includes('p01') && p.name.includes('#1'));
+      const pName = p.name.toLowerCase();
+      const pId = p.id.toLowerCase();
+      return q.includes(pId) || q.includes(pName) || (q.includes('p1') && pName.includes('#1')) || (q.includes('p2') && pName.includes('#2')) || (q.includes('p3') && pName.includes('#3'));
     });
 
-    // 1. "Show all valid connections between X and Y" / "How does X connect to Y"
-    if ((q.includes('connect') || q.includes('path') || q.includes('route') || q.includes('how')) && mentionedNodes.length >= 2) {
+    // 1. "Why does P exist?" / Possibility Provenance
+    if (q.includes('why') && q.includes('exist')) {
+      const p = mentionedPossibilities[0] || possibilities[0];
+      if (!p) {
+        return this.fallbackAnswer(query, 'No possibilities have been generated yet for this case.');
+      }
+
+      return {
+        query,
+        intent: 'POSSIBILITY_PROVENANCE',
+        matchedPossibilityIds: [p.id],
+        factualAnswer: `Possibility '${p.name}' was deterministically generated via method: ${p.generationMethod}.\n\n` +
+          `• Assumptions: ${p.assumptions.join('; ') || 'None'}\n` +
+          `• Supporting Evidence: ${p.supportingEvidence.map(id => nodeMap.get(id)?.label || id).join(', ') || 'None'}\n` +
+          `• Conflicting Evidence: ${p.conflictingEvidence.map(id => nodeMap.get(id)?.label || id).join(', ') || 'None'}\n` +
+          `• Status: ${p.status}`,
+        structuredData: { possibility: p },
+        suggestedFollowUps: [
+          'What do all surviving possibilities have in common?',
+          'What structurally distinguishes the possibilities?'
+        ]
+      };
+    }
+
+    // 2. "Which possibilities are temporally invalid?" / Temporal filter
+    if (q.includes('temporally invalid') || q.includes('invalid possibilities')) {
+      const invalid = possibilities.filter(p => p.status === 'INVALID' || (p.algorithmResults as any)?.temporalValidity === 'INVALID');
+      return {
+        query,
+        intent: 'TEMPORAL_VALIDITY_FILTER',
+        algorithmUsed: 'TOPOLOGICAL_SORT_&_TEMPORAL_VALIDATION',
+        factualAnswer: invalid.length > 0
+          ? `Found ${invalid.length} temporally invalid possibility branch(es):\n` +
+            invalid.map(p => `• ${p.name}: Contains causal cycles or chronological timestamp inversions.`).join('\n')
+          : `All ${possibilities.length} current possibilities satisfy temporal monotonicity and acyclic event execution flows.`,
+        structuredData: { invalidPossibilityIds: invalid.map(p => p.id) },
+        suggestedFollowUps: [
+          'Show all valid connections between entities',
+          'What do all surviving possibilities have in common?'
+        ]
+      };
+    }
+
+    // 3. "What makes P invalid?" / "Why is P invalid?"
+    if ((q.includes('invalid') || q.includes('why')) && (q.includes('fail') || q.includes('violate') || q.includes('what makes') || q.includes('why is'))) {
+      const targetP = mentionedPossibilities[0] || possibilities.find(p => p.status === 'INVALID');
+      if (targetP) {
+        const evalData = (targetP.algorithmResults as any)?.constraintEvaluation;
+        const violations = evalData?.violations || [];
+        const temporalViolations = evalData?.temporalViolations || [];
+
+        const violationText = violations.length > 0
+          ? violations.map((v: string) => `• ${v}`).join('\n')
+          : `• Temporal causality violation: Path chronology or acyclic ordering failed.`;
+
+        return {
+          query,
+          intent: 'EXPLAIN_INVALID_POSSIBILITY',
+          matchedPossibilityIds: [targetP.id],
+          algorithmUsed: 'POSSIBILITY_CONSTRAINT_ENGINE & TEMPORAL_ANALYSIS',
+          factualAnswer: `Possibility '${targetP.name}' is marked INVALID due to ${violations.length || 1} structural constraint violation(s):\n\n${violationText}`,
+          structuredData: { possibilityId: targetP.id, violations, temporalViolations },
+          suggestedFollowUps: [
+            'What do all surviving possibilities have in common?',
+            'Show all valid paths between source and target.'
+          ]
+        };
+      }
+    }
+
+    // 2. "What do all surviving possibilities have in common?" / Common Invariants
+    if (q.includes('common') || q.includes('in common') || q.includes('invariant') || q.includes('universal')) {
+      const validPossibilities = possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL');
+      if (validPossibilities.length === 0) {
+        return this.fallbackAnswer(query, 'No valid surviving possibilities exist.');
+      }
+
+      const invariants = PossibilityDifferentiatingEngine.extractCommonInvariants(baseGraph, validPossibilities);
+      const commonNodeNames = invariants.commonNodes.map(n => `• ${n.label} (${n.type})`).join('\n');
+      const commonEdgeText = invariants.commonEdges.map(e => `• ${nodeMap.get(e.source)?.label || e.source} -[${e.type}]-> ${nodeMap.get(e.target)?.label || e.target}`).join('\n');
+
+      return {
+        query,
+        intent: 'COMMON_INVARIANTS_ANALYSIS',
+        algorithmUsed: 'GRAPH_INTERSECTION_OVER_POSSIBILITY_SPACE',
+        factualAnswer: `Structural intersection across all ${validPossibilities.length} surviving possibilities reveals universal invariants:\n\n` +
+          `Common Nodes (${invariants.commonNodes.length}):\n${commonNodeNames || 'None'}\n\n` +
+          `Common Directed Links (${invariants.commonEdges.length}):\n${commonEdgeText || 'None'}\n\n` +
+          `Common Evidence Items: ${invariants.commonEvidenceRefs.length} item(s) shared across all branches.`,
+        structuredData: { invariants },
+        suggestedFollowUps: [
+          'What structurally distinguishes the possibilities?',
+          'Which nodes are unavoidable across all valid paths?'
+        ]
+      };
+    }
+
+    // 3. "What structurally distinguishes P1 and P2?" / Distinguishing differences
+    if (q.includes('distinguish') || q.includes('different') || q.includes('versus') || q.includes('vs')) {
+      const pToCompare = mentionedPossibilities.length >= 2 ? mentionedPossibilities.slice(0, 5) : possibilities.slice(0, 3);
+      if (pToCompare.length < 2) {
+        return this.fallbackAnswer(query, 'At least 2 possibilities are required to compute distinguishing differences.');
+      }
+
+      const comparison = this.possibilityEngine.comparePossibilities(
+        caseId,
+        pToCompare.map(p => p.id),
+        baseGraph
+      );
+
+      const diffText = pToCompare.map(p => {
+        const uniqueEdges = comparison.structuralDiff.distinguishingEdges[p.id] || [];
+        const uniqueEv = comparison.structuralDiff.distinguishingEvidence[p.id] || [];
+        return `• ${p.name}:\n  - ${uniqueEdges.length} unique relationship(s)\n  - ${uniqueEv.length} unique supporting evidence item(s)`;
+      }).join('\n\n');
+
+      const recText = comparison.resolvingRecommendations && comparison.resolvingRecommendations.length > 0
+        ? `\n\nKey Resolving Evidence Recommendation:\n• ${comparison.resolvingRecommendations[0].recommendedAction} (${comparison.resolvingRecommendations[0].rationale})`
+        : '';
+
+      return {
+        query,
+        intent: 'DISTINGUISHING_SUBGRAPH_ANALYSIS',
+        matchedPossibilityIds: pToCompare.map(p => p.id),
+        algorithmUsed: 'SYMMETRIC_DIFFERENCE_&_RESOLVING_ENGINE',
+        factualAnswer: `Structural differentiation across ${pToCompare.length} models:\n\n${diffText}${recText}`,
+        structuredData: { comparison },
+        suggestedFollowUps: [
+          'What do all surviving possibilities have in common?',
+          'Which possibilities depend on uncertain identity?'
+        ]
+      };
+    }
+
+    // 4. "Which possibilities depend on uncertain identity?" / Entity resolution
+    if (q.includes('identity') || q.includes('resolution') || q.includes('same entity') || q.includes('merged')) {
+      const identityBranches = possibilities.filter(p => p.generationMethod === 'ENTITY_RESOLUTION');
+      const branchSummary = identityBranches.map(p => `• ${p.name} (Status: ${p.status}): ${p.description}`).join('\n');
+
+      return {
+        query,
+        intent: 'IDENTITY_UNCERTAINTY_BRANCHES',
+        algorithmUsed: 'ENTITY_RESOLUTION_GRAPH_BRANCHING',
+        factualAnswer: identityBranches.length > 0
+          ? `Discovered ${identityBranches.length} possibility branch(es) dependent on identity resolution:\n\n${branchSummary}`
+          : `No current possibilities depend on unresolved entity identities.`,
+        structuredData: { identityPossibilities: identityBranches },
+        suggestedFollowUps: [
+          'What do all surviving possibilities have in common?',
+          'Show all valid paths between entities.'
+        ]
+      };
+    }
+
+    // 5. "Which evidence conflicts with P?"
+    if (q.includes('conflict') || q.includes('contradict')) {
+      const targetP = mentionedPossibilities[0] || possibilities.find(p => p.conflictingEvidence.length > 0);
+      if (targetP) {
+        const conflictLabels = targetP.conflictingEvidence.map(id => nodeMap.get(id)?.label || id);
+        return {
+          query,
+          intent: 'CONTRADICTION_EVIDENCE_INQUIRY',
+          matchedPossibilityIds: [targetP.id],
+          algorithmUsed: 'CONTRADICTION_PROPAGATION',
+          factualAnswer: `Possibility '${targetP.name}' directly conflicts with ${conflictLabels.length} evidence item(s):\n` +
+            conflictLabels.map(l => `• ${l}`).join('\n') +
+            `\n\nAssumptions required: ${targetP.assumptions.join('; ')}`,
+          structuredData: { possibilityId: targetP.id, conflictingEvidence: targetP.conflictingEvidence },
+          suggestedFollowUps: [
+            'What do all surviving possibilities have in common?',
+            'What structurally distinguishes the possibilities?'
+          ]
+        };
+      }
+    }
+
+    // 6. "How many independent paths exist in P?" / Corroboration
+    if (q.includes('independent') || q.includes('disjoint') || q.includes('corroborat')) {
+      const targetP = mentionedPossibilities[0] || possibilities[0];
+      const count = (targetP?.algorithmResults as any)?.independentCorroboration?.independentCorroborationCount ?? 1;
+
+      return {
+        query,
+        intent: 'INDEPENDENT_PATHS_INQUIRY',
+        matchedPossibilityIds: targetP ? [targetP.id] : [],
+        algorithmUsed: 'SUURBALLE_VERTEX_DISJOINT_PATHS',
+        factualAnswer: targetP
+          ? `Possibility '${targetP.name}' has ${count} structurally independent (vertex-disjoint) access corridor(s). This means there are ${count} non-overlapping routes providing structural corroboration.`
+          : `No possibility branches selected for disjoint path evaluation.`,
+        structuredData: { independentPathsCount: count },
+        suggestedFollowUps: [
+          'Which nodes are unavoidable across all valid paths?',
+          'What do all surviving possibilities have in common?'
+        ]
+      };
+    }
+
+    // 7. "Show all valid connections between X and Y"
+    if ((q.includes('connect') || q.includes('path') || q.includes('route')) && mentionedNodes.length >= 2) {
       const src = mentionedNodes[0];
       const tgt = mentionedNodes[1];
-      const kPaths = this.analysisEngine.runKShortestPaths(baseGraph, src.id, tgt.id, 3, caseId);
+      const kPaths = this.analysisEngine.runKShortestPaths(baseGraph, src.id, tgt.id, 4, caseId);
       const disjoint = this.analysisEngine.runDisjointPaths(baseGraph, src.id, tgt.id, 'VERTEX_DISJOINT', caseId);
 
       const pathsSummary = kPaths.paths.map((p, idx) =>
@@ -61,7 +260,7 @@ export class InvestigationAgentService {
         matchedEntityIds: [src.id, tgt.id],
         algorithmUsed: 'K_SHORTEST_PATHS & DISJOINT_PATHS',
         factualAnswer: kPaths.paths.length > 0
-          ? `Discovered ${kPaths.paths.length} directed evidence path(s) between '${src.label}' and '${tgt.label}'. There are ${disjoint.independentCorroborationCount} structurally independent (vertex-disjoint) corridor(s).\n\n${pathsSummary}`
+          ? `Discovered ${kPaths.paths.length} directed evidence path(s) between '${src.label}' and '${tgt.label}'. There are ${disjoint.independentCorroborationCount} structurally independent corridor(s).\n\n${pathsSummary}`
           : `No directed path exists between '${src.label}' and '${tgt.label}' under observed graph constraints.`,
         structuredData: { paths: kPaths.paths, independentCorroborationCount: disjoint.independentCorroborationCount },
         suggestedFollowUps: [
@@ -71,7 +270,7 @@ export class InvestigationAgentService {
       };
     }
 
-    // 2. "Which nodes are unavoidable / critical / bottlenecks?" / Dominators / Articulation
+    // 8. "Which nodes are unavoidable / critical / bottlenecks?" / Dominators
     if (q.includes('unavoidable') || q.includes('choke') || q.includes('critical') || q.includes('bottleneck') || q.includes('articulation')) {
       const articulation = this.analysisEngine.runArticulationPoints(baseGraph, caseId);
 
@@ -94,136 +293,8 @@ export class InvestigationAgentService {
         factualAnswer: `Identified ${articulation.articulationPoints.length} structural articulation point(s) in the graph.${dominatorAnswer}\n\n${criticalSummary}`,
         structuredData: { articulationPoints: articulation.articulationPoints, dominatorTree: dominatorData },
         suggestedFollowUps: [
-          `What is the minimum cut separating the suspect from the target?`,
-          `Show all independent paths between entities.`
-        ]
-      };
-    }
-
-    // 3. "Why does P exist?" / Possibility Provenance
-    if (q.includes('why') && (mentionedPossibilities.length > 0 || q.includes('exist'))) {
-      const p = mentionedPossibilities[0] || possibilities[0];
-      if (!p) {
-        return this.fallbackAnswer(query, 'No possibilities have been generated yet for this case.');
-      }
-
-      return {
-        query,
-        intent: 'POSSIBILITY_PROVENANCE',
-        matchedPossibilityIds: [p.id],
-        factualAnswer: `Possibility '${p.name}' was deterministically generated via method: ${p.generationMethod}.\n\n` +
-          `• Assumptions: ${p.assumptions.join('; ') || 'None'}\n` +
-          `• Supporting Evidence: ${p.supportingEvidence.map(id => nodeMap.get(id)?.label || id).join(', ') || 'None'}\n` +
-          `• Conflicting Evidence: ${p.conflictingEvidence.map(id => nodeMap.get(id)?.label || id).join(', ') || 'None'}\n` +
-          `• Status: ${p.status}`,
-        structuredData: { possibility: p },
-        suggestedFollowUps: [
-          `What is different between possibilities?`,
-          `Which possibilities are temporally invalid?`
-        ]
-      };
-    }
-
-    // 4. "What is different between P1 and P2?" / Possibility Comparison
-    if (q.includes('different') || q.includes('compare') || q.includes('versus') || q.includes('vs')) {
-      const pToCompare = mentionedPossibilities.length >= 2 ? mentionedPossibilities.slice(0, 5) : possibilities.slice(0, 3);
-      if (pToCompare.length < 2) {
-        return this.fallbackAnswer(query, 'At least 2 possibilities are required for structural comparison.');
-      }
-
-      const comparison = this.possibilityEngine.comparePossibilities(
-        caseId,
-        pToCompare.map(p => p.id),
-        baseGraph
-      );
-
-      const compText = comparison.possibilities.map(p =>
-        `• ${p.name}: Status=${p.status}, Temporal=${p.temporalValidity}, Supporting Evidence=${p.evidenceSupportCount}, Conflicts=${p.conflictingEvidenceCount}, Assumptions=${p.assumptionCount}`
-      ).join('\n');
-
-      return {
-        query,
-        intent: 'COMPARE_POSSIBILITIES',
-        matchedPossibilityIds: pToCompare.map(p => p.id),
-        algorithmUsed: 'GRAPH_DELTA_COMPARISON',
-        factualAnswer: `Comparison across ${comparison.possibilities.length} possibilities:\n\n${compText}\n\nCommon evidence items across all compared branches: ${comparison.structuralDiff.commonEvidence.length} item(s).`,
-        structuredData: { comparison },
-        suggestedFollowUps: [
-          `What evidence is common to all surviving possibilities?`,
-          `Which possibilities are temporally invalid?`
-        ]
-      };
-    }
-
-    // 5. "Which possibilities are temporally invalid?"
-    if (q.includes('temporally invalid') || q.includes('temporal conflict') || q.includes('invalid possibilities')) {
-      const invalid = possibilities.filter(p => p.status === 'INVALID' || (p.algorithmResults as any)?.temporalValidity === 'INVALID');
-      return {
-        query,
-        intent: 'TEMPORAL_VALIDITY_FILTER',
-        algorithmUsed: 'TOPOLOGICAL_SORT_&_TEMPORAL_VALIDATION',
-        factualAnswer: invalid.length > 0
-          ? `Found ${invalid.length} temporally invalid possibility branch(es):\n` +
-            invalid.map(p => `• ${p.name}: Contains causal cycles or chronological timestamp inversions.`).join('\n')
-          : `All ${possibilities.length} current possibilities satisfy temporal monotonicity and acyclic event execution flows.`,
-        structuredData: { invalidPossibilityIds: invalid.map(p => p.id) },
-        suggestedFollowUps: [
-          `Show all valid connections between entities`,
-          `What evidence is common to all surviving possibilities?`
-        ]
-      };
-    }
-
-    // 6. "What evidence is common to all surviving possibilities?"
-    if (q.includes('common') && q.includes('evidence')) {
-      const validPossibilities = possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL');
-      if (validPossibilities.length === 0) {
-        return this.fallbackAnswer(query, 'No valid surviving possibilities exist.');
-      }
-
-      let common = new Set<string>(validPossibilities[0].supportingEvidence);
-      for (let i = 1; i < validPossibilities.length; i++) {
-        const currentSet = new Set(validPossibilities[i].supportingEvidence);
-        for (const ev of common) {
-          if (!currentSet.has(ev)) {
-            common.delete(ev);
-          }
-        }
-      }
-
-      const commonEvidenceLabels = Array.from(common).map(id => nodeMap.get(id)?.label || id);
-      return {
-        query,
-        intent: 'COMMON_EVIDENCE_INTERSECTION',
-        algorithmUsed: 'SET_INTERSECTION_OVER_POSSIBILITY_SPACE',
-        factualAnswer: commonEvidenceLabels.length > 0
-          ? `The following evidence item(s) are structurally indispensable and common to all ${validPossibilities.length} surviving possibilities:\n` +
-            commonEvidenceLabels.map(l => `• ${l}`).join('\n')
-          : `There is no single evidence item shared by all surviving possibilities (possibilities rely on distinct corroborating evidence paths).`,
-        structuredData: { commonEvidenceIds: Array.from(common) },
-        suggestedFollowUps: [
-          `Why does the first possibility exist?`,
-          `Compare surviving possibilities.`
-        ]
-      };
-    }
-
-    // 7. Attack patterns
-    if (q.includes('attack') || q.includes('stage') || q.includes('pattern') || q.includes('exfiltration')) {
-      const patterns = this.analysisEngine.runPatternMatching(baseGraph, caseId);
-      const patternText = patterns.map(p =>
-        `• ${p.patternName} (${p.matchPercentage}% match): ${p.matchedStages.map(s => s.stageName).join(' → ')}`
-      ).join('\n');
-
-      return {
-        query,
-        intent: 'ATTACK_PATTERN_MATCHING',
-        algorithmUsed: 'SUBGRAPH_PATTERN_MATCHING',
-        factualAnswer: `Evaluated ${patterns.length} attack pattern template(s):\n\n${patternText}`,
-        structuredData: { patterns },
-        suggestedFollowUps: [
-          `Show all valid connections between suspect and database.`,
-          `Which nodes are critical intermediaries?`
+          'What do all surviving possibilities have in common?',
+          'What is the minimum cut separating entities?'
         ]
       };
     }
@@ -231,7 +302,7 @@ export class InvestigationAgentService {
     // Fallback general graph summary
     return this.fallbackAnswer(
       query,
-      `Graph contains ${baseGraph.nodes.length} nodes and ${baseGraph.edges.length} edges across ${possibilities.length} possibility branches. Try asking: "Show all connections between Rahul and Prod-DB-01", "Which nodes are critical?", or "What is different between possibilities?"`
+      `Graph contains ${baseGraph.nodes.length} nodes and ${baseGraph.edges.length} edges across ${possibilities.length} possibility branches. Try asking: "What do all surviving possibilities have in common?", "Which nodes are unavoidable?", or "What structurally distinguishes the possibilities?"`
     );
   }
 
@@ -242,9 +313,9 @@ export class InvestigationAgentService {
       factualAnswer: message,
       structuredData: {},
       suggestedFollowUps: [
-        'Which nodes are critical intermediaries in this graph?',
-        'Show all connections between Rahul Kumar and Prod-DB-01.',
-        'Which possibilities are temporally invalid?'
+        'What do all surviving possibilities have in common?',
+        'Which nodes are unavoidable across all valid paths?',
+        'What structurally distinguishes the possibilities?'
       ]
     };
   }

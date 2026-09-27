@@ -12,6 +12,8 @@ import { PossibilityRepository } from '../infrastructure/repositories/possibilit
 import { GraphAnalysisEngine } from './graph-analysis-engine.js';
 import { KShortestPathsAlgorithm } from '../domain/algorithms/k-shortest-paths.js';
 import { TemporalAnalysisAlgorithm } from '../domain/algorithms/temporal-analysis.js';
+import { PossibilityConstraintEngine } from './possibility-constraint-engine.js';
+import { PossibilityDifferentiatingEngine } from './possibility-differentiating-engine.js';
 
 export class PossibilityEngine {
   constructor(
@@ -72,10 +74,23 @@ export class PossibilityEngine {
 
     // --- 1. Alternative Graph Paths Generation ---
     if (options.includeAlternativePaths !== false && sourceId && targetId && sourceId !== targetId) {
-      const kPaths = KShortestPathsAlgorithm.findKShortestPaths(baseGraph.nodes, baseGraph.edges, sourceId, targetId, 4);
+      const kPaths = KShortestPathsAlgorithm.findKShortestPaths(baseGraph.nodes, baseGraph.edges, sourceId, targetId, 6);
 
       kPaths.paths.forEach((path, idx) => {
         const pathEdges = baseGraph.edges.filter(e => path.edgeIds.includes(e.id));
+
+        // Causal Algorithm Filtering: Validate chronological order and evidence support
+        const pathValidation = PossibilityConstraintEngine.isPathValid(
+          path.nodes,
+          pathEdges,
+          options.minEvidenceSupport ?? 0
+        );
+
+        if (!pathValidation.valid) {
+          // Path eliminated causally by constraint algorithm
+          return;
+        }
+
         const evidenceRefs = new Set<string>();
         for (const e of pathEdges) {
           for (const ev of e.evidenceRefs || []) {
@@ -331,6 +346,10 @@ export class PossibilityEngine {
     for (const c of boundedCandidates) {
       // Apply delta to base graph to evaluate possibility validity
       const possibilityGraph = GraphAnalysisEngine.applyDelta(baseGraph, c.graphChanges);
+
+      // Central Constraint Engine evaluation: checks causality, cycles, evidence, and directions
+      const constraintEval = PossibilityConstraintEngine.evaluateGraph(possibilityGraph);
+
       const analysisResults = this.analysisEngine.runFullPossibilityAnalysis(
         possibilityGraph,
         caseId,
@@ -339,16 +358,16 @@ export class PossibilityEngine {
         targetId
       );
 
-      // Verify temporal validity
-      let status = c.status;
-      if (analysisResults.temporalValidity === 'INVALID') {
-        status = 'INVALID';
-      }
+      // Status is deterministically assigned by the constraint engine
+      const status: PossibilityStatus = constraintEval.status;
 
       const p = this.possibilityRepo.createPossibility({
         ...c,
         status,
-        algorithmResults: analysisResults
+        algorithmResults: {
+          ...analysisResults,
+          constraintEvaluation: constraintEval
+        }
       });
       createdPossibilities.push(p);
     }
@@ -458,7 +477,7 @@ export class PossibilityEngine {
       }
     }
 
-    return {
+    const comparison: PossibilityComparison = {
       caseId,
       comparedAt: new Date().toISOString(),
       possibilities: comparedPossibilities,
@@ -471,6 +490,13 @@ export class PossibilityEngine {
         distinguishingEvidence
       }
     };
+
+    comparison.resolvingRecommendations = PossibilityDifferentiatingEngine.identifyResolvingEvidence(
+      comparison,
+      baseGraph
+    );
+
+    return comparison;
   }
 
   private computeSignature(prefix: string, identifier: string | number, items: string[]): string {
