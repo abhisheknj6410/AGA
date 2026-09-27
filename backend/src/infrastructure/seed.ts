@@ -8,6 +8,7 @@ import { AlgorithmRepository } from './repositories/algorithm-repository.js';
 import { ResolutionRepository } from './repositories/resolution-repository.js';
 import { GraphAnalysisEngine } from '../application/graph-analysis-engine.js';
 import { PossibilityEngine } from '../application/possibility-engine.js';
+import { seedDemonstrationCase } from './seed-demo-case.js';
 
 export function seedDatabase(customDb?: any): { caseId: string } {
   const db = customDb || getDatabase();
@@ -648,6 +649,13 @@ export function seedDatabase(customDb?: any): { caseId: string } {
     console.log(`Initialized ${generated.survivingCount} initial possibility branches for investigation.`);
   } catch (err) {
     console.error('Failed to generate seed possibilities:', err);
+  }
+
+  // Also seed the domain-independent demonstration case
+  try {
+    seedDemonstrationCase(db);
+  } catch (err) {
+    console.error('Failed to seed demonstration case:', err);
   }
 
   console.log(`Seed graph successfully populated for case '${caseId}'!`);

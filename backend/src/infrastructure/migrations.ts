@@ -118,6 +118,8 @@ export function runMigrations(db: DatabaseSync): void {
       conflicting_evidence_json TEXT NOT NULL DEFAULT '[]',
       unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
       canonical_signature TEXT NOT NULL,
+      algorithm_results_json TEXT DEFAULT '{}',
+      generation_trace_json TEXT DEFAULT '[]',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -166,4 +168,11 @@ export function runMigrations(db: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_algorithm_runs_possibility ON algorithm_runs(possibility_id);
     CREATE INDEX IF NOT EXISTS idx_algorithm_results_run ON algorithm_results(run_id);
   `);
+
+  try {
+    db.exec('ALTER TABLE possibilities ADD COLUMN algorithm_results_json TEXT DEFAULT "{}"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE possibilities ADD COLUMN generation_trace_json TEXT DEFAULT "[]"');
+  } catch {}
 }

@@ -217,6 +217,15 @@ export interface GraphDelta {
   }>;
 }
 
+export interface GenerationTraceStep {
+  step: number;
+  phase: 'CANDIDATE_DISCOVERY' | 'TEMPORAL_VALIDATION' | 'EVIDENCE_CONSTRAINT' | 'STRUCTURAL_VALIDATION' | 'CANONICALIZATION' | 'ANALYTICAL_EVALUATION';
+  algorithm: string;
+  status: 'PASSED' | 'FAILED' | 'SKIPPED' | 'APPLIED';
+  detail: string;
+  timestamp: string;
+}
+
 export interface Possibility {
   id: string;
   caseId: string;
@@ -233,8 +242,57 @@ export interface Possibility {
   unresolvedQuestions: string[];
   canonicalSignature: string;
   algorithmResults?: Record<string, any>;
+  generationTrace?: GenerationTraceStep[];
+  criticalDependency?: Array<{ nodeId: string; label: string }>;
+  criticalCut?: Array<{ edgeId: string; source: string; target: string }>;
+  independentSupportPaths?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GenerationTrace {
+  possibilityId: string;
+  possibilityName: string;
+  generationMethod: PossibilityGenerationMethod;
+  candidateSummary: string;
+  steps: GenerationTraceStep[];
+  finalDecision: 'ACCEPTED' | 'REJECTED';
+  eliminationReason?: string;
+}
+
+export interface AlgorithmImpactStage {
+  algorithm: string;
+  phase: string;
+  candidatesBefore: number;
+  candidatesAfter: number;
+  candidatesEliminated: number;
+  rejectionReasons: string[];
+  executionTimeMs: number;
+}
+
+export interface AlgorithmImpactReport {
+  caseId: string;
+  timestamp: string;
+  inputCandidatesCount: number;
+  survivingPossibilitiesCount: number;
+  eliminatedCandidatesCount: number;
+  stages: AlgorithmImpactStage[];
+  eliminatedCandidates: Array<{
+    id: string;
+    candidateSummary: string;
+    eliminatedBy: string;
+    reason: string;
+  }>;
+  commonInvariantsSummary: {
+    nodeCount: number;
+    edgeCount: number;
+    evidenceCount: number;
+  };
+  criticalDependencies: Array<{
+    nodeId: string;
+    label: string;
+    role: string;
+  }>;
 }
 
 export interface PossibilityComparison {

@@ -22,6 +22,7 @@ export interface ConstraintOptions {
   disallowCausalCycles?: boolean;
   minEvidenceSupport?: number;
   allowedNodeCategories?: string[];
+  activeEdgeIds?: string[];
 }
 
 export class PossibilityConstraintEngine {
@@ -85,6 +86,11 @@ export class PossibilityConstraintEngine {
     // Check direct causal/temporal edges for timestamp inversion
     const temporalEdgeTypes = new Set(['CAUSED', 'PRECEDED', 'TRIGGERED', 'DEPENDS_ON']);
     for (const edge of graph.edges) {
+      // Inactive hypothesized edges from other candidate branches do not constrain this possibility
+      if (edge.status === 'HYPOTHESIZED' && (!options.activeEdgeIds || !options.activeEdgeIds.includes(edge.id))) {
+        continue;
+      }
+
       if (temporalEdgeTypes.has(edge.type)) {
         const src = nodeMap.get(edge.source);
         const tgt = nodeMap.get(edge.target);

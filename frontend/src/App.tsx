@@ -511,6 +511,7 @@ export const App: React.FC = () => {
 
       {activeTab === 'POSSIBILITIES' && (
         <PossibilitiesView
+          caseId={currentCase?.id}
           possibilities={possibilities}
           graph={graph}
           onSelectPossibilityForGraph={handleSelectPossibilityForGraph}

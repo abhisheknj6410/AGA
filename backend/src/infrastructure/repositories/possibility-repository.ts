@@ -50,8 +50,9 @@ export class PossibilityRepository {
         id, case_id, name, description, base_graph_version, status,
         generation_method, assumptions_json, graph_changes_json,
         constraints_json, supporting_evidence_json, conflicting_evidence_json,
-        unresolved_questions_json, canonical_signature, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        unresolved_questions_json, canonical_signature, algorithm_results_json,
+        generation_trace_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       possibility.caseId,
@@ -67,6 +68,8 @@ export class PossibilityRepository {
       JSON.stringify(possibility.conflictingEvidence || []),
       JSON.stringify(possibility.unresolvedQuestions || []),
       possibility.canonicalSignature,
+      JSON.stringify(possibility.algorithmResults || {}),
+      JSON.stringify(possibility.generationTrace || []),
       now,
       now
     );
@@ -122,6 +125,12 @@ export class PossibilityRepository {
   }
 
   private mapRowToPossibility(row: Record<string, unknown>): Possibility {
+    const algorithmResults = JSON.parse((row.algorithm_results_json as string) || '{}');
+    const generationTrace = JSON.parse((row.generation_trace_json as string) || '[]');
+    const criticalDependency = algorithmResults?.criticalDependency || undefined;
+    const criticalCut = algorithmResults?.criticalCut || undefined;
+    const independentSupportPaths = algorithmResults?.independentSupportPaths ?? algorithmResults?.independentCorroboration?.independentCorroborationCount;
+
     return {
       id: row.id as string,
       caseId: row.case_id as string,
@@ -137,6 +146,11 @@ export class PossibilityRepository {
       conflictingEvidence: JSON.parse((row.conflicting_evidence_json as string) || '[]'),
       unresolvedQuestions: JSON.parse((row.unresolved_questions_json as string) || '[]'),
       canonicalSignature: row.canonical_signature as string,
+      algorithmResults,
+      generationTrace,
+      criticalDependency,
+      criticalCut,
+      independentSupportPaths,
       createdAt: row.created_at as string,
       updatedAt: row.updated_at as string
     };

@@ -262,4 +262,10 @@ export async function queryAgent(caseId: string, query: string): Promise<any> {
   return res.json();
 }
 
+export async function fetchAlgorithmImpact(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/possibilities/impact`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
 

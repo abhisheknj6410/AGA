@@ -40,6 +40,37 @@ export function createPossibilityRouter(
     }
   });
 
+  // Get Algorithm Impact Report for case (must be before /:id)
+  router.get('/impact', (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { caseId } = req.params;
+      let report = possibilityEngine.getAlgorithmImpactReport(caseId);
+      if (!report) {
+        const baseGraph = graphService.getGraph(caseId);
+        const candidates = resolutionRepo.getByCaseId(caseId);
+        possibilityEngine.generatePossibilities(caseId, baseGraph, candidates, { maxPossibilities: 20 });
+        report = possibilityEngine.getAlgorithmImpactReport(caseId);
+      }
+      res.json(report || { caseId, stages: [], eliminatedCandidates: [] });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Get Generation Trace for specific possibility
+  router.get('/:id/trace', (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { caseId, id } = req.params;
+      const trace = possibilityEngine.getGenerationTrace(caseId, id);
+      if (!trace) {
+        return res.status(404).json({ error: `Trace for possibility '${id}' not found.` });
+      }
+      res.json(trace);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // Get specific possibility by ID
   router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
     try {
