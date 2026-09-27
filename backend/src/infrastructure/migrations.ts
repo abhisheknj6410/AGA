@@ -175,4 +175,16 @@ export function runMigrations(db: DatabaseSync): void {
   try {
     db.exec('ALTER TABLE possibilities ADD COLUMN generation_trace_json TEXT DEFAULT "[]"');
   } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN parent_version_number INTEGER');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN mutation_json TEXT DEFAULT "{}"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN delta_json TEXT DEFAULT "{}"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN affected_subgraph_json TEXT DEFAULT "{}"');
+  } catch {}
 }

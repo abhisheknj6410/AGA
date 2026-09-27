@@ -4,6 +4,8 @@ import { GraphAnalysisEngine } from './graph-analysis-engine.js';
 import { PossibilityEngine } from './possibility-engine.js';
 import { PossibilityDifferentiatingEngine } from './possibility-differentiating-engine.js';
 
+import { IncrementalReasoningEngine } from './incremental-reasoning-engine.js';
+
 export interface AgentQueryResult {
   query: string;
   intent: string;
@@ -16,11 +18,32 @@ export interface AgentQueryResult {
 }
 
 export class InvestigationAgentService {
+  private possibilityRepo: PossibilityRepository;
+  private analysisEngine: GraphAnalysisEngine;
+  private possibilityEngine: PossibilityEngine;
+  private incrementalEngine?: IncrementalReasoningEngine;
+
   constructor(
-    private possibilityRepo: PossibilityRepository,
-    private analysisEngine: GraphAnalysisEngine,
-    private possibilityEngine: PossibilityEngine
-  ) {}
+    arg1: PossibilityRepository | PossibilityEngine,
+    arg2: GraphAnalysisEngine,
+    arg3: PossibilityEngine | PossibilityRepository,
+    incrementalEngine?: IncrementalReasoningEngine
+  ) {
+    if (arg1 instanceof PossibilityRepository) {
+      this.possibilityRepo = arg1;
+      this.analysisEngine = arg2;
+      this.possibilityEngine = arg3 as PossibilityEngine;
+    } else {
+      this.possibilityEngine = arg1;
+      this.analysisEngine = arg2;
+      this.possibilityRepo = arg3 as PossibilityRepository;
+    }
+    this.incrementalEngine = incrementalEngine;
+  }
+
+  setIncrementalEngine(engine: IncrementalReasoningEngine): void {
+    this.incrementalEngine = engine;
+  }
 
   /**
    * Processes natural language investigative inquiries deterministically against the graph & possibility space.
@@ -45,6 +68,151 @@ export class InvestigationAgentService {
       const pId = p.id.toLowerCase();
       return q.includes(pId) || q.includes(pName) || (q.includes('p1') && pName.includes('#1')) || (q.includes('p2') && pName.includes('#2')) || (q.includes('p3') && pName.includes('#3'));
     });
+
+    // 0. "What changed?" / "What changed between versions?" / "Show evolution"
+    if (q.includes('what changed') || q.includes('show changes') || q.includes('evolution')) {
+      const report = this.incrementalEngine?.getLatestImpactReport(caseId);
+      if (report) {
+        const evo = report.possibilityEvolution;
+        return {
+          query,
+          intent: 'INCREMENTAL_EVOLUTION_SUMMARY',
+          algorithmUsed: 'INCREMENTAL_REASONING_ENGINE',
+          factualAnswer: `Graph Evolution from Version ${report.fromVersion} to Version ${report.toVersion}:\n\n` +
+            `• Mutation: ${report.mutation.summary}\n` +
+            `• Delta: ${report.deltaSummary.changedNodes} nodes, ${report.deltaSummary.changedEdges} edges, ${report.deltaSummary.changedEvidence} evidence items modified.\n` +
+            `• Affected Subgraph: ${report.affectedSubgraph.nodeCount} nodes, ${report.affectedSubgraph.edgeCount} edges in active propagation zone.\n` +
+            `• Possibility Space: ${report.validPossibilitiesBefore} → ${report.validPossibilitiesAfter} surviving valid branches.\n` +
+            `• Evolution breakdown: +${evo.addedPossibilities.length} added, -${evo.removedPossibilities.length} removed, ~${evo.modifiedPossibilities.length} modified, =${evo.unchangedPossibilities.length} unchanged.\n` +
+            `• Algorithm Invalidation: Reused: [${report.algorithmsReused.join(', ')}]; Recomputed: [${report.algorithmsRecomputed.join(', ')}].`,
+          structuredData: { impactReport: report },
+          suggestedFollowUps: [
+            'Why did this possibility disappear?',
+            'What would happen if I removed this evidence?',
+            'What remains invariant across versions?'
+          ]
+        };
+      }
+    }
+
+    // 0b. "Why did P disappear / removed?"
+    if ((q.includes('disappear') || q.includes('removed') || q.includes('eliminated') || q.includes('gone')) && q.includes('why')) {
+      const report = this.incrementalEngine?.getLatestImpactReport(caseId);
+      const removedList = report?.possibilityEvolution.removedPossibilities || [];
+      if (removedList.length > 0) {
+        const target = removedList[0];
+        return {
+          query,
+          intent: 'POSSIBILITY_ELIMINATION_EXPLANATION',
+          algorithmUsed: target.eliminatingAlgorithm,
+          matchedPossibilityIds: [target.possibilityId],
+          factualAnswer: `Possibility '${target.possibilityName}' was eliminated by ${target.eliminatingAlgorithm}:\n\n` +
+            `• Causal Reason: ${target.causalReason}\n` +
+            `• Affected Substructure: ${target.affectedStructure || 'Direct candidate corridor'}\n` +
+            `• Epistemic Status: Removed from valid possibility set due to unsatisfied graph constraint.`,
+          structuredData: { removedRecord: target },
+          suggestedFollowUps: [
+            'What changed after I added this evidence?',
+            'What would happen if I removed this evidence?',
+            'What remains invariant across versions?'
+          ]
+        };
+      }
+    }
+
+    // 0c. "Why did P appear / created?"
+    if ((q.includes('appear') || q.includes('created') || q.includes('added') || q.includes('new')) && q.includes('why')) {
+      const report = this.incrementalEngine?.getLatestImpactReport(caseId);
+      const addedList = report?.possibilityEvolution.addedPossibilities || [];
+      if (addedList.length > 0) {
+        const target = addedList[0];
+        return {
+          query,
+          intent: 'POSSIBILITY_CREATION_EXPLANATION',
+          algorithmUsed: target.spawningAlgorithm,
+          matchedPossibilityIds: [target.possibility.id],
+          factualAnswer: `Possibility '${target.possibility.name}' was created by ${target.spawningAlgorithm}:\n\n` +
+            `• Causal Trigger: ${target.causalReason}\n` +
+            `• Validation: Passed temporal, evidence provenance, and structural constraints.\n` +
+            `• Status: ${target.possibility.status}`,
+          structuredData: { addedRecord: target },
+          suggestedFollowUps: [
+            'What do all surviving possibilities have in common?',
+            'What structurally distinguishes the possibilities?'
+          ]
+        };
+      }
+    }
+
+    // 0d. "What would happen if I removed / What if I remove ...?" (Counterfactual simulation)
+    if (q.includes('what if') || q.includes('what would happen') || (q.includes('if i remove') || q.includes('if we remove'))) {
+      const mentionedEv = mentionedNodes.find(n => n.category === 'EVIDENCE');
+      if (mentionedEv && this.incrementalEngine) {
+        const sim = this.incrementalEngine.runWhatIfSimulation(caseId, baseGraph, {
+          action: 'REMOVE_EVIDENCE',
+          targetId: mentionedEv.id
+        });
+        return {
+          query,
+          intent: 'COUNTERFACTUAL_WHAT_IF_SIMULATION',
+          algorithmUsed: 'SIMULATION_ENGINE_&_CONSTRAINT_EVALUATION',
+          factualAnswer: `Counterfactual Simulation (${sim.simulationId}): Removing evidence '${mentionedEv.label}' (${mentionedEv.id}):\n\n` +
+            `• Baseline Possibilities: ${sim.baselinePossibilityCount}\n` +
+            `• Simulated Possibilities: ${sim.simulatedPossibilityCount} (${sim.simulatedPossibilityCount - sim.baselinePossibilityCount >= 0 ? '+' : ''}${sim.simulatedPossibilityCount - sim.baselinePossibilityCount})\n` +
+            `• Removed Branches: ${sim.removedPossibilities.length > 0 ? sim.removedPossibilities.map(r => `${r.name} (${r.reason})`).join('; ') : 'None'}\n` +
+            `• Added Branches: ${sim.addedPossibilities.length > 0 ? sim.addedPossibilities.map(a => a.name).join('; ') : 'None'}\n` +
+            `• Note: This simulation was executed on an in-memory graph clone without modifying the persistent case database.`,
+          structuredData: { simulation: sim },
+          suggestedFollowUps: [
+            'What changed after I added this evidence?',
+            'What do all surviving possibilities have in common?'
+          ]
+        };
+      }
+    }
+
+    // 0e. "Which possibilities were affected by evidence E?"
+    if (q.includes('affected by') || (q.includes('depend on') && q.includes('evidence'))) {
+      const evNode = mentionedNodes.find(n => n.category === 'EVIDENCE');
+      if (evNode) {
+        const dependent = possibilities.filter(p => p.supportingEvidence.includes(evNode.id));
+        return {
+          query,
+          intent: 'EVIDENCE_DEPENDENT_POSSIBILITIES',
+          algorithmUsed: 'EVIDENCE_PROVENANCE_FILTER',
+          matchedPossibilityIds: dependent.map(p => p.id),
+          factualAnswer: `Evidence '${evNode.label}' (${evNode.id}) directly supports ${dependent.length} of ${possibilities.length} possibility branch(es):\n\n` +
+            (dependent.length > 0
+              ? dependent.map(p => `• ${p.name} [${p.status}]`).join('\n')
+              : `• No possibilities currently rely on this evidence for provenance.`),
+          structuredData: { evidenceId: evNode.id, dependentPossibilityIds: dependent.map(p => p.id) },
+          suggestedFollowUps: [
+            `What would happen if I removed evidence ${evNode.label}?`,
+            'What do all surviving possibilities have in common?'
+          ]
+        };
+      }
+    }
+
+    // 0f. "What remains invariant across versions?"
+    if (q.includes('invariant across versions') || (q.includes('remain') && q.includes('invariant'))) {
+      const valid = possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL');
+      const invariants = PossibilityDifferentiatingEngine.extractCommonInvariants(baseGraph, valid);
+      return {
+        query,
+        intent: 'INVARIANTS_ACROSS_VERSIONS',
+        algorithmUsed: 'COMMON_INVARIANTS_ENGINE',
+        factualAnswer: `Invariants remaining universal across all ${valid.length} surviving possibilities:\n\n` +
+          `• Common Entities & Events: ${invariants.nodes.map(n => n.label).join(', ')}\n` +
+          `• Common Provenance: ${invariants.evidence.map(e => e.label).join(', ') || 'None'}\n` +
+          `• Common Directed Relationships: ${invariants.edges.length} edges remain structurally required regardless of branch evolution.`,
+        structuredData: { invariants },
+        suggestedFollowUps: [
+          'What structurally distinguishes the possibilities?',
+          'Which nodes are unavoidable across all valid paths?'
+        ]
+      };
+    }
 
     // 1. "Why does P exist?" / Possibility Provenance
     if (q.includes('why') && q.includes('exist')) {

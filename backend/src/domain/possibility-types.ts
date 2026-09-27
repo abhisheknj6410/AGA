@@ -194,4 +194,6 @@ export interface PossibilityGenerationOptions {
   };
   requiredEvidence?: string[];
   allowHypotheses?: boolean;
+  persist?: boolean;
+  replaceExisting?: boolean;
 }

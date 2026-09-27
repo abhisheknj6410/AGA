@@ -47,7 +47,11 @@ export class PossibilityEngine {
   } {
     const maxPossibilities = options.maxPossibilities ?? 20;
     const baseVersion = this.possibilityRepo.getLatestVersion(caseId);
-    const existingPossibilities = this.possibilityRepo.findByCaseId(caseId);
+    const replaceExisting = options.replaceExisting ?? false;
+    if (replaceExisting && options.persist !== false) {
+      this.possibilityRepo.deleteAllForCase(caseId);
+    }
+    const existingPossibilities = replaceExisting ? [] : this.possibilityRepo.findByCaseId(caseId);
     const seenSignatures = new Set<string>(existingPossibilities.map(p => p.canonicalSignature));
 
     const candidates: Array<Omit<Possibility, 'id' | 'createdAt' | 'updatedAt'>> = [];
@@ -606,21 +610,44 @@ export class PossibilityEngine {
 
       const finalTrace = [...(c.generationTrace || []), analyticalTraceStep];
 
-      const p = this.possibilityRepo.createPossibility({
-        ...c,
-        status,
-        generationTrace: finalTrace,
-        criticalDependency,
-        criticalCut,
-        independentSupportPaths,
-        algorithmResults: {
-          ...analysisResults,
-          constraintEvaluation: constraintEval,
+      let p: Possibility;
+      if (options.persist === false) {
+        const now = new Date().toISOString();
+        p = {
+          ...c,
+          id: `sim-possibility-${uuidv4()}`,
+          status,
+          generationTrace: finalTrace,
           criticalDependency,
           criticalCut,
-          independentSupportPaths
-        }
-      });
+          independentSupportPaths,
+          createdAt: now,
+          updatedAt: now,
+          algorithmResults: {
+            ...analysisResults,
+            constraintEvaluation: constraintEval,
+            criticalDependency,
+            criticalCut,
+            independentSupportPaths
+          }
+        };
+      } else {
+        p = this.possibilityRepo.createPossibility({
+          ...c,
+          status,
+          generationTrace: finalTrace,
+          criticalDependency,
+          criticalCut,
+          independentSupportPaths,
+          algorithmResults: {
+            ...analysisResults,
+            constraintEvaluation: constraintEval,
+            criticalDependency,
+            criticalCut,
+            independentSupportPaths
+          }
+        });
+      }
       createdPossibilities.push(p);
     }
 

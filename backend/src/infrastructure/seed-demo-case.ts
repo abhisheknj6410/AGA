@@ -1,9 +1,11 @@
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseSync } from 'node:sqlite';
 import { CaseService } from '../application/case-service.js';
 import { GraphService } from '../application/graph-service.js';
 import { ResolutionRepository } from './repositories/resolution-repository.js';
 import { PossibilityRepository } from './repositories/possibility-repository.js';
 import { AlgorithmRepository } from './repositories/algorithm-repository.js';
+import { GraphVersionRepository } from './repositories/graph-version-repository.js';
 import { GraphAnalysisEngine } from '../application/graph-analysis-engine.js';
 import { PossibilityEngine } from '../application/possibility-engine.js';
 
@@ -459,6 +461,44 @@ export function seedDemonstrationCase(db: DatabaseSync, customEngine?: Possibili
     minEvidenceSupport: 2,
     maxPossibilities: 15
   });
+
+  // 9. Register Baseline Graph Version 1
+  const versionRepo = new GraphVersionRepository(db);
+  if (!versionRepo.getLatest(caseId)) {
+    versionRepo.create({
+      id: uuidv4(),
+      caseId,
+      versionNumber: 1,
+      parentVersionNumber: null,
+      changeSummary: 'Initial Baseline: 4 Candidate Corridors & Disjoint Verification',
+      mutation: {
+        action: 'INITIAL_GRAPH',
+        targetType: 'SYSTEM',
+        targetId: 'root',
+        summary: 'Seeded initial multi-modal evidence graph and corridor constraints',
+        timestamp: new Date().toISOString()
+      },
+      delta: {
+        addedNodes: baseGraph.nodes,
+        removedNodes: [],
+        modifiedNodes: [],
+        addedEdges: baseGraph.edges,
+        removedEdges: [],
+        modifiedEdges: [],
+        changedEvidence: [],
+        changedTemporalConstraints: [],
+        changedIdentityConstraints: []
+      },
+      affectedSubgraph: {
+        affectedNodeIds: baseGraph.nodes.map(n => n.id),
+        affectedEdgeIds: baseGraph.edges.map(e => e.id),
+        affectedEvidenceIds: baseGraph.nodes.filter(n => n.category === 'EVIDENCE').map(n => n.id),
+        propagationReason: 'Initial baseline compilation'
+      },
+      snapshot: baseGraph,
+      createdAt: new Date().toISOString()
+    });
+  }
 
   console.log(`Seeded demonstration case: '${demoCaseName}' (${caseId}) with genuine causal graph ambiguity.`);
   return { caseId };

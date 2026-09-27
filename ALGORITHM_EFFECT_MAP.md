@@ -198,3 +198,17 @@ This document defines every graph algorithm implemented in the Graphical Investi
   - When `disableTemporalValidation: true` is passed, Route 3 survives into the possibility space, proving that Temporal Validation causally prunes the candidate set.
   - When `minEvidenceSupport` is raised from 1 to 3, lower-evidenced corridors are eliminated, proving that Evidence Constraints causally shape the surviving space.
 - **Verification Suite**: [`backend/src/tests/end-to-end-causal-algorithms.test.ts`](file:///home/zius/Projects/Graphical-Investigation-system/backend/src/tests/end-to-end-causal-algorithms.test.ts) (12/12 passing).
+
+---
+
+## 12. Incremental Algorithm Invalidation & Dependency Matrix
+
+| Algorithm | Depends On | Invalidated When | Downstream Results Invalidated | Behavior on Unrelated Mutation |
+|:---|:---|:---|:---|:---|
+| **Yen's K-Shortest Paths** | Base graph vertices & edges | Incident edges added, removed, or costs modified; nodes added or deleted | `TEMPORAL_VALIDATION`, `EVIDENCE_PROVENANCE`, `POSSIBILITY_SET`, `DOMINATOR_ANALYSIS`, `COMMON_INVARIANTS` | Reused via `AlgorithmResultCache` |
+| **Temporal Monotonicity Check** | Ordered candidate paths, event timestamps | Any traversed event timestamp is edited, or interval precision altered | `POSSIBILITY_SET`, `DOMINATOR_ANALYSIS`, `COMMON_INVARIANTS` | Reused if event times are untouched |
+| **Evidence Provenance Engine** | Path edges, evidence nodes | Supporting evidence items added, revoked, or reliability scores altered | `POSSIBILITY_SET`, `DOMINATOR_ANALYSIS`, `COMMON_INVARIANTS` | Reused if edge evidence references remain constant |
+| **Safe Entity Resolution** | Entity node labels, types, properties | New entity node added, label edited, or candidate match accepted/rejected | `GRAPH_TOPOLOGY`, `POSSIBILITY_SET` | Reused across non-matching entity types |
+| **Dominator Analysis** | Surviving possibility paths | Possibility set changed (routes added, removed, or rerouted) | `INSPECTOR_VIEWS`, `AGENT_BOTTLENECK_QUERIES` | Recomputed only for modified possibilities |
+| **Min-Cut Interdiction** | Directed edge capacities / weights | Possibility set changed, or edge cost/confidence modified | `CRITICAL_INTERDICTION_CARDS` | Recomputed only for modified possibilities |
+| **Common Invariants Engine** | All valid possibilities in space | Any possibility added, removed, or modified | `COMMON_INVARIANTS_PANEL`, `AGENT_QUERIES` | Recomputed globally on surviving possibility space |

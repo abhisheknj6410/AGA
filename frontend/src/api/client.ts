@@ -268,4 +268,38 @@ export async function fetchAlgorithmImpact(caseId: string): Promise<any> {
   return res.json();
 }
 
+export async function fetchGraphVersions(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/incremental/versions`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.versions || [];
+}
+
+export async function fetchLatestIncrementalImpact(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/incremental/versions/latest/impact`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.report || null;
+}
+
+export async function runWhatIfSimulation(
+  caseId: string,
+  simulation: {
+    action: string;
+    targetId: string;
+    parameters?: Record<string, any>;
+  }
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/incremental/simulation/what-if`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(simulation)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Simulation failed.');
+  }
+  return res.json();
+}
+
 

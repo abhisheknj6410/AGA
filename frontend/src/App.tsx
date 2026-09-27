@@ -18,6 +18,7 @@ import { ComparisonView } from './components/possibilities/ComparisonView';
 import { AnalysisView } from './components/analysis/AnalysisView';
 import { CaseIngestionView } from './components/agent/CaseIngestionView';
 import { InvestigationQueryView } from './components/agent/InvestigationQueryView';
+import { PossibilityEvolutionView } from './components/possibilities/PossibilityEvolutionView';
 import {
   Case,
   GraphPayload,
@@ -76,7 +77,7 @@ export const App: React.FC = () => {
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [activePossibility, setActivePossibility] = useState<Possibility | null>(null);
   const [comparisonData, setComparisonData] = useState<PossibilityComparison | null>(null);
@@ -518,6 +519,14 @@ export const App: React.FC = () => {
           onCompare={handleComparePossibilities}
           onGenerate={handleGeneratePossibilities}
           isGenerating={isGeneratingPossibilities}
+        />
+      )}
+
+      {activeTab === 'EVOLUTION' && (
+        <PossibilityEvolutionView
+          caseId={currentCase?.id || ''}
+          graph={graph}
+          onRefreshGraph={loadCaseData}
         />
       )}
 

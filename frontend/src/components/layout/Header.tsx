@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Network,
   GitBranch,
+  GitCompare,
   Cpu,
   Bot,
   Sun,
@@ -43,8 +44,8 @@ interface HeaderProps {
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
-  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
-  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
+  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
+  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
   possibilityCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -198,6 +199,18 @@ export const Header: React.FC<HeaderProps> = ({
               {possibilityCount}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => onTabChange('EVOLUTION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'EVOLUTION'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <GitCompare className="w-3.5 h-3.5" />
+          <span>Evolution & What-If</span>
         </button>
 
         <button

@@ -29,6 +29,8 @@ import { InvestigationAgentService } from '../application/investigation-agent-se
 import { createPossibilityRouter } from './routes/possibility-routes.js';
 import { createAnalysisRouter } from './routes/analysis-routes.js';
 import { createAgentRouter } from './routes/agent-routes.js';
+import { IncrementalReasoningEngine } from '../application/incremental-reasoning-engine.js';
+import { createIncrementalRouter } from './routes/incremental-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -46,7 +48,8 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   const resolutionRepo = new ResolutionRepository(db);
   const analysisEngine = new GraphAnalysisEngine(algorithmRepo);
   const possibilityEngine = new PossibilityEngine(possibilityRepo, analysisEngine);
-  const agentService = new InvestigationAgentService(possibilityRepo, analysisEngine, possibilityEngine);
+  const incrementalEngine = new IncrementalReasoningEngine(db, possibilityEngine);
+  const agentService = new InvestigationAgentService(possibilityRepo, analysisEngine, possibilityEngine, incrementalEngine);
 
   const app = express();
 
@@ -74,6 +77,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases/:caseId/possibilities', createPossibilityRouter(graphService, possibilityEngine, possibilityRepo, resolutionRepo, analysisEngine));
   app.use('/api/cases/:caseId/analysis', createAnalysisRouter(graphService, analysisEngine, possibilityRepo, algorithmRepo));
   app.use('/api/cases/:caseId/agent', createAgentRouter(graphService, agentService));
+  app.use('/api/cases/:caseId/incremental', createIncrementalRouter(graphService, incrementalEngine));
 
   // Global Error Handler
   app.use(errorHandler);
