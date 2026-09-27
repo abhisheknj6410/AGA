@@ -189,3 +189,77 @@ export function getExportSnapshotUrl(caseId: string): string {
   return `${API_BASE}/cases/${caseId}/export`;
 }
 
+// --- Possibility & Analysis APIs ---
+
+export async function fetchPossibilities(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/possibilities`);
+  if (!res.ok) throw new Error('Failed to fetch possibilities.');
+  const data = await res.json();
+  return data.possibilities || [];
+}
+
+export async function generatePossibilities(caseId: string, options: Record<string, any> = {}): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/possibilities/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to generate possibilities.');
+  }
+  return res.json();
+}
+
+export async function comparePossibilities(caseId: string, possibilityIds: string[]): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/possibilities/compare`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ possibilityIds })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to compare possibilities.');
+  }
+  return res.json();
+}
+
+export async function deletePossibility(caseId: string, id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/possibilities/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Failed to delete possibility.');
+}
+
+export async function runAlgorithm(
+  caseId: string,
+  algorithm: string,
+  parameters: Record<string, any> = {},
+  possibilityId?: string
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/analysis/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ algorithm, parameters, possibilityId })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to run algorithm.');
+  }
+  return res.json();
+}
+
+export async function queryAgent(caseId: string, query: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/agent/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to query agent.');
+  }
+  return res.json();
+}
+
+

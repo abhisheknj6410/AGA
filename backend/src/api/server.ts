@@ -20,6 +20,15 @@ import { createAuditRouter } from './routes/audit-routes.js';
 import { AiExtractionService } from '../application/ai-extraction-service.js';
 import { createExtractionRouter } from './routes/extraction-routes.js';
 import { createSnapshotRouter } from './routes/snapshot-routes.js';
+import { PossibilityRepository } from '../infrastructure/repositories/possibility-repository.js';
+import { AlgorithmRepository } from '../infrastructure/repositories/algorithm-repository.js';
+import { ResolutionRepository } from '../infrastructure/repositories/resolution-repository.js';
+import { GraphAnalysisEngine } from '../application/graph-analysis-engine.js';
+import { PossibilityEngine } from '../application/possibility-engine.js';
+import { InvestigationAgentService } from '../application/investigation-agent-service.js';
+import { createPossibilityRouter } from './routes/possibility-routes.js';
+import { createAnalysisRouter } from './routes/analysis-routes.js';
+import { createAgentRouter } from './routes/agent-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -31,6 +40,13 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   const resolutionService = new EntityResolutionService(db);
   const auditRepo = new AuditRepository(db);
   const aiService = new AiExtractionService();
+
+  const possibilityRepo = new PossibilityRepository(db);
+  const algorithmRepo = new AlgorithmRepository(db);
+  const resolutionRepo = new ResolutionRepository(db);
+  const analysisEngine = new GraphAnalysisEngine(algorithmRepo);
+  const possibilityEngine = new PossibilityEngine(possibilityRepo, analysisEngine);
+  const agentService = new InvestigationAgentService(possibilityRepo, analysisEngine, possibilityEngine);
 
   const app = express();
 
@@ -55,9 +71,13 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases/:caseId/resolution', createResolutionRouter(resolutionService));
   app.use('/api/cases/:caseId/audit', createAuditRouter(auditRepo));
   app.use('/api/cases/:caseId/extract', createExtractionRouter(aiService));
+  app.use('/api/cases/:caseId/possibilities', createPossibilityRouter(graphService, possibilityEngine, possibilityRepo, resolutionRepo, analysisEngine));
+  app.use('/api/cases/:caseId/analysis', createAnalysisRouter(graphService, analysisEngine, possibilityRepo, algorithmRepo));
+  app.use('/api/cases/:caseId/agent', createAgentRouter(graphService, agentService));
 
   // Global Error Handler
   app.use(errorHandler);
 
   return app;
 }
+

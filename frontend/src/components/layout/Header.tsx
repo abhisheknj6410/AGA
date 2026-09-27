@@ -13,7 +13,11 @@ import {
   FileCheck,
   Download,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Network,
+  GitBranch,
+  Cpu,
+  Bot
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,6 +36,9 @@ interface HeaderProps {
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
+  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'AGENT';
+  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'AGENT') => void;
+  possibilityCount: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -49,7 +56,10 @@ export const Header: React.FC<HeaderProps> = ({
   allEdges,
   onSelectElement,
   isTimelineOpen,
-  onToggleTimeline
+  onToggleTimeline,
+  activeTab,
+  onTabChange,
+  possibilityCount
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -84,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
             <h1 className="text-sm font-semibold tracking-wide text-slate-100 flex items-center gap-1.5">
               Evidence Graph
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800/60 font-mono">
-                PHASE 1
+                PHASE 2
               </span>
             </h1>
           </div>
@@ -115,6 +125,64 @@ export const Header: React.FC<HeaderProps> = ({
             className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
           >
             <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="h-5 w-[1px] bg-slate-800" />
+
+        {/* Primary View Switcher Tabs */}
+        <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs">
+          <button
+            onClick={() => onTabChange('GRAPH')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded font-medium transition ${
+              activeTab === 'GRAPH'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            <span>Graph</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('POSSIBILITIES')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded font-medium transition ${
+              activeTab === 'POSSIBILITIES'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+            <span>Possibilities</span>
+            {possibilityCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-300 text-[10px] font-mono">
+                {possibilityCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => onTabChange('ANALYSIS')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded font-medium transition ${
+              activeTab === 'ANALYSIS'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Algorithms</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('AGENT')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded font-medium transition ${
+              activeTab === 'AGENT'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>Query Agent</span>
           </button>
         </div>
       </div>

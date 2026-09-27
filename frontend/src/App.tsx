@@ -12,6 +12,10 @@ import { ResolutionModal } from './components/modals/ResolutionModal';
 import { AuditModal } from './components/modals/AuditModal';
 import { NewCaseModal } from './components/modals/NewCaseModal';
 import { DiagnosticsModal } from './components/modals/DiagnosticsModal';
+import { PossibilitiesView } from './components/possibilities/PossibilitiesView';
+import { ComparisonView } from './components/possibilities/ComparisonView';
+import { AnalysisView } from './components/analysis/AnalysisView';
+import { InvestigationAgentView } from './components/agent/InvestigationAgentView';
 import {
   Case,
   GraphPayload,
@@ -22,7 +26,9 @@ import {
   ENTITY_TYPES,
   EVENT_TYPES,
   EVIDENCE_TYPES,
-  EDGE_TYPES
+  EDGE_TYPES,
+  Possibility,
+  PossibilityComparison
 } from './types/graph';
 import {
   fetchCases,
@@ -34,7 +40,10 @@ import {
   updateEdge,
   deleteEdge,
   validateGraph,
-  fetchResolutionCandidates
+  fetchResolutionCandidates,
+  fetchPossibilities,
+  generatePossibilities,
+  comparePossibilities
 } from './api/client';
 
 const INITIAL_FILTERS: FilterState = {
@@ -64,6 +73,13 @@ export const App: React.FC = () => {
   const [resolutionCandidates, setResolutionCandidates] = useState<ResolutionCandidate[]>([]);
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+
+  // Phase 2 Primary Views & Possibility State
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'COMPARISON' | 'ANALYSIS' | 'AGENT'>('GRAPH');
+  const [possibilities, setPossibilities] = useState<Possibility[]>([]);
+  const [activePossibility, setActivePossibility] = useState<Possibility | null>(null);
+  const [comparisonData, setComparisonData] = useState<PossibilityComparison | null>(null);
+  const [isGeneratingPossibilities, setIsGeneratingPossibilities] = useState(false);
 
   // Timeline playback state
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
@@ -95,14 +111,16 @@ export const App: React.FC = () => {
   const loadCaseData = useCallback(async () => {
     if (!currentCase) return;
     try {
-      const [g, v, r] = await Promise.all([
+      const [g, v, r, pList] = await Promise.all([
         fetchCaseGraph(currentCase.id),
         validateGraph(currentCase.id),
-        fetchResolutionCandidates(currentCase.id)
+        fetchResolutionCandidates(currentCase.id),
+        fetchPossibilities(currentCase.id)
       ]);
       setGraph(g);
       setValidation(v);
       setResolutionCandidates(r);
+      setPossibilities(pList);
     } catch (err) {
       console.error('Failed to load case data:', err);
     }
@@ -111,9 +129,39 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadCaseData();
     setSelectedElement(null);
+    setActivePossibility(null);
     setTimelineStep(0);
     setIsTimelinePlaying(false);
   }, [loadCaseData]);
+
+  const handleGeneratePossibilities = async () => {
+    if (!currentCase) return;
+    setIsGeneratingPossibilities(true);
+    try {
+      const res = await generatePossibilities(currentCase.id);
+      setPossibilities(res.possibilities || []);
+    } catch (err) {
+      console.error('Failed to generate possibilities:', err);
+    } finally {
+      setIsGeneratingPossibilities(false);
+    }
+  };
+
+  const handleComparePossibilities = async (selectedIds: string[]) => {
+    if (!currentCase) return;
+    try {
+      const comp = await comparePossibilities(currentCase.id, selectedIds);
+      setComparisonData(comp);
+      setActiveTab('COMPARISON');
+    } catch (err) {
+      console.error('Failed to compare possibilities:', err);
+    }
+  };
+
+  const handleSelectPossibilityForGraph = (p: Possibility) => {
+    setActivePossibility(p);
+    setActiveTab('GRAPH');
+  };
 
   // Extract sorted chronological events for timeline playback
   const chronologicalEvents = useMemo(() => {
@@ -268,62 +316,115 @@ export const App: React.FC = () => {
             setIsTimelinePlaying(false);
           }
         }}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        possibilityCount={possibilities.length}
       />
 
-      {/* Main Workspace Layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Filter & Layer Sidebar */}
-        <SidebarFilters
-          filters={filters}
-          setFilters={setFilters}
-          nodes={graph?.nodes || []}
-          edges={graph?.edges || []}
-          onResetFilters={() => setFilters(INITIAL_FILTERS)}
-        />
+      {/* Main Workspace Layout by Active View */}
+      {activeTab === 'GRAPH' && (
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Active Possibility Overlay Banner */}
+          {activePossibility && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-900/95 border border-indigo-500/80 shadow-2xl backdrop-blur-md text-xs">
+              <span className="font-semibold text-indigo-300">Possibility Overlay:</span>
+              <span className="text-white font-medium">{activePossibility.name}</span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-emerald-400 font-mono">
+                {activePossibility.status}
+              </span>
+              <button
+                onClick={() => setActivePossibility(null)}
+                className="ml-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+              >
+                Reset to Canonical Graph
+              </button>
+            </div>
+          )}
 
-        {/* Center Cytoscape Canvas & Floating Overlays */}
-        <div className="relative flex-1 h-full overflow-hidden">
-          <CytoscapeCanvas
-            nodes={filteredElements.nodes}
-            edges={filteredElements.edges}
-            selectedElement={selectedElement}
-            onSelectElement={setSelectedElement}
-            layoutType={filters.layout}
+          {/* Left Filter & Layer Sidebar */}
+          <SidebarFilters
+            filters={filters}
+            setFilters={setFilters}
+            nodes={graph?.nodes || []}
+            edges={graph?.edges || []}
+            onResetFilters={() => setFilters(INITIAL_FILTERS)}
           />
 
-          {/* Chronological Event Stepper & Playback Toolbar */}
-          {isTimelineOpen && (
-            <TimelinePlayback
-              events={chronologicalEvents}
-              allNodes={graph?.nodes || []}
-              allEdges={graph?.edges || []}
-              currentStep={timelineStep}
-              onStepChange={handleTimelineStepChange}
-              isPlaying={isTimelinePlaying}
-              onTogglePlay={() => setIsTimelinePlaying(!isTimelinePlaying)}
-              cumulativeMode={cumulativeTimeline}
-              onToggleCumulative={() => setCumulativeTimeline(!cumulativeTimeline)}
-              onClose={() => {
-                setIsTimelineOpen(false);
-                setIsTimelinePlaying(false);
-              }}
+          {/* Center Cytoscape Canvas & Floating Overlays */}
+          <div className="relative flex-1 h-full overflow-hidden">
+            <CytoscapeCanvas
+              nodes={filteredElements.nodes}
+              edges={filteredElements.edges}
+              selectedElement={selectedElement}
+              onSelectElement={setSelectedElement}
+              layoutType={filters.layout}
             />
-          )}
-        </div>
 
-        {/* Right Inspector & Provenance Panel */}
-        <InspectorPanel
-          selectedElement={selectedElement}
-          onClose={() => setSelectedElement(null)}
-          nodes={graph?.nodes || []}
-          edges={graph?.edges || []}
-          onSelectElement={setSelectedElement}
-          onDeleteNode={handleDeleteNode}
-          onDeleteEdge={handleDeleteEdge}
-          onUpdateNode={handleUpdateNode}
-          onUpdateEdge={handleUpdateEdge}
+            {/* Chronological Event Stepper & Playback Toolbar */}
+            {isTimelineOpen && (
+              <TimelinePlayback
+                events={chronologicalEvents}
+                allNodes={graph?.nodes || []}
+                allEdges={graph?.edges || []}
+                currentStep={timelineStep}
+                onStepChange={handleTimelineStepChange}
+                isPlaying={isTimelinePlaying}
+                onTogglePlay={() => setIsTimelinePlaying(!isTimelinePlaying)}
+                cumulativeMode={cumulativeTimeline}
+                onToggleCumulative={() => setCumulativeTimeline(!cumulativeTimeline)}
+                onClose={() => {
+                  setIsTimelineOpen(false);
+                  setIsTimelinePlaying(false);
+                }}
+              />
+            )}
+          </div>
+
+          {/* Right Inspector & Provenance Panel */}
+          <InspectorPanel
+            selectedElement={selectedElement}
+            onClose={() => setSelectedElement(null)}
+            nodes={graph?.nodes || []}
+            edges={graph?.edges || []}
+            onSelectElement={setSelectedElement}
+            onDeleteNode={handleDeleteNode}
+            onDeleteEdge={handleDeleteEdge}
+            onUpdateNode={handleUpdateNode}
+            onUpdateEdge={handleUpdateEdge}
+          />
+        </div>
+      )}
+
+      {activeTab === 'POSSIBILITIES' && (
+        <PossibilitiesView
+          possibilities={possibilities}
+          graph={graph}
+          onSelectPossibilityForGraph={handleSelectPossibilityForGraph}
+          onCompare={handleComparePossibilities}
+          onGenerate={handleGeneratePossibilities}
+          isGenerating={isGeneratingPossibilities}
         />
-      </div>
+      )}
+
+      {activeTab === 'COMPARISON' && (
+        <ComparisonView
+          comparison={comparisonData}
+          onBack={() => setActiveTab('POSSIBILITIES')}
+        />
+      )}
+
+      {activeTab === 'ANALYSIS' && (
+        <AnalysisView
+          caseId={currentCase?.id || ''}
+          graph={graph}
+        />
+      )}
+
+      {activeTab === 'AGENT' && (
+        <InvestigationAgentView
+          caseId={currentCase?.id || ''}
+        />
+      )}
 
       {/* Bottom Status Bar */}
       <StatusBar

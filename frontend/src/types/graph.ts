@@ -186,3 +186,92 @@ export interface ResolutionCandidate {
   status: 'PENDING' | 'MERGED' | 'REJECTED';
   createdAt: string;
 }
+
+export type PossibilityStatus =
+  | 'VALID'
+  | 'INVALID'
+  | 'CONDITIONAL'
+  | 'CONFLICTING'
+  | 'SUPERSEDED'
+  | 'ARCHIVED';
+
+export type PossibilityGenerationMethod =
+  | 'ALTERNATIVE_PATHS'
+  | 'TEMPORAL_ORDERING'
+  | 'ENTITY_RESOLUTION'
+  | 'RELATIONSHIP_UNCERTAINTY'
+  | 'CONTRADICTION_BRANCHING'
+  | 'MANUAL_HYPOTHESIS';
+
+export interface GraphDelta {
+  addedNodes: GraphNode[];
+  removedNodeIds: string[];
+  modifiedNodes: Partial<GraphNode>[];
+  addedEdges: GraphEdge[];
+  removedEdgeIds: string[];
+  modifiedEdges: Partial<GraphEdge>[];
+  entityResolutionMerges?: Array<{
+    survivingNodeId: string;
+    mergedNodeId: string;
+    rewiredEdgeCount: number;
+  }>;
+}
+
+export interface Possibility {
+  id: string;
+  caseId: string;
+  name: string;
+  description: string;
+  baseGraphVersion: number;
+  status: PossibilityStatus;
+  generationMethod: PossibilityGenerationMethod;
+  assumptions: string[];
+  graphChanges: GraphDelta;
+  constraints: Record<string, unknown>;
+  supportingEvidence: string[];
+  conflictingEvidence: string[];
+  unresolvedQuestions: string[];
+  canonicalSignature: string;
+  algorithmResults?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PossibilityComparison {
+  caseId: string;
+  comparedAt: string;
+  possibilities: Array<{
+    id: string;
+    name: string;
+    status: PossibilityStatus;
+    generationMethod: PossibilityGenerationMethod;
+    temporalValidity: 'VALID' | 'INVALID' | 'AMBIGUOUS';
+    evidenceSupportCount: number;
+    conflictingEvidenceCount: number;
+    assumptionCount: number;
+    independentPathCount?: number;
+    criticalNodeCount?: number;
+    pathCost?: number;
+    unresolvedQuestionsCount: number;
+  }>;
+  structuralDiff: {
+    commonNodes: string[];
+    distinguishingNodes: Record<string, string[]>;
+    commonEdges: Array<{ source: string; target: string; type: string }>;
+    distinguishingEdges: Record<string, Array<{ source: string; target: string; type: string }>>;
+    commonEvidence: string[];
+    distinguishingEvidence: Record<string, string[]>;
+  };
+}
+
+export interface AgentQueryResult {
+  query: string;
+  intent: string;
+  matchedEntityIds?: string[];
+  matchedPossibilityIds?: string[];
+  algorithmUsed?: string;
+  factualAnswer: string;
+  structuredData: Record<string, unknown>;
+  suggestedFollowUps: string[];
+}
+
