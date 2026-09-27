@@ -122,6 +122,14 @@ export class AlgorithmResultCache {
     };
   }
 
+  getStats(): { hits: number; misses: number; total: number } {
+    return {
+      hits: this.reusedCount,
+      misses: this.recomputedCount,
+      total: this.cache.size
+    };
+  }
+
   resetMetrics(): void {
     this.reusedCount = 0;
     this.invalidatedCount = 0;

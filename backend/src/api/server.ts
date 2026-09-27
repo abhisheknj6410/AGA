@@ -33,9 +33,11 @@ import { IncrementalReasoningEngine } from '../application/incremental-reasoning
 import { ResolutionReasoningEngine } from '../application/resolution-reasoning-engine.js';
 import { InvestigationPlanningEngine } from '../application/investigation-planning-engine.js';
 import { AlgorithmEffectivenessEngine } from '../application/algorithm-effectiveness-engine.js';
+import { EvidenceImpactEngine } from '../application/evidence-impact-engine.js';
 import { createIncrementalRouter } from './routes/incremental-routes.js';
 import { createPlanningRouter } from './routes/planning-routes.js';
 import { createEffectivenessRouter } from './routes/effectiveness-routes.js';
+import { createClosedLoopRouter } from './routes/closed-loop-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -62,6 +64,14 @@ export function createApp(customDb?: DatabaseSync): express.Application {
     resolutionEngine,
     planningEngine
   );
+  const evidenceImpactEngine = new EvidenceImpactEngine(
+    db,
+    graphService,
+    possibilityEngine,
+    resolutionEngine,
+    planningEngine,
+    incrementalEngine
+  );
   const agentService = new InvestigationAgentService(
     possibilityRepo,
     analysisEngine,
@@ -71,6 +81,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
     planningEngine,
     effectivenessEngine
   );
+  agentService.setEvidenceImpactEngine(evidenceImpactEngine);
 
   const app = express();
 
@@ -85,6 +96,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   // Snapshot Routes & Root Case Routes
   app.use('/api/cases', createSnapshotRouter(db, caseService, graphService));
   app.use('/api/cases', createCaseRouter(caseService));
+  app.use('/api/cases', createClosedLoopRouter(evidenceImpactEngine));
 
   // Case-Scoped Nested Routes
   app.use('/api/cases/:caseId/nodes', createNodeRouter(graphService));

@@ -8,6 +8,7 @@ import { IncrementalReasoningEngine } from './incremental-reasoning-engine.js';
 import { ResolutionReasoningEngine } from './resolution-reasoning-engine.js';
 import { InvestigationPlanningEngine } from './investigation-planning-engine.js';
 import { AlgorithmEffectivenessEngine } from './algorithm-effectiveness-engine.js';
+import { EvidenceImpactEngine } from './evidence-impact-engine.js';
 
 export interface AgentQueryResult {
   query: string;
@@ -28,6 +29,7 @@ export class InvestigationAgentService {
   private resolutionEngine?: ResolutionReasoningEngine;
   private planningEngine?: InvestigationPlanningEngine;
   private effectivenessEngine?: AlgorithmEffectivenessEngine;
+  private evidenceImpactEngine?: EvidenceImpactEngine;
 
   constructor(
     arg1: PossibilityRepository | PossibilityEngine,
@@ -69,6 +71,10 @@ export class InvestigationAgentService {
     this.effectivenessEngine = engine;
   }
 
+  setEvidenceImpactEngine(engine: EvidenceImpactEngine): void {
+    this.evidenceImpactEngine = engine;
+  }
+
   /**
    * Processes natural language investigative inquiries deterministically against the graph & possibility space.
    */
@@ -104,6 +110,169 @@ export class InvestigationAgentService {
         this.resolutionEngine,
         this.planningEngine
       );
+    }
+
+    // --- PHASE 7 CLOSED-LOOP INVESTIGATION QUERIES ---
+
+    // 7-1: "What changed after this evidence?"
+    if (q.includes('what changed after this evidence') || (q.includes('what changed') && (q.includes('evidence') || q.includes('after')))) {
+      const cycle = this.evidenceImpactEngine?.getLatestCycle(caseId);
+      if (cycle) {
+        const added = cycle.possibilityEvolution.addedPossibilities.length;
+        const removed = cycle.possibilityEvolution.removedPossibilities.length;
+        const modified = cycle.possibilityEvolution.modifiedPossibilities.length;
+        const unchanged = cycle.possibilityEvolution.unchangedPossibilities.length;
+        const resolved = cycle.actionTransitions.filter(t => t.newStatus === 'RESOLVED').length;
+        const obsolete = cycle.actionTransitions.filter(t => t.newStatus === 'OBSOLETE').length;
+        const newlyReq = cycle.actionTransitions.filter(t => t.newStatus === 'NEWLY_REQUIRED').length;
+
+        return {
+          query,
+          intent: 'EVIDENCE_IMPACT_EXPLANATION',
+          algorithmUsed: 'EVIDENCE_IMPACT_ENGINE',
+          factualAnswer:
+            `Closed-Loop Impact Report (V${cycle.fromVersion} → V${cycle.toVersion}):\n\n` +
+            `• Triggering Evidence: '${cycle.triggeringEvidence.label}' (${cycle.triggeringEvidence.category})\n` +
+            `• Graph Delta: +${cycle.graphDeltaSummary.addedNodes} node(s), +${cycle.graphDeltaSummary.addedEdges} edge(s)\n` +
+            `• Possibility Space Evolution:\n` +
+            `  - Added: ${added}, Removed: ${removed}, Modified: ${modified}, Unchanged: ${unchanged}\n` +
+            `• Resolution Evolution:\n` +
+            `  - Families: ${cycle.resolutionDiff.familiesBefore} → ${cycle.resolutionDiff.familiesAfter}\n` +
+            `  - Invariants: ${cycle.resolutionDiff.invariantsBefore} → ${cycle.resolutionDiff.invariantsAfter}\n` +
+            `  - Uncertainty (Entropy): ${cycle.resolutionDiff.entropyBefore} → ${cycle.resolutionDiff.entropyAfter} bits (Δ: ${(cycle.resolutionDiff.entropyBefore - cycle.resolutionDiff.entropyAfter).toFixed(4)})\n` +
+            `• Investigation Plan Actions:\n` +
+            `  - Resolved: ${resolved}, Obsolete: ${obsolete}, Newly Required: ${newlyReq}, Active: ${cycle.activeInvestigationPlan.actions.length}\n` +
+            `• Reused Algorithms: ${cycle.algorithmsSummary.reused.join(', ') || 'None'} (Recomputed: ${cycle.algorithmsSummary.recomputed.join(', ')})`,
+          structuredData: { cycle },
+          suggestedFollowUps: [
+            'Which possibilities were eliminated?',
+            'Which algorithms were rerun?',
+            'What investigation actions are now relevant?'
+          ]
+        };
+      }
+    }
+
+    // 7-2: "Which possibilities were eliminated?"
+    if (
+      (q.includes('which possibilities') || q.includes('what possibilities')) && (q.includes('eliminated') || q.includes('removed') || q.includes('pruned'))
+    ) {
+      const cycle = this.evidenceImpactEngine?.getLatestCycle(caseId);
+      const removed = cycle?.possibilityEvolution.removedPossibilities || [];
+      const details = removed.length > 0
+        ? removed.map((r, i) =>
+            `${i + 1}. **${r.possibilityName}** (${r.possibilityId})\n` +
+            `   - Eliminating Algorithm: ${r.eliminatingAlgorithm}\n` +
+            `   - Causal Reason: ${r.causalReason}`
+          ).join('\n\n')
+        : 'No candidate hypotheses were eliminated by the latest evidence. All current routes continue to satisfy known integrity and temporal constraints.';
+
+      return {
+        query,
+        intent: 'POSSIBILITY_ELIMINATION_QUERY',
+        algorithmUsed: 'POSSIBILITY_EVOLUTION_ENGINE',
+        factualAnswer:
+          `Eliminated Possibilities (${removed.length} total):\n\n` +
+          `${details}\n\n` +
+          (removed.length > 0 ? `These branches were causally pruned and no longer consume investigation budget.` : `Active hypotheses remain under investigation.`),
+        structuredData: { eliminated: removed },
+        suggestedFollowUps: [
+          'Why did the possibility space change?',
+          'What investigation actions are now relevant?'
+        ]
+      };
+    }
+
+    // 7-3: "Which algorithms were rerun?"
+    if (q.includes('which algorithms') && (q.includes('rerun') || q.includes('recomputed') || q.includes('invalidated') || q.includes('reused'))) {
+      const cycle = this.evidenceImpactEngine?.getLatestCycle(caseId);
+      if (cycle) {
+        return {
+          query,
+          intent: 'ALGORITHMS_RERUN_QUERY',
+          algorithmUsed: 'ALGORITHM_DEPENDENCY_GRAPH',
+          factualAnswer:
+            `Algorithm Recalculation Breakdown:\n\n` +
+            `• Recomputed Stages (${cycle.algorithmsSummary.recomputed.length}): ${cycle.algorithmsSummary.recomputed.join(', ')}\n` +
+            `• Reused Cached Stages (${cycle.algorithmsSummary.reused.length}): ${cycle.algorithmsSummary.reused.join(', ') || 'None'}\n` +
+            `• Cache Invalidation Root: Selective invalidation triggered by ${cycle.triggeringEvidence.label} in affected zone.\n` +
+            `• Performance: Incremental calculation took ${cycle.executionMetrics.incrementalDurationMs} ms (${cycle.executionMetrics.speedupRatio}x speedup vs cold recomputation).`,
+          structuredData: { algorithms: cycle.algorithmsSummary, metrics: cycle.executionMetrics },
+          suggestedFollowUps: [
+            'What changed after this evidence?',
+            'What investigation actions are now relevant?'
+          ]
+        };
+      }
+    }
+
+    // 7-4: "What investigation actions are now relevant?"
+    if (
+      q.includes('what investigation actions') ||
+      q.includes('actions are now relevant') ||
+      q.includes('relevant investigation actions') ||
+      (q.includes('actions') && q.includes('relevant'))
+    ) {
+      let plan: InvestigationPlan | null = null;
+      if (this.evidenceImpactEngine?.getLatestCycle(caseId)) {
+        plan = this.evidenceImpactEngine.getLatestCycle(caseId)!.activeInvestigationPlan;
+      } else if (this.planningEngine) {
+        plan = await this.planningEngine.generatePlan(caseId, baseGraph);
+      }
+
+      if (plan && plan.actions.length > 0) {
+        const topActions = plan.actions.slice(0, 4).map((a, i) =>
+          `${i + 1}. **Action ${a.id}**: ${a.question}\n` +
+          `   - Target: ${a.targetLabel} (${a.targetType})\n` +
+          `   - Graph Basis: ${a.graphBasis} (${a.algorithmBasis})\n` +
+          `   - Expected Info Gain: ${a.expectedInformationGain} bits | Utility: ${a.resolutionUtility}/100\n` +
+          `   - Recommended Source: ${a.evidenceClasses.join(', ')}`
+        ).join('\n\n');
+
+        return {
+          query,
+          intent: 'RELEVANT_ACTIONS_QUERY',
+          algorithmUsed: 'INVESTIGATION_PLANNING_ENGINE',
+          factualAnswer:
+            `Relevant Investigation Actions (Current Entropy: ${plan.currentEntropy} bits):\n\n` +
+            `${topActions}\n\n` +
+            `Next Immediate Action: Action ${plan.nextImmediateAction?.id || plan.actions[0].id}.`,
+          structuredData: { actions: plan.actions, planId: plan.planId },
+          suggestedFollowUps: [
+            'What changed after this evidence?',
+            'Show the investigation plan'
+          ]
+        };
+      }
+    }
+
+    // 7-5: "Why did the possibility space change?"
+    if (
+      q.includes('why did the possibility space change') ||
+      (q.includes('why did') && q.includes('possibility space') && q.includes('change'))
+    ) {
+      const cycle = this.evidenceImpactEngine?.getLatestCycle(caseId);
+      if (cycle) {
+        const removed = cycle.possibilityEvolution.removedPossibilities;
+        const reasons = removed.map(r => `• ${r.possibilityName}: eliminated by ${r.eliminatingAlgorithm} (${r.causalReason})`).join('\n');
+
+        return {
+          query,
+          intent: 'POSSIBILITY_SPACE_CHANGE_REASON',
+          algorithmUsed: 'POSSIBILITY_EVOLUTION_ENGINE',
+          factualAnswer:
+            `Possibility Space Evolution Rationale:\n\n` +
+            `Evidence '${cycle.triggeringEvidence.label}' altered the graph topology in version V${cycle.toVersion}.\n` +
+            (reasons ? `\nCausal Eliminations:\n${reasons}\n` : '') +
+            `\nStructural Family Impact: ${cycle.resolutionDiff.familiesBefore} → ${cycle.resolutionDiff.familiesAfter} family(ies).\n` +
+            `Uncertainty Reduction: Entropy reduced from ${cycle.resolutionDiff.entropyBefore} to ${cycle.resolutionDiff.entropyAfter} bits.`,
+          structuredData: { evolution: cycle.possibilityEvolution, resolutionDiff: cycle.resolutionDiff },
+          suggestedFollowUps: [
+            'Which possibilities were eliminated?',
+            'What investigation actions are now relevant?'
+          ]
+        };
+      }
     }
 
     // --- PHASE 6 DETERMINISTIC QUERY LAYER ---

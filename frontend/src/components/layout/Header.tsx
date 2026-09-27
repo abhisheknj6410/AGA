@@ -26,6 +26,7 @@ import {
   Sliders,
   Sparkles,
   Target,
+  Zap,
   X
 } from 'lucide-react';
 
@@ -46,8 +47,8 @@ interface HeaderProps {
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
-  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
-  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
+  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
+  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
   possibilityCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -237,6 +238,18 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Target className="w-3.5 h-3.5 text-teal-500" />
           <span>Plan</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('CLOSED_LOOP')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'CLOSED_LOOP'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Closed Loop</span>
         </button>
 
         <button

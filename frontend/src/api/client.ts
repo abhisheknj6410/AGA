@@ -433,6 +433,51 @@ export async function fetchSyntheticBenchmarks(caseId: string): Promise<any[]> {
   return data.benchmarks || [];
 }
 
+// --- Phase 7: Closed-Loop Investigation APIs ---
+
+export async function ingestClosedLoopEvidence(caseId: string, payload: {
+  evidenceNode: any;
+  attachedEdges: any[];
+  summary?: string;
+  requestedByActionId?: string;
+  reason?: string;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/evidence/ingest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to ingest evidence.');
+  }
+  return res.json();
+}
+
+export async function fetchClosedLoopCycles(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/closed-loop/cycles`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchLatestClosedLoopCycle(caseId: string): Promise<any | null> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/closed-loop/latest`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchClosedLoopBenchmark(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/closed-loop/benchmark`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchClosedLoopVersions(caseId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/closed-loop/versions`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
 
 
 
