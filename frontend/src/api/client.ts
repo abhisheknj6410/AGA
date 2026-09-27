@@ -519,3 +519,22 @@ export async function fetchAlgorithmComparative(caseId: string): Promise<any> {
   return res.json();
 }
 
+export async function fetchAlgorithmBenchmark(): Promise<any> {
+  const res = await fetch(`${API_BASE}/algorithms/benchmark`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch algorithm benchmark');
+  }
+  return res.json();
+}
+
+export async function fetchCaseGeneralization(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/algorithms/generalization`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch case generalization report');
+  }
+  return res.json();
+}
+
+

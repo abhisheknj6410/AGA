@@ -49,8 +49,8 @@ interface HeaderProps {
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
-  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
-  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
+  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'BENCHMARK' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
+  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'BENCHMARK' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
   possibilityCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -288,6 +288,18 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Activity className="w-3.5 h-3.5 text-emerald-500" />
           <span>Value Lab</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('BENCHMARK')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'BENCHMARK'
+              ? 'bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Network className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Benchmark</span>
         </button>
 
         <button
