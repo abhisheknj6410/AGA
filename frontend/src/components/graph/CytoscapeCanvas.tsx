@@ -45,26 +45,32 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       boxSelectionEnabled: false,
       autounselectify: false,
       style: ([
-        // Base Node Style
+        // Base Node Style - Figma-grade card
         {
           selector: 'node',
           style: {
             'label': 'data(label)',
-            'font-family': 'Inter, system-ui, sans-serif',
-            'font-size': '11px',
-            'font-weight': 500,
+            'font-family': 'Inter, system-ui, -apple-system, sans-serif',
+            'font-size': '11.5px',
+            'font-weight': 600,
             'text-valign': 'center',
             'text-halign': 'center',
             'color': isLight ? '#0f172a' : '#f8fafc',
-            'text-wrap': 'ellipsis',
-            'text-max-width': '125px',
+            'text-wrap': 'wrap',
+            'text-max-width': '190px',
+            'line-height': 1.35,
             'border-width': '1.5px',
             'border-color': isLight ? '#cbd5e1' : '#334155',
             'background-color': isLight ? '#ffffff' : '#1e293b',
-            'width': '135px',
-            'height': '42px',
+            'width': '210px',
+            'height': '62px',
             'shape': 'round-rectangle',
-            'transition-property': 'background-color, border-color, width, height, opacity',
+            'corner-radius': 8,
+            'shadow-blur': 6,
+            'shadow-color': isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(0, 0, 0, 0.35)',
+            'shadow-opacity': 1,
+            'shadow-offset-y': 2,
+            'transition-property': 'background-color, border-color, width, height, opacity, shadow-blur',
             'transition-duration': 0.15
           }
         },
@@ -73,26 +79,28 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: 'node[category = "ENTITY"]',
           style: {
             'background-color': isLight ? '#ffffff' : '#1e293b',
-            'border-color': isLight ? '#94a3b8' : '#475569',
+            'border-color': isLight ? '#cbd5e1' : '#334155',
             'color': isLight ? '#0f172a' : '#f8fafc'
           }
         },
-        // Event Nodes (Soft amber tint)
+        // Event Nodes (Warm Amber sand)
         {
           selector: 'node[category = "EVENT"]',
           style: {
-            'background-color': isLight ? '#fffbeb' : '#27190b',
+            'background-color': isLight ? '#fffbeb' : '#261b0c',
             'border-color': isLight ? '#f59e0b' : '#b45309',
-            'color': isLight ? '#92400e' : '#fef3c7'
+            'border-width': '1.75px',
+            'color': isLight ? '#78350f' : '#fef3c7'
           }
         },
-        // Evidence Nodes (Soft emerald tint)
+        // Evidence Nodes (Mint Sage)
         {
           selector: 'node[category = "EVIDENCE"]',
           style: {
-            'background-color': isLight ? '#f0fdf4' : '#0a2318',
+            'background-color': isLight ? '#f0fdf4' : '#082517',
             'border-color': isLight ? '#10b981' : '#059669',
-            'color': isLight ? '#166534' : '#a7f3d0'
+            'border-width': '1.75px',
+            'color': isLight ? '#065f46' : '#a7f3d0'
           }
         },
         // Selected Node
@@ -100,10 +108,11 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: 'node:selected',
           style: {
             'border-color': '#4f46e5',
-            'border-width': '3px',
-            'shadow-blur': 12,
-            'shadow-color': isLight ? 'rgba(79, 70, 229, 0.25)' : 'rgba(99, 102, 241, 0.4)',
-            'shadow-opacity': 1
+            'border-width': '2.5px',
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(79, 70, 229, 0.35)' : 'rgba(99, 102, 241, 0.5)',
+            'shadow-opacity': 1,
+            'shadow-offset-y': 3
           }
         },
         // Base Edge Style
@@ -112,20 +121,20 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           style: {
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
-            'arrow-scale': 0.9,
+            'arrow-scale': 0.85,
             'label': 'data(label)',
-            'font-family': 'Inter, system-ui, sans-serif',
-            'font-size': '9px',
+            'font-family': 'Inter, system-ui, -apple-system, sans-serif',
+            'font-size': '9.5px',
             'font-weight': 500,
-            'color': isLight ? '#475569' : '#94a3b8',
-            'text-background-opacity': 0.9,
+            'color': isLight ? '#64748b' : '#94a3b8',
+            'text-background-opacity': 0.95,
             'text-background-color': isLight ? '#ffffff' : '#0f172a',
-            'text-background-padding': '3px',
+            'text-background-padding': '4px',
             'text-background-shape': 'roundrectangle',
             'text-rotation': 'autorotate',
-            'width': 1.5,
-            'line-color': isLight ? '#94a3b8' : '#475569',
-            'target-arrow-color': isLight ? '#94a3b8' : '#475569'
+            'width': 1.6,
+            'line-color': isLight ? '#cbd5e1' : '#475569',
+            'target-arrow-color': isLight ? '#cbd5e1' : '#475569'
           }
         },
         // Observed Edge
@@ -175,7 +184,9 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           style: {
             'line-color': '#4f46e5',
             'target-arrow-color': '#4f46e5',
-            'width': 3
+            'width': 2.8,
+            'text-background-color': '#4f46e5',
+            'color': '#ffffff'
           }
         },
         // Neighborhood Dimmed Class
@@ -190,8 +201,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: '.highlighted',
           style: {
             'opacity': 1.0,
-            'shadow-blur': 8,
-            'shadow-opacity': 0.3
+            'shadow-blur': 12,
+            'shadow-opacity': 0.4
           }
         }
       ] as any)
@@ -233,15 +244,51 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
 
     cy.elements().remove();
 
-    const cyNodes = nodes.map(n => ({
-      group: 'nodes' as const,
-      data: {
-        id: n.id,
-        label: n.label,
-        category: n.category,
-        type: n.type
+    const getNodeIcon = (category: string, type: string) => {
+      if (category === 'EVENT') return '⚡';
+      if (category === 'EVIDENCE') return '🛡️';
+      switch (type) {
+        case 'PERSON': return '👤';
+        case 'SERVER': return '🖥️';
+        case 'IP_ADDRESS': return '🌐';
+        case 'FILE': return '📁';
+        case 'CREDENTIAL': return '🔑';
+        case 'ORGANIZATION': return '🏢';
+        case 'DEVICE': return '💻';
+        case 'DATABASE': return '🗄️';
+        case 'DOMAIN': return '🌍';
+        case 'EMAIL_ACCOUNT': return '✉️';
+        default: return '📍';
       }
-    }));
+    };
+
+    const cyNodes = nodes.map(n => {
+      const icon = getNodeIcon(n.category, n.type);
+      let subtitle = n.type.replace(/_/g, ' ');
+      if (n.category === 'EVENT' && n.time?.start) {
+        try {
+          const d = new Date(n.time.start);
+          subtitle = `${d.toISOString().substring(11, 16)} UTC · ${n.type.replace(/_/g, ' ')}`;
+        } catch {
+          subtitle = n.type.replace(/_/g, ' ');
+        }
+      } else if (n.category === 'EVIDENCE' && n.reliability !== undefined) {
+        subtitle = `Reliability ${(n.reliability * 100).toFixed(0)}% · ${n.type.replace(/_/g, ' ')}`;
+      }
+
+      // 2-line layout: icon + name on line 1, subtitle on line 2
+      const formattedLabel = `${icon}  ${n.label}\n${subtitle}`;
+
+      return {
+        group: 'nodes' as const,
+        data: {
+          id: n.id,
+          label: formattedLabel,
+          category: n.category,
+          type: n.type
+        }
+      };
+    });
 
     const cyEdges = edges.map(e => ({
       group: 'edges' as const,
@@ -249,7 +296,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         id: e.id,
         source: e.source,
         target: e.target,
-        label: e.type,
+        label: e.type.toLowerCase().replace(/_/g, ' '),
         type: e.type,
         status: e.status
       }
@@ -263,22 +310,24 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       layoutOptions = {
         name: 'dagre',
         rankDir: 'LR',
-        nodeSep: 45,
-        rankSep: 85,
-        padding: 50
+        nodeSep: 65,
+        rankSep: 110,
+        edgeSep: 35,
+        padding: 60
       };
     } else if (layoutType === 'cose') {
       layoutOptions = {
         name: 'cose',
         animate: false,
-        nodeRepulsion: 7000,
-        idealEdgeLength: 120,
-        padding: 50
+        nodeRepulsion: 9500,
+        idealEdgeLength: 140,
+        gravity: 0.2,
+        padding: 60
       };
     } else {
       layoutOptions = {
         name: layoutType,
-        padding: 50
+        padding: 60
       };
     }
 

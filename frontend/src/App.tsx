@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Layers, Plus, Sparkles, Bot, Clock } from 'lucide-react';
 import { Header } from './components/layout/Header';
 import { SidebarFilters, FilterState } from './components/layout/SidebarFilters';
 import { CytoscapeCanvas } from './components/graph/CytoscapeCanvas';
@@ -379,6 +380,65 @@ export const App: React.FC = () => {
               theme={theme}
             />
 
+            {/* Floating Figma Top Control Dock */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2.5 py-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full shadow-lg text-xs font-medium text-slate-700 dark:text-slate-200">
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, layout: prev.layout === 'dagre' ? 'cose' : 'dagre' }))}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px]"
+                title="Toggle Graph Layout (Flow vs Organic)"
+              >
+                <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                <span>{filters.layout === 'dagre' ? 'Flow Layout' : 'Organic'}</span>
+              </button>
+
+              <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+
+              <button
+                onClick={() => {
+                  setNodeModalCategory('ENTITY');
+                  setNodeModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px]"
+                title="Add Node Fact"
+              >
+                <Plus className="w-3.5 h-3.5 text-blue-500" />
+                <span>Add Fact</span>
+              </button>
+
+              <button
+                onClick={() => setEdgeModalOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px]"
+                title="Connect Relationship"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Connect</span>
+              </button>
+
+              <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+
+              <button
+                onClick={() => setIsTimelineOpen(!isTimelineOpen)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition text-[11px] ${
+                  isTimelineOpen
+                    ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Toggle Timeline Playback"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <span>Timeline</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('AGENT')}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 transition text-[11px] font-semibold"
+                title="Ask Investigation Agent"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>Ask AI</span>
+              </button>
+            </div>
+
             {/* Chronological Event Stepper & Playback Toolbar */}
             {isTimelineOpen && (
               <TimelinePlayback
@@ -397,20 +457,24 @@ export const App: React.FC = () => {
                 }}
               />
             )}
-          </div>
 
-          {/* Right Inspector & Provenance Panel */}
-          <InspectorPanel
-            selectedElement={selectedElement}
-            onClose={() => setSelectedElement(null)}
-            nodes={graph?.nodes || []}
-            edges={graph?.edges || []}
-            onSelectElement={setSelectedElement}
-            onDeleteNode={handleDeleteNode}
-            onDeleteEdge={handleDeleteEdge}
-            onUpdateNode={handleUpdateNode}
-            onUpdateEdge={handleUpdateEdge}
-          />
+            {/* Floating Slide-over Inspector */}
+            {selectedElement && (
+              <div className="absolute top-3 right-3 bottom-12 z-30 transition-all duration-200 animate-in fade-in slide-in-from-right-6 pointer-events-auto">
+                <InspectorPanel
+                  selectedElement={selectedElement}
+                  onClose={() => setSelectedElement(null)}
+                  nodes={graph?.nodes || []}
+                  edges={graph?.edges || []}
+                  onSelectElement={setSelectedElement}
+                  onDeleteNode={handleDeleteNode}
+                  onDeleteEdge={handleDeleteEdge}
+                  onUpdateNode={handleUpdateNode}
+                  onUpdateEdge={handleUpdateEdge}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -84,17 +84,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   }, [selectedElement, node, edge, isNode]);
 
   if (!selectedElement) {
-    return (
-      <aside className="w-80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-l border-slate-200/80 dark:border-slate-800/80 p-6 flex flex-col items-center justify-center text-center select-none text-slate-400 text-xs">
-        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 text-slate-400 dark:text-slate-500">
-          <Link className="w-4 h-4" />
-        </div>
-        <p className="font-medium text-slate-600 dark:text-slate-300 mb-1">Inspector</p>
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed max-w-[200px]">
-          Select any node or edge to inspect attributes, temporal intervals, and provenance proofs.
-        </p>
-      </aside>
-    );
+    return null;
   }
 
   if (isNode && !node) return null;
@@ -196,7 +186,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <aside className="w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-l border-slate-200/80 dark:border-slate-800/80 flex flex-col h-[calc(100vh-3.5rem-1.75rem)] select-none z-10">
+    <aside className="w-84 max-w-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xl flex flex-col max-h-[calc(100vh-6rem)] select-none z-30 overflow-hidden">
       {/* Inspector Header */}
       <div className="h-10 px-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
         <div className="flex items-center gap-2 truncate">
