@@ -7,3 +7,4 @@ export * from './disjoint-paths.js';
 export * from './temporal-analysis.js';
 export * from './pattern-matching.js';
 export * from './steiner-connecting-subgraph.js';
+export * from './temporal-reachability.js';

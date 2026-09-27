@@ -1553,7 +1553,11 @@ export interface InterpretationReasoningBranch {
   interpretationName: string;
   description: string;
   coherenceScore: number;
+  branchStatus?: 'SURVIVING' | 'ELIMINATED_BY_GRAPH_ALGORITHM';
+  eliminationReason?: string;
+  eliminationExecutionId?: string;
   graph: GraphPayload;
+  algorithmExecutions?: any[];
   adaptiveReport: any;
   possibilities: Possibility[];
   resolution: any;
@@ -1609,6 +1613,7 @@ export interface EndToEndCaseReasoningReport {
   rawEvidenceCount: number;
   reconstruction: ReconstructionPipelineReport;
   branches: InterpretationReasoningBranch[];
+  algorithmExecutions?: any[];
   commonConclusions: UniversalConclusions;
   branchComparison?: CompetingInterpretationComparison;
   unifiedTrace: CaseReasoningTraceStage[];

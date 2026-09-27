@@ -16,6 +16,8 @@ import {
   WhyQueryType,
   WhyInspectionQuery
 } from '../domain/case-pipeline-types.js';
+import { AlgorithmExecution } from '../domain/algorithm-execution-types.js';
+import { TemporalReachabilityAlgorithm } from '../domain/algorithms/temporal-reachability.js';
 import { EvidenceReconstructionEngine } from './evidence-reconstruction-engine.js';
 import { AdaptiveReasoningEngine } from './adaptive-reasoning-engine.js';
 import { PossibilityEngine } from './possibility-engine.js';
@@ -33,17 +35,49 @@ export class CaseReasoningPipeline {
   ) {}
 
   /**
+   * Helper to find primary source node (actor, origin, or in-degree 0)
+   */
+  private findSourceId(nodes: GraphNode[], edges: GraphEdge[]): string {
+    const inDeg = new Map<string, number>();
+    for (const n of nodes) inDeg.set(n.id, 0);
+    for (const e of edges) inDeg.set(e.target, (inDeg.get(e.target) || 0) + 1);
+
+    const entities = nodes.filter(n => n.category === 'ENTITY');
+    const sorted = (entities.length > 0 ? entities : nodes).sort(
+      (a, b) => (inDeg.get(a.id) || 0) - (inDeg.get(b.id) || 0)
+    );
+    return sorted[0]?.id || nodes[0]?.id || '';
+  }
+
+  /**
+   * Helper to find primary target node (destination, impact, target, or out-degree 0)
+   */
+  private findTargetId(nodes: GraphNode[], edges: GraphEdge[], sourceId: string): string {
+    const outDeg = new Map<string, number>();
+    for (const n of nodes) outDeg.set(n.id, 0);
+    for (const e of edges) outDeg.set(e.source, (outDeg.get(e.source) || 0) + 1);
+
+    const candidates = nodes.filter(n => n.id !== sourceId);
+    const sorted = candidates.sort(
+      (a, b) => (outDeg.get(a.id) || 0) - (outDeg.get(b.id) || 0)
+    );
+    return sorted[0]?.id || nodes[nodes.length - 1]?.id || '';
+  }
+
+  /**
    * Executes the full End-to-End Case Reasoning Pipeline:
    * 1. Raw Evidence Ingest & 7-Gate Fact Admission
    * 2. Competing Graph Interpretations (branching preserved!)
-   * 3. Adaptive Algorithm Selection & Execution per branch
-   * 4. Possibility Space Generation per branch
-   * 5. Epistemic Validation per branch
-   * 6. Structural Resolution & Differentiators per branch
-   * 7. Investigation Decisions & Strategic Simulations per branch
-   * 8. Cross-Branch Comparison & Common Conclusions extraction
-   * 9. 10-Stage Unified Case Reasoning Trace
-   * 10. Deterministic "Why?" Inspector Catalog
+   * 3. Temporal Reachability & Causal Upstream Algorithm Execution
+   * 4. Branch Elimination / Preservation
+   * 5. Adaptive Algorithm Selection & Execution per branch
+   * 6. Possibility Space Generation per branch
+   * 7. Epistemic Validation per branch
+   * 8. Structural Resolution & Differentiators per branch
+   * 9. Investigation Decisions & Strategic Simulations per branch
+   * 10. Cross-Branch Comparison & Common Conclusions extraction
+   * 11. 10-Stage Unified Case Reasoning Trace
+   * 12. Deterministic "Why?" Inspector Catalog
    */
   async executeCasePipeline(
     caseId: string,
@@ -84,12 +118,71 @@ export class CaseReasoningPipeline {
     for (const interp of interpretationsToRun) {
       const branchCaseId = `${caseId}-${interp.id}`;
 
+      // 0. Causal Upstream Graph Algorithm: Temporal Reachability
+      const sourceId = this.findSourceId(interp.graph.nodes, interp.graph.edges);
+      const targetId = this.findTargetId(interp.graph.nodes, interp.graph.edges, sourceId);
+      const reachability = TemporalReachabilityAlgorithm.evaluateReachability(
+        interp.graph.nodes,
+        interp.graph.edges,
+        sourceId,
+        targetId
+      );
+
+      const reachabilityExecId = `exec-reachability-${interp.id}-${Date.now()}`;
+      const branchAlgorithmExecutions: AlgorithmExecution[] = [
+        {
+          id: reachabilityExecId,
+          algorithm: 'TEMPORAL_REACHABILITY',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: {
+            sourceId,
+            targetId,
+            sourceLabel: reachability.sourceLabel,
+            targetLabel: reachability.targetLabel
+          },
+          result: {
+            reachable: reachability.reachable,
+            pathCount: reachability.validPathsCount,
+            violations: reachability.violations.map(v => ({
+              previousEventLabel: v.previousEventLabel,
+              previousTimestamp: v.previousTimestamp,
+              nextEventLabel: v.nextEventLabel,
+              nextTimestamp: v.nextTimestamp,
+              deltaMs: v.deltaMs,
+              description: v.description
+            })),
+            summary: reachability.summary
+          },
+          derivedNodes: reachability.shortestTemporalPath?.nodeIds || [],
+          derivedEdges: reachability.shortestTemporalPath?.edgeIds || [],
+          evidenceRefs: reachability.evidenceRefs,
+          causalImpact: reachability.reachable ? 'VALIDATED_CORRIDOR' : 'ELIMINATED_BRANCH',
+          eliminatedHypotheses: reachability.reachable ? [] : [interp.id],
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        }
+      ];
+
+      let branchStatus: 'SURVIVING' | 'ELIMINATED_BY_GRAPH_ALGORITHM' = 'SURVIVING';
+      let eliminationReason: string | undefined = undefined;
+      let eliminationExecutionId: string | undefined = undefined;
+
+      // If temporal reachability fails due to temporal inversion or impossible path:
+      if (!reachability.reachable && (reachability.temporalFailure || reachability.violations.length > 0)) {
+        branchStatus = 'ELIMINATED_BY_GRAPH_ALGORITHM';
+        eliminationReason = reachability.summary;
+        eliminationExecutionId = reachabilityExecId;
+      }
+
       // A. Adaptive Algorithm Selection & Execution
       const adaptiveReport = AdaptiveReasoningEngine.analyzeAndExecute(
         interp.graph,
         branchCaseId,
         interp.id,
-        interp.name
+        interp.name,
+        sourceId,
+        targetId
       );
 
       // B. Candidate Possibilities Generation
@@ -97,9 +190,40 @@ export class CaseReasoningPipeline {
         branchCaseId,
         interp.graph,
         [],
-        { persist: false, maxPossibilities: 10 }
+        { persist: false, maxPossibilities: 10, sourceNodeId: sourceId, targetNodeId: targetId }
       );
-      const possibilities = genResult.possibilities;
+      let possibilities = genResult.possibilities;
+
+      // If branch was eliminated by graph algorithm, prune/invalidate its possibilities
+      if (branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM') {
+        possibilities = possibilities.map(p => ({
+          ...p,
+          status: 'INVALID' as const,
+          unresolvedQuestions: [
+            ...p.unresolvedQuestions,
+            `Mathematically eliminated by Temporal Reachability Algorithm: ${reachability.summary}`
+          ]
+        }));
+      }
+
+      // Record K-Shortest Paths execution
+      branchAlgorithmExecutions.push({
+        id: `exec-kpaths-${interp.id}-${Date.now()}`,
+        algorithm: 'K_SHORTEST_PATHS',
+        caseId: branchCaseId,
+        graphVersion: `graph-${interp.id}`,
+        input: { sourceId, targetId, parameters: { k: 8 } },
+        result: {
+          pathCount: possibilities.length,
+          summary: `Discovered ${possibilities.length} corridor candidate(s) via Yen's K-Shortest Paths.`
+        },
+        derivedNodes: Array.from(new Set(possibilities.flatMap(p => p.constraints?.traversedNodeIds || []))),
+        derivedEdges: Array.from(new Set(possibilities.flatMap(p => p.constraints?.traversedEdgeIds || []))),
+        evidenceRefs: Array.from(new Set(possibilities.flatMap(p => p.supportingEvidence))),
+        causalImpact: 'VALIDATED_CORRIDOR',
+        timestamp: new Date().toISOString(),
+        deterministic: true
+      });
 
       // C. Structural Resolution Reasoning
       const resolution = this.resolutionEngine.runResolutionAnalysis(
@@ -107,6 +231,27 @@ export class CaseReasoningPipeline {
         interp.graph,
         possibilities
       );
+
+      // Record Dominators execution if distinguishing structures exist
+      if (resolution.distinguishingStructures.length > 0) {
+        branchAlgorithmExecutions.push({
+          id: `exec-dominators-${interp.id}-${Date.now()}`,
+          algorithm: 'DOMINATORS',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: { sourceId, targetId },
+          result: {
+            dominatorNodeIds: resolution.distinguishingStructures.map(d => d.nodeId).filter(Boolean) as string[],
+            summary: `Identified ${resolution.distinguishingStructures.length} distinguishing structural element(s).`
+          },
+          derivedNodes: resolution.distinguishingStructures.map(d => d.nodeId).filter(Boolean) as string[],
+          derivedEdges: [],
+          evidenceRefs: [],
+          causalImpact: 'IDENTIFIED_CHOKE_POINT',
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        });
+      }
 
       // D. Epistemic Validation
       const epistemicReport = await this.validationEngine.validateCase(
@@ -126,8 +271,12 @@ export class CaseReasoningPipeline {
         interpretationId: interp.id,
         interpretationName: interp.name,
         description: interp.description,
-        coherenceScore: interp.coherenceScore,
+        coherenceScore: branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM' ? 0.0 : interp.coherenceScore,
+        branchStatus,
+        eliminationReason,
+        eliminationExecutionId,
         graph: interp.graph,
+        algorithmExecutions: branchAlgorithmExecutions,
         adaptiveReport,
         possibilities,
         resolution,
@@ -154,12 +303,15 @@ export class CaseReasoningPipeline {
     // -------------------------------------------------------------------------
     const whyInspectorCatalog = this.buildWhyInspectorCatalog(facts, reconstruction, branches, branchComparison);
 
+    const allAlgorithmExecutions = branches.flatMap(b => b.algorithmExecutions);
+
     return {
       caseId,
       timestamp,
       rawEvidenceCount: facts.length,
       reconstruction,
       branches,
+      algorithmExecutions: allAlgorithmExecutions,
       commonConclusions,
       branchComparison,
       unifiedTrace,
@@ -182,6 +334,26 @@ export class CaseReasoningPipeline {
       w => w.queryType === query.queryType && w.targetId === query.targetId
     );
     if (existing) return existing;
+
+    // Check if query asks why a branch or candidate was eliminated
+    const branchMatch = report.branches.find(
+      b => b.interpretationId === query.targetId || b.interpretationName.toLowerCase().includes(query.targetId.toLowerCase())
+    );
+    if (branchMatch && branchMatch.branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM') {
+      const exec = branchMatch.algorithmExecutions.find(e => e.id === branchMatch.eliminationExecutionId);
+      return {
+        queryType: query.queryType,
+        targetId: query.targetId,
+        targetLabel: branchMatch.interpretationName,
+        question: `Why was branch '${branchMatch.interpretationName}' eliminated?`,
+        directAnswer: `Eliminated by deterministic Temporal Reachability Algorithm: ${branchMatch.eliminationReason || 'Path violates temporal causality'}.`,
+        structuralRationale: `Execution record ${exec?.id || 'exec-reachability'} proved zero time-respecting paths exist. Every topological route requires an event occurring after the required subsequent effect.`,
+        supportingFacts: exec?.evidenceRefs || [],
+        provenanceReferences: exec?.evidenceRefs || [],
+        algorithmicBasis: 'TEMPORAL_REACHABILITY',
+        confidenceOrCoherence: 1.0
+      };
+    }
 
     // Fallback: build answer dynamically
     return {
@@ -207,6 +379,25 @@ export class CaseReasoningPipeline {
   ): UniversalConclusions {
     if (branches.length === 0) {
       return { universalNodes: [], universalEdges: [], universalFindings: [], universalActions: [] };
+    }
+
+    const survivingBranches = branches.filter(b => b.branchStatus !== 'ELIMINATED_BY_GRAPH_ALGORITHM');
+    const eliminatedBranches = branches.filter(b => b.branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM');
+
+    // If one branch was eliminated by a graph algorithm, surviving branch's conclusions become primary findings
+    if (survivingBranches.length === 1 && eliminatedBranches.length > 0) {
+      const survivor = survivingBranches[0];
+      const eliminated = eliminatedBranches[0];
+      return {
+        universalNodes: survivor.graph.nodes.map(n => n.label),
+        universalEdges: survivor.graph.edges.map(e => `${e.source} -[${e.type}]-> ${e.target}`),
+        universalFindings: [
+          `Interpretation '${eliminated.interpretationName}' was mathematically eliminated by Temporal Reachability Algorithm (${eliminated.eliminationReason || 'Path violates temporal causality'}).`,
+          `Surviving Interpretation '${survivor.interpretationName}' is the unique coherent causal corridor supported by evidence.`,
+          `Discovered ${survivor.possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL').length} structurally valid possibility candidate(s).`
+        ],
+        universalActions: (survivor.decisions.strategies || []).map(s => s.primaryAction.action)
+      };
     }
 
     if (branches.length === 1) {
@@ -318,6 +509,13 @@ export class CaseReasoningPipeline {
     }
     if (differingAlgorithmBehaviors.length === 0) {
       differingAlgorithmBehaviors.push('Both branches share equivalent topological complexity and algorithm execution profile.');
+    }
+
+    if (branchA.branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM') {
+      differingAlgorithmBehaviors.unshift(`Temporal Reachability Algorithm: Branch A ('${branchA.interpretationName}') failed time-respecting reachability and was mathematically eliminated.`);
+    }
+    if (branchB.branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM') {
+      differingAlgorithmBehaviors.unshift(`Temporal Reachability Algorithm: Branch B ('${branchB.interpretationName}') failed time-respecting reachability and was mathematically eliminated.`);
     }
 
     // Distinguishing evidence targets
@@ -517,9 +715,28 @@ export class CaseReasoningPipeline {
     comparison?: CompetingInterpretationComparison
   ): WhyInspectionAnswer[] {
     const catalog: WhyInspectionAnswer[] = [];
-    const primaryBranch = branches[0];
+    // 0. Why were branches eliminated by graph algorithms?
+    for (const b of branches) {
+      if (b.branchStatus === 'ELIMINATED_BY_GRAPH_ALGORITHM') {
+        const exec = b.algorithmExecutions.find(e => e.id === b.eliminationExecutionId);
+        catalog.push({
+          queryType: 'POSSIBILITY_ELIMINATED',
+          targetId: b.interpretationId,
+          targetLabel: b.interpretationName,
+          question: `Why was branch '${b.interpretationName}' eliminated?`,
+          directAnswer: `Branch was mathematically eliminated by Temporal Reachability Algorithm: ${b.eliminationReason || 'Path violates temporal causality'}.`,
+          structuralRationale: `Algorithm execution proved zero time-respecting paths exist from source to target. Every topological route requires an event occurring after the required subsequent effect.`,
+          supportingFacts: exec?.evidenceRefs || [],
+          provenanceReferences: exec?.evidenceRefs || [],
+          algorithmicBasis: 'TEMPORAL_REACHABILITY',
+          confidenceOrCoherence: 1.0
+        });
+      }
+    }
 
     // 1. Why do possibilities exist?
+    const primaryBranch = branches.find(b => b.branchStatus === 'ACTIVE') || branches[0];
+    
     for (const p of primaryBranch.possibilities.slice(0, 3)) {
       catalog.push({
         queryType: 'POSSIBILITY_EXISTS',

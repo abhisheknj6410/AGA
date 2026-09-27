@@ -10,6 +10,7 @@ import { Possibility } from './possibility-types.js';
 import { ResolutionReasoningResult } from './resolution-types.js';
 import { EpistemicValidationReport } from './epistemic-types.js';
 import { InvestigativeDecisionResult, InvestigationStrategy } from './decision-types.js';
+import { AlgorithmExecution } from './algorithm-execution-types.js';
 
 export type PipelineStageName =
   | 'RAW_EVIDENCE'
@@ -66,7 +67,11 @@ export interface InterpretationReasoningBranch {
   interpretationName: string;
   description: string;
   coherenceScore: number;
+  branchStatus: 'SURVIVING' | 'ELIMINATED_BY_GRAPH_ALGORITHM';
+  eliminationReason?: string;
+  eliminationExecutionId?: string;
   graph: GraphPayload;
+  algorithmExecutions: AlgorithmExecution[];
   adaptiveReport: AdaptiveReasoningReport;
   possibilities: Possibility[];
   resolution: ResolutionReasoningResult;
@@ -122,6 +127,7 @@ export interface EndToEndCaseReasoningReport {
   rawEvidenceCount: number;
   reconstruction: ReconstructionPipelineReport;
   branches: InterpretationReasoningBranch[];
+  algorithmExecutions: AlgorithmExecution[];
   commonConclusions: UniversalConclusions;
   branchComparison?: CompetingInterpretationComparison;
   unifiedTrace: CaseReasoningTraceStage[];
