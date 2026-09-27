@@ -1546,6 +1546,7 @@ export interface WhyInspectionAnswer {
   provenanceReferences: string[];
   algorithmicBasis: string;
   confidenceOrCoherence: number;
+  inputSubgraph?: { nodes: string[]; edges: string[] };
 }
 
 export interface InterpretationReasoningBranch {

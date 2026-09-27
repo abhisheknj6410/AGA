@@ -52,7 +52,7 @@ export const CasePipelineView: React.FC<CasePipelineViewProps> = ({ caseId }) =>
       const data = caseId
         ? await fetchCasePipelineReport(caseId)
         : await fetchPipelineBenchmark();
-      setReport(data);
+      console.log("DATA LOADED:", Object.keys(data)); setReport(data);
       if (data.unifiedTrace.length > 0) {
         setSelectedStage(data.unifiedTrace[0]);
       }
@@ -97,8 +97,18 @@ export const CasePipelineView: React.FC<CasePipelineViewProps> = ({ caseId }) =>
     if (exactNode) highlightNodes.add(exactNode.id);
     if (exactEdge) highlightEdges.add(exactEdge.id);
     
-    // Highlight edges supporting facts
-    if (selectedWhyAnswer.supportingFacts.length > 0) {
+    // Use Phase 15 inputSubgraph if available
+    if (selectedWhyAnswer.inputSubgraph) {
+      selectedWhyAnswer.inputSubgraph.nodes.forEach(n => highlightNodes.add(n));
+      selectedWhyAnswer.inputSubgraph.edges.forEach(e => {
+        highlightEdges.add(e);
+        const edgeData = currentGraph.edges.find(edge => edge.id === e);
+        if (edgeData) {
+          highlightNodes.add(edgeData.source);
+          highlightNodes.add(edgeData.target);
+        }
+      });
+    } else if (selectedWhyAnswer.supportingFacts.length > 0) {
       for (const e of currentGraph.edges) {
         if (e.evidenceRefs && e.evidenceRefs.some(ref => selectedWhyAnswer.supportingFacts.includes(ref))) {
           highlightEdges.add(e.id);

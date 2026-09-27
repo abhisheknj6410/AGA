@@ -1,13 +1,11 @@
-/**
- * First-Class Algorithm Execution Record.
- * Makes graph algorithm computations auditable, deterministic, and causally upstream of reasoning.
- */
 export interface AlgorithmExecutionInput {
   sourceId?: string;
   targetId?: string;
   sourceLabel?: string;
   targetLabel?: string;
   parameters?: Record<string, any>;
+  subgraphNodes?: string[];
+  subgraphEdges?: string[];
 }
 
 export interface AlgorithmExecutionResult {
@@ -17,6 +15,7 @@ export interface AlgorithmExecutionResult {
   dominatorNodeIds?: string[];
   cutEdgeIds?: string[];
   disjointPathCount?: number;
+  informationGainBits?: number;
   violations?: Array<{
     previousEventLabel?: string;
     previousTimestamp?: string;
@@ -28,7 +27,7 @@ export interface AlgorithmExecutionResult {
   summary: string;
 }
 
-export interface AlgorithmExecution {
+export interface AlgorithmEvidenceTrace {
   id: string;
   algorithm:
     | 'TEMPORAL_REACHABILITY'
@@ -37,16 +36,34 @@ export interface AlgorithmExecution {
     | 'MIN_CUT'
     | 'DISJOINT_PATHS'
     | 'TEMPORAL_KAHN'
-    | 'ARTICULATION_POINTS';
+    | 'ARTICULATION_POINTS'
+    | 'STRUCTURAL_FAMILIES'
+    | 'SHANNON_INFORMATION_GAIN';
   caseId: string;
   graphVersion: string;
-  input: AlgorithmExecutionInput;
+  
+  // Phase 15 Unified Output Contract
+  inputSubgraph?: { nodes: string[]; edges: string[] };
+  inputEvidence?: string[]; // Evidence IDs (facts)
+  computation?: { parameters: Record<string, any>; complexity: string };
   result: AlgorithmExecutionResult;
-  derivedNodes: string[];
-  derivedEdges: string[];
-  evidenceRefs: string[];
+  structuralInterpretation?: string;
+  possibilityImpact?: string;
+  resolutionImpact?: string;
+  investigationImpact?: string;
+  role?: 'CONTRIBUTING_ALGORITHM' | 'SUPPORTING_ALGORITHM' | 'FILTERING_ALGORITHM' | 'DOWNSTREAM_CONSUMER';
+  
+  // Old properties (deprecated / optional)
+  input: AlgorithmExecutionInput;
+  derivedNodes?: string[];
+  derivedEdges?: string[];
+  evidenceRefs?: string[];
   eliminatedHypotheses?: string[];
-  causalImpact: 'ELIMINATED_BRANCH' | 'PRUNED_POSSIBILITY' | 'IDENTIFIED_CHOKE_POINT' | 'ISOLATED_CUT' | 'VALIDATED_CORRIDOR';
+  causalImpact?: string;
+  
   timestamp: string;
   deterministic: true;
 }
+
+// Deprecate AlgorithmExecution in favor of AlgorithmEvidenceTrace or alias it for backward compatibility
+export type AlgorithmExecution = AlgorithmEvidenceTrace;

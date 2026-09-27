@@ -154,6 +154,16 @@ export class CaseReasoningPipeline {
             })),
             summary: reachability.summary
           },
+          // Phase 15 Properties
+          inputSubgraph: { nodes: [sourceId, targetId], edges: reachability.shortestTemporalPath?.edgeIds || [] },
+          inputEvidence: reachability.evidenceRefs,
+          computation: { parameters: {}, complexity: 'O(V + E)' },
+          structuralInterpretation: reachability.reachable ? 'Found coherent temporal corridor' : 'Causal timeline impossible',
+          possibilityImpact: reachability.reachable ? 'Permits possibility generation' : 'Eliminates branch',
+          resolutionImpact: reachability.reachable ? 'Contributes to candidate set' : 'Prunes candidate space',
+          investigationImpact: reachability.reachable ? 'None' : 'Forces investigation onto surviving branches',
+          role: 'FILTERING_ALGORITHM',
+          
           derivedNodes: reachability.shortestTemporalPath?.nodeIds || [],
           derivedEdges: reachability.shortestTemporalPath?.edgeIds || [],
           evidenceRefs: reachability.evidenceRefs,
@@ -217,19 +227,73 @@ export class CaseReasoningPipeline {
           pathCount: possibilities.length,
           summary: `Discovered ${possibilities.length} corridor candidate(s) via Yen's K-Shortest Paths.`
         },
-        derivedNodes: Array.from(new Set(possibilities.flatMap(p => p.constraints?.traversedNodeIds || []))),
-        derivedEdges: Array.from(new Set(possibilities.flatMap(p => p.constraints?.traversedEdgeIds || []))),
+        // Phase 15 properties
+        inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+        inputEvidence: Array.from(new Set(possibilities.flatMap(p => p.supportingEvidence))),
+        computation: { parameters: { k: 8 }, complexity: 'O(K * V * (V log V + E))' },
+        structuralInterpretation: `Identified ${possibilities.length} independent structural routing options`,
+        possibilityImpact: 'Generated core hypotheses',
+        resolutionImpact: 'Sets baseline for structural comparison',
+        investigationImpact: 'Defines the search space for evidence collection',
+        role: 'CONTRIBUTING_ALGORITHM',
+
+        derivedNodes: Array.from(new Set(possibilities.flatMap(p => p.constraints?.traversedNodeIds || []))) as string[],
+        derivedEdges: Array.from(new Set(possibilities.flatMap(p => p.constraints?.traversedEdgeIds || []))) as string[],
         evidenceRefs: Array.from(new Set(possibilities.flatMap(p => p.supportingEvidence))),
         causalImpact: 'VALIDATED_CORRIDOR',
         timestamp: new Date().toISOString(),
         deterministic: true
       });
+      
+      // TEMPORAL_KAHN Trace
+      if (adaptiveReport.decisions.some(d => d.algorithmKey === 'TEMPORAL_KAHN' && d.executed)) {
+        branchAlgorithmExecutions.push({
+          id: `exec-kahn-${interp.id}-${Date.now()}`,
+          algorithm: 'TEMPORAL_KAHN',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: { sourceId, targetId },
+          result: { summary: `Validated graph acyclicity via Kahn's Topological Sort.` },
+          inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+          inputEvidence: [],
+          computation: { parameters: {}, complexity: 'O(V + E)' },
+          structuralInterpretation: 'Verifies that causal events do not form temporal cycles',
+          possibilityImpact: 'Rejects impossible causal topologies',
+          resolutionImpact: 'Ensures resolution only operates on valid timelines',
+          investigationImpact: 'Highlights conflicting temporal evidence',
+          role: 'FILTERING_ALGORITHM',
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        });
+      }
+
+      // DISJOINT_PATHS Trace
+      if (adaptiveReport.decisions.some(d => d.algorithmKey === 'DISJOINT_PATHS' && d.executed)) {
+        branchAlgorithmExecutions.push({
+          id: `exec-disjoint-${interp.id}-${Date.now()}`,
+          algorithm: 'DISJOINT_PATHS',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: { sourceId, targetId },
+          result: { summary: `Evaluated independent corroborating routes via Suurballe's Algorithm.` },
+          inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+          inputEvidence: [],
+          computation: { parameters: { sourceId, targetId }, complexity: 'O(E log V)' },
+          structuralInterpretation: 'Finds completely independent causal paths between two events',
+          possibilityImpact: 'Increases epistemic confidence of possibilities',
+          resolutionImpact: 'Reduces reliance on any single piece of evidence',
+          investigationImpact: 'Avoids redundant investigation of corroborated subgraphs',
+          role: 'SUPPORTING_ALGORITHM',
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        });
+      }
 
       // C. Structural Resolution Reasoning
       const resolution = this.resolutionEngine.runResolutionAnalysis(
         branchCaseId,
         interp.graph,
-        possibilities
+        { customPossibilities: possibilities }
       );
 
       // Record Dominators execution if distinguishing structures exist
@@ -241,13 +305,72 @@ export class CaseReasoningPipeline {
           graphVersion: `graph-${interp.id}`,
           input: { sourceId, targetId },
           result: {
-            dominatorNodeIds: resolution.distinguishingStructures.map(d => d.nodeId).filter(Boolean) as string[],
+            dominatorNodeIds: resolution.distinguishingStructures.map(d => d.elementId).filter(Boolean) as string[],
             summary: `Identified ${resolution.distinguishingStructures.length} distinguishing structural element(s).`
           },
-          derivedNodes: resolution.distinguishingStructures.map(d => d.nodeId).filter(Boolean) as string[],
+          // Phase 15 properties
+          inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+          inputEvidence: [],
+          computation: { parameters: { sourceId, targetId }, complexity: 'O(V + E)' },
+          structuralInterpretation: 'Finds nodes that every path from source to target must pass through',
+          possibilityImpact: 'Identifies common ground across multiple possibilities',
+          resolutionImpact: 'Creates invariants that don\'t differentiate possibilities',
+          investigationImpact: 'Highlights required checkpoints for timeline corroboration',
+          role: 'SUPPORTING_ALGORITHM',
+
+          derivedNodes: resolution.distinguishingStructures.map(d => d.elementId).filter(Boolean) as string[],
           derivedEdges: [],
           evidenceRefs: [],
           causalImpact: 'IDENTIFIED_CHOKE_POINT',
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        });
+      }
+      
+      // MIN_CUT Trace
+      if (resolution.distinguishingStructures.some(d => d.structuralRole.includes('cut'))) {
+        branchAlgorithmExecutions.push({
+          id: `exec-mincut-${interp.id}-${Date.now()}`,
+          algorithm: 'MIN_CUT',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: { sourceId, targetId },
+          result: {
+            cutEdgeIds: resolution.distinguishingStructures.filter(d => d.elementType === 'EDGE').map(d => d.elementId) as string[],
+            summary: `Computed minimum cut isolating structural ambiguities.`
+          },
+          inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+          inputEvidence: [],
+          computation: { parameters: { sourceId, targetId }, complexity: 'O(V * E^2)' },
+          structuralInterpretation: 'Finds the minimum set of edges whose removal disconnects the graph',
+          possibilityImpact: 'Identifies boundaries between competing structural possibilities',
+          resolutionImpact: 'Generates high-value resolution candidates',
+          investigationImpact: 'Highlights vulnerabilities in the causal narrative',
+          role: 'CONTRIBUTING_ALGORITHM',
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        });
+      }
+
+      // STRUCTURAL_FAMILIES Trace
+      if (resolution.structuralFamilies.length > 0) {
+        branchAlgorithmExecutions.push({
+          id: `exec-families-${interp.id}-${Date.now()}`,
+          algorithm: 'STRUCTURAL_FAMILIES',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: { sourceId, targetId },
+          result: {
+            summary: `Clustered ${possibilities.length} possibilities into ${resolution.structuralFamilies.length} distinct structural families.`
+          },
+          inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+          inputEvidence: [],
+          computation: { parameters: {}, complexity: 'O(P^2 * (V+E))' },
+          structuralInterpretation: 'Groups possibilities that share core topological structures',
+          possibilityImpact: 'Reduces combinatorial explosion of possibilities',
+          resolutionImpact: 'Elevates reasoning from individual paths to architectural variants',
+          investigationImpact: 'Allows investigators to disprove entire families of hypotheses at once',
+          role: 'DOWNSTREAM_CONSUMER',
           timestamp: new Date().toISOString(),
           deterministic: true
         });
@@ -266,6 +389,32 @@ export class CaseReasoningPipeline {
         interp.graph,
         { customPossibilities: possibilities, customResolution: resolution }
       );
+      
+      // SHANNON_INFORMATION_GAIN Trace
+      if (decisions.strategies.length > 0) {
+        const topStrategy = decisions.strategies[0];
+        branchAlgorithmExecutions.push({
+          id: `exec-entropy-${interp.id}-${Date.now()}`,
+          algorithm: 'SHANNON_INFORMATION_GAIN',
+          caseId: branchCaseId,
+          graphVersion: `graph-${interp.id}`,
+          input: { sourceId, targetId },
+          result: {
+            informationGainBits: topStrategy.primaryAction.expectedInformationGain,
+            summary: `Evaluated expected entropy reduction of ${topStrategy.primaryAction.expectedInformationGain.toFixed(2)} bits for optimal evidence targeting.`
+          },
+          inputSubgraph: { nodes: interp.graph.nodes.map(n => n.id), edges: interp.graph.edges.map(e => e.id) },
+          inputEvidence: [],
+          computation: { parameters: { baselineEntropy: decisions.currentEntropy }, complexity: 'O(P * A)' },
+          structuralInterpretation: 'Calculates the probabilistic structural uncertainty reduction of acquiring specific evidence',
+          possibilityImpact: 'No direct impact on possibilities, evaluates them probabilistically',
+          resolutionImpact: 'No direct impact on resolution candidates',
+          investigationImpact: 'Prioritizes investigation actions based on maximum expected structural distinction',
+          role: 'DOWNSTREAM_CONSUMER',
+          timestamp: new Date().toISOString(),
+          deterministic: true
+        });
+      }
 
       branches.push({
         interpretationId: interp.id,
@@ -396,7 +545,7 @@ export class CaseReasoningPipeline {
           `Surviving Interpretation '${survivor.interpretationName}' is the unique coherent causal corridor supported by evidence.`,
           `Discovered ${survivor.possibilities.filter(p => p.status === 'VALID' || p.status === 'CONDITIONAL').length} structurally valid possibility candidate(s).`
         ],
-        universalActions: (survivor.decisions.strategies || []).map(s => s.primaryAction.action)
+        universalActions: (survivor.decisions.strategies || []).map(s => s.primaryAction.question)
       };
     }
 
@@ -409,7 +558,7 @@ export class CaseReasoningPipeline {
           `Single coherent graph structure with ${b.graph.nodes.length} nodes and ${b.graph.edges.length} edges.`,
           `Discovered ${b.possibilities.length} valid possibility candidate(s).`
         ],
-        universalActions: (b.decisions.strategies || []).map(s => s.primaryAction.action)
+        universalActions: (b.decisions.strategies || []).map(s => s.primaryAction.question)
       };
     }
 
@@ -434,7 +583,7 @@ export class CaseReasoningPipeline {
     // Find investigation actions shared across branches or targeting branch distinction
     const universalActions = [
       `Execute distinguishing evidence acquisition to partition Interpretation ${branches[0].interpretationName} vs ${branches[1].interpretationName}.`,
-      ...(branches[0].decisions.strategies || []).slice(0, 2).map(s => s.primaryAction.action)
+      ...(branches[0].decisions.strategies || []).slice(0, 2).map(s => s.primaryAction.question)
     ];
 
     return {
@@ -549,8 +698,8 @@ export class CaseReasoningPipeline {
         `Branch B primary resolution focus: ${branchB.resolution.resolutionCandidates[0]?.targetLabel || 'Alibi corroboration'}`
       ],
       differingActions: {
-        branchAOnly: (branchA.decisions.strategies || []).slice(0, 3).map(s => s.primaryAction.action),
-        branchBOnly: (branchB.decisions.strategies || []).slice(0, 3).map(s => s.primaryAction.action)
+        branchAOnly: (branchA.decisions.strategies || []).slice(0, 3).map(s => s.primaryAction.question),
+        branchBOnly: (branchB.decisions.strategies || []).slice(0, 3).map(s => s.primaryAction.question)
       },
       distinguishingEvidenceTargets
     };
@@ -696,7 +845,7 @@ export class CaseReasoningPipeline {
         inputs: { candidateCount: primaryBranch.resolution.resolutionCandidates.length },
         outputs: {
           primaryQuestion: primaryBranch.decisions.unresolvedQuestions[0]?.question,
-          rankedActions: (primaryBranch.decisions.strategies || []).slice(0, 3).map(s => s.primaryAction.action),
+          rankedActions: (primaryBranch.decisions.strategies || []).slice(0, 3).map(s => s.primaryAction.question),
           distinguishingEvidence: commonConclusions.universalActions[0]
         },
         reasonForDownstreamChanges: 'Directly tells the investigator what uncertainty to resolve next, why, and what evidence to acquire.',
@@ -840,7 +989,7 @@ export class CaseReasoningPipeline {
       catalog.push({
         queryType: 'ACTION_RECOMMENDED',
         targetId: topStrategy.id,
-        targetLabel: topStrategy.primaryAction.action,
+        targetLabel: topStrategy.primaryAction.question,
         question: `Why is investigation strategy '${topStrategy.name}' recommended?`,
         directAnswer: `Recommended because it targets the highest information-gain distinction (expected entropy reduction: ${topStrategy.expectedEntropyReduction} bits, objective: ${topStrategy.objective}).`,
         structuralRationale: topStrategy.tradeoffSummary.pros.join('; ') || topStrategy.targetedDistinction,
@@ -849,6 +998,27 @@ export class CaseReasoningPipeline {
         algorithmicBasis: topStrategy.algorithmBasis,
         confidenceOrCoherence: 1.0
       });
+    }
+
+    // 7. Phase 15: Unified Algorithm Evidence Trace
+    for (const b of branches) {
+      for (const exec of b.algorithmExecutions) {
+        if (!exec.inputSubgraph || !exec.computation) continue; // Skip incomplete traces
+        
+        catalog.push({
+          queryType: 'ALGORITHM_EXECUTED',
+          targetId: exec.id,
+          targetLabel: exec.algorithm,
+          question: `Why did ${exec.algorithm} execute and what was its impact?`,
+          directAnswer: `Algorithm produced result: ${exec.result.summary}`,
+          structuralRationale: `Role: ${exec.role}. Interpretation: ${exec.structuralInterpretation}. Possibility Impact: ${exec.possibilityImpact}. Resolution: ${exec.resolutionImpact}. Investigation: ${exec.investigationImpact}.`,
+          supportingFacts: exec.inputEvidence || [],
+          provenanceReferences: [],
+          algorithmicBasis: exec.algorithm,
+          confidenceOrCoherence: 1.0,
+          inputSubgraph: exec.inputSubgraph
+        });
+      }
     }
 
     return catalog;

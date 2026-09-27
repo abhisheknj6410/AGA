@@ -20,6 +20,8 @@ import { EvidenceReconstructionEngine } from '../application/evidence-reconstruc
 function setupPipeline() {
   const db = getDatabase(':memory:');
   runMigrations(db);
+  
+  db.exec("INSERT INTO cases (id, name, status, created_at, updated_at) VALUES ('c1', 'Test Case', 'ACTIVE', '2025-01-01', '2025-01-01');");
 
   const possibilityRepo = new PossibilityRepository(db);
   const algorithmRepo = new AlgorithmRepository(db);
@@ -48,9 +50,9 @@ function setupPipeline() {
 test('TemporalReachabilityAlgorithm: Eliminates path with backward time flow', () => {
   const nodes: GraphNode[] = [
     { id: 'source', caseId: '1', category: 'ENTITY', type: 'PERSON', label: 'Origin', properties: {}, metadata: {}, createdAt: '', updatedAt: '' },
-    { id: 'ev1', caseId: '1', category: 'EVENT', type: 'ACTION', label: 'Event 1', properties: {}, metadata: {}, createdAt: '', updatedAt: '', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'EXACT' } },
+    { id: 'ev1', caseId: '1', category: 'EVENT', type: 'ACTION', label: 'Event 1', properties: {}, metadata: {}, createdAt: '', updatedAt: '', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'SECOND' } },
     { id: 'mid', caseId: '1', category: 'ENTITY', type: 'LOCATION', label: 'Mid', properties: {}, metadata: {}, createdAt: '', updatedAt: '' },
-    { id: 'ev2', caseId: '1', category: 'EVENT', type: 'ACTION', label: 'Event 2', properties: {}, metadata: {}, createdAt: '', updatedAt: '', time: { start: '2025-01-01T10:00:00Z', end: '2025-01-01T10:00:00Z', precision: 'EXACT' } }, // Before Event 1!
+    { id: 'ev2', caseId: '1', category: 'EVENT', type: 'ACTION', label: 'Event 2', properties: {}, metadata: {}, createdAt: '', updatedAt: '', time: { start: '2025-01-01T10:00:00Z', end: '2025-01-01T10:00:00Z', precision: 'SECOND' } }, // Before Event 1!
     { id: 'target', caseId: '1', category: 'ENTITY', type: 'PERSON', label: 'Target', properties: {}, metadata: {}, createdAt: '', updatedAt: '' }
   ];
 
@@ -72,22 +74,22 @@ test('TemporalReachabilityAlgorithm: Eliminates path with backward time flow', (
 test('CaseReasoningPipeline: Causal elimination alters cross-branch comparison', async () => {
   const pipeline = setupPipeline();
   
-  const baseProv = { sourceName: 'Test', sourceReference: 'ref', sourceEvidenceId: '1' };
+  const baseProv = { sourceKind: 'DOCUMENT', reliability: 1.0,  sourceName: 'Test', sourceReference: 'ref', sourceEvidenceId: '1' };
   
   const rawFacts: EvidenceFact[] = [
     // Contradictory claims that will cause branching (same subject, different locations)
-    { id: 'f_contra1', caseId: 'c1', subject: { id: 'suspect', label: 'Suspect', category: 'ENTITY', type: 'PERSON' }, predicate: 'LOCATED_AT', object: { id: 'loc2', label: 'Cafe', category: 'ENTITY', type: 'LOCATION' }, temporalInfo: { start: '2025-01-01T11:00:00Z', end: '2025-01-01T11:30:00Z', precision: 'EXACT' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
-    { id: 'f_contra2', caseId: 'c1', subject: { id: 'suspect', label: 'Suspect', category: 'ENTITY', type: 'PERSON' }, predicate: 'LOCATED_AT', object: { id: 'loc3', label: 'Airport', category: 'ENTITY', type: 'LOCATION' }, temporalInfo: { start: '2025-01-01T11:15:00Z', end: '2025-01-01T11:45:00Z', precision: 'EXACT' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
+    { id: 'f_contra1', caseId: 'c1', subject: { id: 'suspect', label: 'Suspect', category: 'ENTITY', type: 'PERSON' }, predicate: 'LOCATED_AT', object: { id: 'loc2', label: 'Cafe', category: 'ENTITY', type: 'LOCATION' }, temporalInfo: { start: '2025-01-01T11:00:00Z', end: '2025-01-01T11:30:00Z', precision: 'SECOND' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
+    { id: 'f_contra2', caseId: 'c1', subject: { id: 'suspect', label: 'Suspect', category: 'ENTITY', type: 'PERSON' }, predicate: 'LOCATED_AT', object: { id: 'loc3', label: 'Airport', category: 'ENTITY', type: 'LOCATION' }, temporalInfo: { start: '2025-01-01T11:15:00Z', end: '2025-01-01T11:45:00Z', precision: 'SECOND' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
     
     // Continuation of path 1 (Temporally valid)
     // From Cafe to Event 1
-    { id: 'f2', caseId: 'c1', subject: { id: 'loc2', label: 'Cafe', category: 'ENTITY', type: 'LOCATION' }, predicate: 'SITE_OF', object: { id: 'ev1', label: 'Event 1', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'EXACT' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
-    { id: 'f3', caseId: 'c1', subject: { id: 'ev1', label: 'Event 1', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'EXACT' } }, predicate: 'INVOLVED', object: { id: 'target', label: 'Target', category: 'ENTITY', type: 'PERSON' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
+    { id: 'f2', caseId: 'c1', subject: { id: 'loc2', label: 'Cafe', category: 'ENTITY', type: 'LOCATION' }, predicate: 'SITE_OF', object: { id: 'ev1', label: 'Event 1', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'SECOND' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
+    { id: 'f3', caseId: 'c1', subject: { id: 'ev1', label: 'Event 1', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'SECOND' } }, predicate: 'INVOLVED', object: { id: 'target', label: 'Target', category: 'ENTITY', type: 'PERSON' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
 
     // Continuation of path 2 (Temporally invalid - time inversion)
-    { id: 'f4', caseId: 'c1', subject: { id: 'loc3', label: 'Airport', category: 'ENTITY', type: 'LOCATION' }, predicate: 'SITE_OF', object: { id: 'ev2', label: 'Event 2', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T09:00:00Z', end: '2025-01-01T09:00:00Z', precision: 'EXACT' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
-    { id: 'f5', caseId: 'c1', subject: { id: 'ev2', label: 'Event 2', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T09:00:00Z', end: '2025-01-01T09:00:00Z', precision: 'EXACT' } }, predicate: 'CAUSED', object: { id: 'ev3', label: 'Event 3', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T08:00:00Z', end: '2025-01-01T08:00:00Z', precision: 'EXACT' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
-    { id: 'f6', caseId: 'c1', subject: { id: 'ev3', label: 'Event 3', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T08:00:00Z', end: '2025-01-01T08:00:00Z', precision: 'EXACT' } }, predicate: 'INVOLVED', object: { id: 'target', label: 'Target', category: 'ENTITY', type: 'PERSON' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL', provenance: baseProv },
+    { id: 'f4', caseId: 'c1', subject: { id: 'loc3', label: 'Airport', category: 'ENTITY', type: 'LOCATION' }, predicate: 'SITE_OF', object: { id: 'ev2', label: 'Event 2', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T09:00:00Z', end: '2025-01-01T09:00:00Z', precision: 'SECOND' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
+    { id: 'f5', caseId: 'c1', subject: { id: 'ev2', label: 'Event 2', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T09:00:00Z', end: '2025-01-01T09:00:00Z', precision: 'SECOND' } }, predicate: 'CAUSED', object: { id: 'ev3', label: 'Event 3', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T08:00:00Z', end: '2025-01-01T08:00:00Z', precision: 'SECOND' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
+    { id: 'f6', caseId: 'c1', subject: { id: 'ev3', label: 'Event 3', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T08:00:00Z', end: '2025-01-01T08:00:00Z', precision: 'SECOND' } }, predicate: 'INVOLVED', object: { id: 'target', label: 'Target', category: 'ENTITY', type: 'PERSON' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
   ];
 
   const report = await pipeline.executeCasePipeline('c1', rawFacts);
