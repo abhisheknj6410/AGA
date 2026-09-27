@@ -120,25 +120,25 @@ export const Header: React.FC<HeaderProps> = ({
     : [];
 
   return (
-    <header className="h-13 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between px-4 z-30 select-none transition-colors duration-150">
+    <header className="h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-5 z-30 select-none transition-colors duration-150">
       {/* Left: Brand & Case Selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white shadow-sm">
+          <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 shadow-sm">
             <Network className="w-4 h-4" />
           </div>
-          <span className="text-xs font-semibold tracking-tight text-slate-900 dark:text-white">
+          <span className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white">
             Evidence Studio
           </span>
         </div>
 
-        <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800" />
+        <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
 
         {/* Case Switcher */}
         <div className="flex items-center gap-1.5">
           <div className="relative flex items-center">
             <select
-              className="appearance-none bg-slate-100 hover:bg-slate-200/70 dark:bg-slate-800/80 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-md pl-2.5 pr-7 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer max-w-[180px] truncate transition-colors"
+              className="appearance-none bg-zinc-100 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-500 cursor-pointer max-w-[200px] truncate transition-colors"
               value={currentCase?.id || ''}
               onChange={e => {
                 const selected = cases.find(c => c.id === e.target.value);
@@ -151,27 +151,27 @@ export const Header: React.FC<HeaderProps> = ({
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 pointer-events-none" />
           </div>
 
           <button
             onClick={onNewCase}
             title="Create New Case"
-            className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Center: Clean Segmented View Navigation */}
-      <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-medium">
+      {/* Center: Vercel Segmented Navigation */}
+      <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-medium">
         <button
           onClick={() => onTabChange('GRAPH')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
             activeTab === 'GRAPH'
-              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
           <Network className="w-3.5 h-3.5" />
@@ -180,16 +180,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => onTabChange('POSSIBILITIES')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
             activeTab === 'POSSIBILITIES' || activeTab === 'COMPARISON'
-              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
           <GitBranch className="w-3.5 h-3.5" />
           <span>Possibilities</span>
           {possibilityCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700">
               {possibilityCount}
             </span>
           )}
@@ -197,10 +197,10 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => onTabChange('ANALYSIS')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
             activeTab === 'ANALYSIS'
-              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
           <Cpu className="w-3.5 h-3.5" />
@@ -209,27 +209,27 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => onTabChange('AGENT')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all ${
             activeTab === 'AGENT'
-              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs font-semibold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
         >
           <Bot className="w-3.5 h-3.5" />
-          <span>Query Agent</span>
+          <span>AI Agent & Ingestion</span>
         </button>
       </div>
 
       {/* Right: Search, Add Fact, Tools Drawer, Theme */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         {/* Search */}
         <div ref={searchRef} className="relative w-56">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
             <input
               type="text"
               placeholder="Search graph..."
-              className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs rounded-md pl-8 pr-3 py-1 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition"
+              className="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs rounded-lg pl-8 pr-3 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:bg-white dark:focus:bg-zinc-950 transition"
               value={searchQuery}
               onChange={e => {
                 setSearchQuery(e.target.value);
@@ -292,27 +292,27 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Unified + Add Fact Dropdown */}
+        {/* Unified + Add Fact Dropdown - Vercel Monochrome */}
         <div ref={addMenuRef} className="relative">
           <button
             onClick={() => setShowAddMenu(!showAddMenu)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 shadow-sm transition"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Fact</span>
-            <ChevronDown className="w-3 h-3 ml-0.5 opacity-80" />
+            <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
           </button>
 
           {showAddMenu && (
-            <div className="absolute right-0 top-8 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 z-50 text-xs font-medium">
+            <div className="absolute right-0 top-9 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs font-medium">
               <button
                 onClick={() => {
                   onAddNode('ENTITY');
                   setShowAddMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
                 <span>Add Entity...</span>
               </button>
               <button
@@ -320,9 +320,9 @@ export const Header: React.FC<HeaderProps> = ({
                   onAddNode('EVENT');
                   setShowAddMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                 <span>Add Event Node...</span>
               </button>
               <button
@@ -330,20 +330,20 @@ export const Header: React.FC<HeaderProps> = ({
                   onAddNode('EVIDENCE');
                   setShowAddMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <span>Add Evidence Item...</span>
               </button>
-              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
               <button
                 onClick={() => {
                   onAddEdge();
                   setShowAddMenu(false);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200 transition"
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
               >
-                <Link2 className="w-3.5 h-3.5 text-indigo-500" />
+                <Link2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                 <span>Connect Relationship...</span>
               </button>
             </div>

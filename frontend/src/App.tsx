@@ -380,62 +380,65 @@ export const App: React.FC = () => {
               theme={theme}
             />
 
-            {/* Floating Figma Top Control Dock */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2.5 py-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full shadow-lg text-xs font-medium text-slate-700 dark:text-slate-200">
+            {/* Floating Vercel Top Control Dock */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-full shadow-lg text-xs font-semibold text-zinc-800 dark:text-zinc-200">
               <button
                 onClick={() => setFilters(prev => ({ ...prev, layout: prev.layout === 'dagre' ? 'cose' : 'dagre' }))}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px]"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs"
                 title="Toggle Graph Layout (Flow vs Organic)"
               >
-                <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                <Layers className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                 <span>{filters.layout === 'dagre' ? 'Flow Layout' : 'Organic'}</span>
               </button>
 
-              <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+              <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
 
               <button
                 onClick={() => {
                   setNodeModalCategory('ENTITY');
                   setNodeModalOpen(true);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px]"
+                className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs"
                 title="Add Node Fact"
               >
-                <Plus className="w-3.5 h-3.5 text-blue-500" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>Add Fact</span>
               </button>
 
               <button
                 onClick={() => setEdgeModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px]"
+                className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-xs"
                 title="Connect Relationship"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Connect</span>
               </button>
 
-              <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+              <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
 
               <button
                 onClick={() => setIsTimelineOpen(!isTimelineOpen)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition text-[11px] ${
+                className={`flex items-center gap-1 px-3 py-1 rounded-full transition text-xs ${
                   isTimelineOpen
-                    ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-semibold'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-semibold'
+                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 }`}
                 title="Toggle Timeline Playback"
               >
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <Clock className="w-3.5 h-3.5" />
                 <span>Timeline</span>
               </button>
 
+              <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+
+              {/* Direct Ingestion & Query Agent buttons */}
               <button
                 onClick={() => setActiveTab('AGENT')}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 transition text-[11px] font-semibold"
-                title="Ask Investigation Agent"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 transition text-xs font-semibold shadow-xs"
+                title="Input Case Documents & Query Agent"
               >
                 <Bot className="w-3.5 h-3.5" />
-                <span>Ask AI</span>
+                <span>AI Ingest & Query</span>
               </button>
             </div>
 

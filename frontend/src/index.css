@@ -17,16 +17,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Figma Canvas dot grid patterns */
+/* Vercel / Linear Minimal Canvas dot grid patterns */
 .canvas-grid-light {
-  background-color: #f8fafc;
-  background-image: radial-gradient(#cbd5e1 1.25px, transparent 1.25px);
+  background-color: #fafafa;
+  background-image: radial-gradient(#d4d4d8 1.25px, transparent 1.25px);
   background-size: 24px 24px;
 }
 
 .canvas-grid-dark {
-  background-color: #0b0f19;
-  background-image: radial-gradient(#1e293b 1.25px, transparent 1.25px);
+  background-color: #09090b;
+  background-image: radial-gradient(#27272a 1.25px, transparent 1.25px);
   background-size: 24px 24px;
 }
 

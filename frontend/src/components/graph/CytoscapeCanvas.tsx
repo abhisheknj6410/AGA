@@ -45,130 +45,126 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       boxSelectionEnabled: false,
       autounselectify: false,
       style: ([
-        // Base Node Style - Figma-grade card
+        // Base Node Style - Clean Vercel / Linear Minimal Card
         {
           selector: 'node',
           style: {
             'label': 'data(label)',
             'font-family': 'Inter, system-ui, -apple-system, sans-serif',
-            'font-size': '11.5px',
+            'font-size': '12px',
             'font-weight': 600,
             'text-valign': 'center',
             'text-halign': 'center',
-            'color': isLight ? '#0f172a' : '#f8fafc',
+            'color': isLight ? '#09090b' : '#fafafa',
             'text-wrap': 'wrap',
-            'text-max-width': '190px',
-            'line-height': 1.35,
-            'border-width': '1.5px',
-            'border-color': isLight ? '#cbd5e1' : '#334155',
-            'background-color': isLight ? '#ffffff' : '#1e293b',
-            'width': '210px',
-            'height': '62px',
+            'text-max-width': '180px',
+            'border-width': 1.5,
+            'border-color': isLight ? '#e4e4e7' : '#27272a',
+            'background-color': isLight ? '#ffffff' : '#18181b',
+            'width': '200px',
+            'height': '58px',
             'shape': 'round-rectangle',
-            'corner-radius': 8,
-            'shadow-blur': 6,
-            'shadow-color': isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(0, 0, 0, 0.35)',
+            'shadow-blur': 8,
+            'shadow-color': isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.4)',
             'shadow-opacity': 1,
-            'shadow-offset-y': 2,
             'transition-property': 'background-color, border-color, width, height, opacity, shadow-blur',
             'transition-duration': 0.15
           }
         },
-        // Entity Nodes
+        // Entity Nodes - Crisp Monochrome Card
         {
           selector: 'node[category = "ENTITY"]',
           style: {
-            'background-color': isLight ? '#ffffff' : '#1e293b',
-            'border-color': isLight ? '#cbd5e1' : '#334155',
-            'color': isLight ? '#0f172a' : '#f8fafc'
+            'background-color': isLight ? '#ffffff' : '#18181b',
+            'border-color': isLight ? '#e4e4e7' : '#27272a',
+            'color': isLight ? '#09090b' : '#fafafa'
           }
         },
-        // Event Nodes (Warm Amber sand)
+        // Event Nodes - Subtle Sandstone Accent
         {
           selector: 'node[category = "EVENT"]',
           style: {
-            'background-color': isLight ? '#fffbeb' : '#261b0c',
-            'border-color': isLight ? '#f59e0b' : '#b45309',
-            'border-width': '1.75px',
-            'color': isLight ? '#78350f' : '#fef3c7'
+            'background-color': isLight ? '#fefce8' : '#1c1917',
+            'border-color': isLight ? '#ca8a04' : '#a16207',
+            'border-width': 1.75,
+            'color': isLight ? '#713f12' : '#fef08a'
           }
         },
-        // Evidence Nodes (Mint Sage)
+        // Evidence Nodes - Subtle Sage Accent
         {
           selector: 'node[category = "EVIDENCE"]',
           style: {
-            'background-color': isLight ? '#f0fdf4' : '#082517',
-            'border-color': isLight ? '#10b981' : '#059669',
-            'border-width': '1.75px',
-            'color': isLight ? '#065f46' : '#a7f3d0'
+            'background-color': isLight ? '#f0fdf4' : '#052e16',
+            'border-color': isLight ? '#16a34a' : '#15803d',
+            'border-width': 1.75,
+            'color': isLight ? '#14532d' : '#bbf7d0'
           }
         },
-        // Selected Node
+        // Selected Node - Vercel High-Contrast Monochrome Ring
         {
           selector: 'node:selected',
           style: {
-            'border-color': '#4f46e5',
-            'border-width': '2.5px',
+            'border-color': isLight ? '#09090b' : '#ffffff',
+            'border-width': 3,
             'shadow-blur': 16,
-            'shadow-color': isLight ? 'rgba(79, 70, 229, 0.35)' : 'rgba(99, 102, 241, 0.5)',
-            'shadow-opacity': 1,
-            'shadow-offset-y': 3
+            'shadow-color': isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.35)',
+            'shadow-opacity': 1
           }
         },
-        // Base Edge Style
+        // Base Edge Style - Minimal Razor Line
         {
           selector: 'edge',
           style: {
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
-            'arrow-scale': 0.85,
+            'arrow-scale': 0.8,
             'label': 'data(label)',
             'font-family': 'Inter, system-ui, -apple-system, sans-serif',
-            'font-size': '9.5px',
+            'font-size': '10px',
             'font-weight': 500,
-            'color': isLight ? '#64748b' : '#94a3b8',
+            'color': isLight ? '#71717a' : '#a1a1aa',
             'text-background-opacity': 0.95,
-            'text-background-color': isLight ? '#ffffff' : '#0f172a',
-            'text-background-padding': '4px',
+            'text-background-color': isLight ? '#ffffff' : '#18181b',
+            'text-background-padding': '3px',
             'text-background-shape': 'roundrectangle',
             'text-rotation': 'autorotate',
-            'width': 1.6,
-            'line-color': isLight ? '#cbd5e1' : '#475569',
-            'target-arrow-color': isLight ? '#cbd5e1' : '#475569'
+            'width': 1.5,
+            'line-color': isLight ? '#d4d4d8' : '#3f3f46',
+            'target-arrow-color': isLight ? '#d4d4d8' : '#3f3f46'
           }
         },
-        // Observed Edge
+        // Observed Edge - Solid High Contrast
         {
           selector: 'edge[status = "OBSERVED"]',
           style: {
-            'line-color': isLight ? '#6366f1' : '#818cf8',
-            'target-arrow-color': isLight ? '#6366f1' : '#818cf8',
+            'line-color': isLight ? '#18181b' : '#f4f4f5',
+            'target-arrow-color': isLight ? '#18181b' : '#f4f4f5',
             'line-style': 'solid',
-            'width': 1.8
+            'width': 2
           }
         },
-        // Derived Edge
+        // Derived Edge - Dashed
         {
           selector: 'edge[status = "DERIVED"]',
           style: {
-            'line-color': isLight ? '#8b5cf6' : '#a78bfa',
-            'target-arrow-color': isLight ? '#8b5cf6' : '#a78bfa',
+            'line-color': '#71717a',
+            'target-arrow-color': '#71717a',
             'line-style': 'dashed',
-            'line-dash-pattern': [5, 3],
+            'line-dash-pattern': [5, 4],
             'width': 1.8
           }
         },
-        // Hypothesized Edge
+        // Hypothesized Edge - Dotted
         {
           selector: 'edge[status = "HYPOTHESIZED"]',
           style: {
-            'line-color': isLight ? '#f59e0b' : '#fbbf24',
-            'target-arrow-color': isLight ? '#f59e0b' : '#fbbf24',
+            'line-color': '#a1a1aa',
+            'target-arrow-color': '#a1a1aa',
             'line-style': 'dotted',
             'width': 2
           }
         },
-        // Contradicts Edge
+        // Contradicts Edge - Pure Red
         {
           selector: 'edge[type = "CONTRADICTS"]',
           style: {
@@ -178,15 +174,15 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             'line-style': 'solid'
           }
         },
-        // Selected Edge
+        // Selected Edge - Vercel Black/White Focus
         {
           selector: 'edge:selected',
           style: {
-            'line-color': '#4f46e5',
-            'target-arrow-color': '#4f46e5',
+            'line-color': isLight ? '#09090b' : '#ffffff',
+            'target-arrow-color': isLight ? '#09090b' : '#ffffff',
             'width': 2.8,
-            'text-background-color': '#4f46e5',
-            'color': '#ffffff'
+            'text-background-color': isLight ? '#09090b' : '#ffffff',
+            'color': isLight ? '#ffffff' : '#09090b'
           }
         },
         // Neighborhood Dimmed Class
@@ -201,8 +197,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: '.highlighted',
           style: {
             'opacity': 1.0,
-            'shadow-blur': 12,
-            'shadow-opacity': 0.4
+            'shadow-blur': 14,
+            'shadow-opacity': 0.5
           }
         }
       ] as any)
@@ -231,7 +227,19 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
 
     cyRef.current = cy;
 
+    // Observe container resizing to keep canvas responsive
+    const resizeObserver = new ResizeObserver(() => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+      }
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       cy.destroy();
       cyRef.current = null;
     };
@@ -332,9 +340,21 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     }
 
     const layout = cy.layout(layoutOptions);
+    layout.one('layoutstop', () => {
+      cy.resize();
+      cy.fit(undefined, 60);
+      setCurrentZoom(Math.round(cy.zoom() * 100));
+    });
     layout.run();
-    cy.fit(undefined, 50);
-    setCurrentZoom(Math.round(cy.zoom() * 100));
+
+    // Fallback fit to guarantee nodes appear immediately even if layoutstop is missed
+    setTimeout(() => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        cyRef.current.fit(undefined, 60);
+        setCurrentZoom(Math.round(cyRef.current.zoom() * 100));
+      }
+    }, 80);
   }, [nodes, edges, layoutType]);
 
   // Sync selected element
@@ -382,33 +402,33 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       <div ref={containerRef} className="w-full h-full" />
 
       {/* Floating Bottom-Right Minimal Navigation Controls */}
-      <div className="absolute bottom-4 right-4 z-10 flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm p-1 text-slate-600 dark:text-slate-300">
+      <div className="absolute bottom-4 right-4 z-10 flex items-center bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm p-1 text-zinc-600 dark:text-zinc-300">
         <button
           onClick={handleZoomOut}
           title="Zoom Out"
-          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition"
+          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
 
-        <span className="px-2 text-[11px] font-mono font-medium text-slate-500 min-w-[42px] text-center">
+        <span className="px-2.5 text-xs font-mono font-medium text-zinc-500 min-w-[46px] text-center">
           {currentZoom}%
         </span>
 
         <button
           onClick={handleZoomIn}
           title="Zoom In"
-          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition"
+          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
 
-        <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
+        <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1" />
 
         <button
           onClick={handleFit}
           title="Fit View"
-          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition"
+          className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
@@ -418,8 +438,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           title="Toggle 1-Hop Neighborhood Isolation"
           className={`p-1.5 rounded-md transition ${
             neighborhoodMode
-              ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold'
-              : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold'
+              : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
           }`}
         >
           <Crosshair className="w-4 h-4" />
@@ -427,9 +447,9 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       </div>
 
       {/* Floating Bottom-Left Minimal Discrete Legend */}
-      <div className="absolute bottom-4 left-4 z-10 hidden sm:flex items-center gap-3 px-3 py-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800/80 rounded-lg shadow-xs text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+      <div className="absolute bottom-4 left-4 z-10 hidden sm:flex items-center gap-3.5 px-3.5 py-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xs text-xs text-zinc-600 dark:text-zinc-400 font-medium">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-white dark:bg-slate-800 border border-slate-400" />
+          <span className="w-2.5 h-2.5 rounded-sm bg-white dark:bg-zinc-800 border border-zinc-400" />
           <span>Entity</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -440,13 +460,13 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           <span className="w-2.5 h-2.5 rounded-sm bg-emerald-100 dark:bg-emerald-950 border border-emerald-500" />
           <span>Evidence</span>
         </div>
-        <div className="h-3 w-[1px] bg-slate-200 dark:bg-slate-800" />
+        <div className="h-3 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-indigo-500" />
+          <span className="w-3.5 h-0.5 bg-zinc-900 dark:bg-zinc-100" />
           <span>Observed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-rose-500" />
+          <span className="w-3.5 h-0.5 bg-rose-500" />
           <span>Contradiction</span>
         </div>
       </div>
