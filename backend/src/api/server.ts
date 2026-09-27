@@ -35,11 +35,13 @@ import { InvestigationPlanningEngine } from '../application/investigation-planni
 import { AlgorithmEffectivenessEngine } from '../application/algorithm-effectiveness-engine.js';
 import { EvidenceImpactEngine } from '../application/evidence-impact-engine.js';
 import { InvestigationDecisionEngine } from '../application/investigation-decision-engine.js';
+import { EpistemicValidationEngine } from '../application/epistemic-validation-engine.js';
 import { createIncrementalRouter } from './routes/incremental-routes.js';
 import { createPlanningRouter } from './routes/planning-routes.js';
 import { createEffectivenessRouter } from './routes/effectiveness-routes.js';
 import { createClosedLoopRouter } from './routes/closed-loop-routes.js';
 import { createDecisionRouter } from './routes/decision-routes.js';
+import { createValidationRouter } from './routes/validation-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -92,6 +94,13 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   );
   agentService.setDecisionEngine(decisionEngine);
 
+  const validationEngine = new EpistemicValidationEngine(
+    possibilityRepo,
+    resolutionEngine,
+    planningEngine,
+    decisionEngine
+  );
+
   const app = express();
 
   app.use(cors());
@@ -107,6 +116,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases', createCaseRouter(caseService));
   app.use('/api/cases', createClosedLoopRouter(evidenceImpactEngine));
   app.use('/api/cases', createDecisionRouter(decisionEngine, graphService));
+  app.use('/api/cases', createValidationRouter(validationEngine, graphService));
 
   // Case-Scoped Nested Routes
   app.use('/api/cases/:caseId/nodes', createNodeRouter(graphService));

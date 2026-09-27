@@ -501,8 +501,11 @@ export async function simulateInvestigativeStrategy(
   return res.json();
 }
 
-
-
-
-
-
+export async function fetchEpistemicValidation(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/validation/epistemic`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch epistemic validation');
+  }
+  return res.json();
+}

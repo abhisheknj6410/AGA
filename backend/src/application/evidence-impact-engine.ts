@@ -527,13 +527,59 @@ export class EvidenceImpactEngine {
     // Check if the connected target nodes exist in ANY surviving possibility's traversed nodes
     const connectedNeighborIds = attachedEdges.flatMap(e => [e.source, e.target]).filter(id => id !== evidenceNode.id);
     const anyPossibilityTouches = valid.some(p => {
-      const pNodeIds = new Set((p.graphChanges.addedNodes || []).map(n => n.id));
-      // Also check assumptions
-      return connectedNeighborIds.some(cid => pNodeIds.has(cid) || p.assumptions.some(a => a.includes(cid)));
+      const pTraversed = new Set((p.constraints as any)?.traversedNodeIds || []);
+      const pNodeIds = new Set((p.graphChanges?.addedNodes || []).map(n => n.id));
+      const pEvidence = new Set([...(p.supportingEvidence || []), ...(p.conflictingEvidence || [])]);
+      return connectedNeighborIds.some(cid =>
+        pTraversed.has(cid) ||
+        pNodeIds.has(cid) ||
+        pEvidence.has(cid) ||
+        p.assumptions?.some(a => a.includes(cid))
+      );
     });
 
-    // Check if any attached edge is an explicit contradiction against surviving evidence
-    const contradictsValid = attachedEdges.some(e => e.type === 'CONTRADICTS' && valid.some(p => p.supportingEvidence.includes(e.target) || p.supportingEvidence.includes(e.source)));
+    // 3. Check if contradiction affects all corridor possibilities or 100% of surviving possibilities
+    const corridorPossibilities = valid.filter(p => ((p.constraints as any)?.traversedNodeIds || []).length > 0);
+    const contradictsAll = attachedEdges.some(e => {
+      if (e.type !== 'CONTRADICTS') return false;
+      const targetId = e.target === evidenceNode.id ? e.source : e.target;
+      
+      const contradictsAllCorridors = corridorPossibilities.length > 0 && corridorPossibilities.every(p => {
+        const traversed = new Set((p.constraints as any)?.traversedNodeIds || []);
+        const evidence = new Set([...(p.supportingEvidence || []), ...(p.conflictingEvidence || [])]);
+        return traversed.has(targetId) || evidence.has(targetId);
+      });
+
+      const contradictsAllValid = valid.every(p => {
+        const traversed = new Set((p.constraints as any)?.traversedNodeIds || []);
+        const pNodeIds = new Set((p.graphChanges?.addedNodes || []).map(n => n.id));
+        const evidence = new Set([...(p.supportingEvidence || []), ...(p.conflictingEvidence || [])]);
+        return (
+          traversed.has(targetId) ||
+          pNodeIds.has(targetId) ||
+          evidence.has(targetId) ||
+          p.assumptions?.some(a => a.includes(targetId)) ||
+          p.name.includes(targetId)
+        );
+      });
+
+      return contradictsAllCorridors || contradictsAllValid;
+    });
+
+    if (contradictsAll) {
+      return {
+        isUnexpected: true,
+        anomalyType: 'MODEL_REVISION_REQUIRED',
+        anomalyReason: `Evidence '${evidenceNode.label}' directly contradicts an element required by surviving corridor hypotheses.`,
+        contradictedPossibilityIds: valid.map(p => p.id),
+        recommendation: 'Model revision required: root assumptions or scope parameters must be re-evaluated by the investigator. Do not auto-generate speculative hypotheses.'
+      };
+    }
+
+    const contradictsValid = attachedEdges.some(e =>
+      e.type === 'CONTRADICTS' &&
+      valid.some(p => p.supportingEvidence?.includes(e.target) || p.supportingEvidence?.includes(e.source))
+    );
 
     if (!anyPossibilityTouches && connectedNeighborIds.length > 0 && !contradictsValid) {
       return {

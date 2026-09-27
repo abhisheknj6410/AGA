@@ -102,14 +102,41 @@ The algorithm pipeline has been empirically verified across 5 distinct domains u
 5. **Contradictory Witness Statements** (`contradiction-case-005`):
    - Disputed presence of key suspect resolved via contradiction-impact arbitration and surveillance verification.
 
+## 5. Phase 9: Adversarial Graph Reasoning & Epistemic Validation
+
+Phase 9 introduces deterministic stress-testing and epistemic integrity checks to eliminate reasoning flaws, false certainty, and ungrounded investigation actions:
+
+### Deterministic Adversarial Test Suite (10 / 10 Passing)
+1. **Ambiguous Graph**: Multiple equally valid causal paths are preserved without premature collapse or arbitrary tie-breaking.
+2. **Sparse Evidence**: Paths lacking corroboration are classified as `INSUFFICIENT_EVIDENCE` instead of manufacturing false certainty.
+3. **Contradictory Evidence**: Direct evidence contradictions across branches are preserved as `CONFLICTING` hypotheses while exposing the contradictory edges.
+4. **Temporal Ambiguity**: Coarse timestamps (e.g. DAY or HOUR precision) do not trigger invalid temporal inversions or false pruning.
+5. **Disconnected Evidence**: Isolated evidence without topological paths cannot artificially support or corroborate hypothesis corridors.
+6. **False Convergence Prevention**: Shared dominator choke points are recognized as structural bottlenecks rather than proof of causal culpability; actions targeting common invariants are flagged as non-discriminating.
+7. **Multiple Competing Strategies**: Equivalent alternatives are preserved side-by-side without arbitrary bias.
+8. **All-Invalidated Hypotheses**: Ingestion of evidence contradicting all surviving paths triggers `MODEL_REVISION_REQUIRED` / `UNEXPLAINED_SUBGRAPH` rather than fabricating speculative paths.
+9. **Algorithm Ablation Regression**: Re-verifies that bypassing Yen's, dominators, or topological sorting materially alters downstream conclusions.
+10. **Epistemic Triad Decoupling**: Cleanly separates `isGraphConsistent` (structural topology), `isEvidenceSupported` (empirical corroboration), and `isInvestigativelyUseful` (discriminating power).
+
+### Epistemic Triad Evaluation Matrix
+
+| Status | Graph Consistent | Evidence Supported | Investigatively Useful | Meaning & Response |
+|--------|------------------|--------------------|------------------------|--------------------|
+| `STRUCTURALLY_SUPPORTED` | **YES** | **YES** | **YES** | Valid, empirically grounded, and actively differentiates possibilities. |
+| `CONDITIONALLY_SUPPORTED` | **YES** | Partially | **YES** | Valid causal structure requiring further corroborating evidence. |
+| `CONFLICTING` | **YES** | Contradicted | **YES** | Direct factual or witness contradiction identified; requires arbitration. |
+| `INSUFFICIENT_EVIDENCE` | **YES** | **NO** | Dependent | Hypothesis is topologically feasible but lacks corroboration. |
+| `UNEXPLAINED` | **NO** | N/A | **NO** | Topological disconnect or model invalidation; triggers model revision. |
+
 ---
 
-## 5. Verification Summary
+## 6. Verification Summary
 
 * **Phase 6 Test Suite**: 30/30 tests passing (`backend/src/tests/algorithm-effectiveness.test.ts`).
 * **Phase 7 Closed-Loop Test Suite**: 15/15 tests passing (`backend/src/tests/closed-loop-investigation.test.ts`).
 * **Phase 8 Investigative Decision Test Suite**: 18/18 tests passing (`backend/src/tests/investigative-decision.test.ts`).
-* **Total Backend Test Suite**: 193/193 tests passing across 9 test suites (`npm test`).
+* **Phase 9 Adversarial & Epistemic Test Suite**: 10/10 tests passing (`backend/src/tests/adversarial-epistemic.test.ts`).
+* **Total Backend Test Suite**: **203/203 tests passing** across 9 test suites (`npm test`).
 * **Frontend Production Build**: Zero compilation or lint errors (`npm --prefix frontend run build`).
 * **Architectural Invariant**: Zero decorative algorithms; 100% of active algorithms directly generate, prune, isolate, or rank the investigation space.
 
