@@ -49,16 +49,16 @@ export const InvestigationAgentView: React.FC<InvestigationAgentViewProps> = ({ 
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-slate-950 text-slate-200">
+    <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200">
       {/* Top Header */}
-      <div className="h-14 border-b border-slate-800/80 px-6 flex items-center justify-between bg-slate-900/60 backdrop-blur-sm">
+      <div className="h-14 border-b border-slate-200/80 dark:border-slate-800/80 px-6 flex items-center justify-between bg-white dark:bg-slate-900">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-            <Bot className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400">
+            <Bot className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white tracking-wide">Investigation Query Agent</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Investigation Query Agent</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Deterministic graph query and algorithm explanation layer — Zero hallucinations
             </p>
           </div>
@@ -66,21 +66,21 @@ export const InvestigationAgentView: React.FC<InvestigationAgentViewProps> = ({ 
       </div>
 
       {/* Main Chat / Query Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-thin">
         {/* Sample Prompt Chips */}
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-2">
             Suggested Investigation Inquiries
           </span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {samplePrompts.map(prompt => (
               <button
                 key={prompt}
                 onClick={() => handleSend(prompt)}
                 disabled={loading}
-                className="px-3 py-1.5 rounded-lg text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 transition-all flex items-center gap-1.5"
+                className="px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 transition-all flex items-center gap-1.5 shadow-xs"
               >
-                <Sparkles className="w-3 h-3 text-indigo-400" />
+                <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                 <span>{prompt}</span>
               </button>
             ))}
@@ -89,50 +89,50 @@ export const InvestigationAgentView: React.FC<InvestigationAgentViewProps> = ({ 
 
         {/* History stream */}
         {history.length === 0 ? (
-          <div className="py-16 flex flex-col items-center justify-center text-slate-500">
-            <Terminal className="w-12 h-12 mb-3 text-slate-700 stroke-1" />
-            <p className="text-sm font-medium">Ask any question regarding graph reachability, bottlenecks, or possibilities.</p>
-            <p className="text-xs text-slate-600 mt-1 max-w-sm text-center">
+          <div className="py-16 flex flex-col items-center justify-center text-slate-400">
+            <Terminal className="w-10 h-10 mb-3 text-slate-300 dark:text-slate-600 stroke-1" />
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Ask any question regarding graph reachability, bottlenecks, or possibilities.</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 max-w-sm text-center">
               The agent translates inquiries into formal graph algorithms (K-shortest paths, dominator trees, min-cut, topological sorts) and presents verified facts.
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {history.map((item, idx) => (
-              <div key={idx} className="rounded-xl border border-slate-800 bg-slate-900/70 p-5 space-y-3 shadow-md">
+              <div key={idx} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4.5 space-y-3 shadow-xs">
                 {/* User Inquiry */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                       Query
                     </span>
-                    <span className="text-sm font-semibold text-white">{item.query}</span>
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{item.query}</span>
                   </div>
                   {item.algorithmUsed && (
-                    <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
                       Algo: {item.algorithmUsed}
                     </span>
                   )}
                 </div>
 
                 {/* Agent Answer */}
-                <div className="text-xs text-slate-200 whitespace-pre-line leading-relaxed font-sans">
+                <div className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed font-sans">
                   {item.factualAnswer}
                 </div>
 
                 {/* Suggested Followups */}
                 {item.suggestedFollowUps && item.suggestedFollowUps.length > 0 && (
-                  <div className="pt-3 border-t border-slate-800/60 flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
                       Follow-up:
                     </span>
                     {item.suggestedFollowUps.map((fu, fIdx) => (
                       <button
                         key={fIdx}
                         onClick={() => handleSend(fu)}
-                        className="text-[11px] px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-indigo-300 hover:text-indigo-200 border border-slate-700/60 transition-colors flex items-center gap-1"
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-indigo-700 dark:text-indigo-300 border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1"
                       >
-                        {fu} <ArrowRight className="w-3 h-3" />
+                        {fu} <ArrowRight className="w-2.5 h-2.5" />
                       </button>
                     ))}
                   </div>
@@ -144,13 +144,13 @@ export const InvestigationAgentView: React.FC<InvestigationAgentViewProps> = ({ 
       </div>
 
       {/* Query Input Box */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/80">
+      <div className="p-4 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
         <form
           onSubmit={e => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 max-w-4xl mx-auto"
         >
           <div className="relative flex-1">
             <input
@@ -158,19 +158,19 @@ export const InvestigationAgentView: React.FC<InvestigationAgentViewProps> = ({ 
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Ask an investigative graph question (e.g. 'Show all connections between Rahul and Prod-DB-01')..."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner pr-10"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 shadow-inner pr-16"
               disabled={loading}
             />
-            <kbd className="absolute right-3 top-3 px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1">
+            <kbd className="absolute right-2.5 top-2.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-2xs">
               <CornerDownLeft className="w-2.5 h-2.5" /> Return
             </kbd>
           </div>
           <button
             type="submit"
             disabled={!query.trim() || loading}
-            className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold shadow-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
           </button>
         </form>
       </div>

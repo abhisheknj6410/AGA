@@ -62,44 +62,40 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
 
     let parsedProps = {};
     try {
-      if (propertiesJson.trim()) {
-        parsedProps = JSON.parse(propertiesJson);
-      }
-    } catch {
-      setError('Properties must be valid JSON.');
+      parsedProps = JSON.parse(propertiesJson);
+    } catch (err: any) {
+      setError('Invalid JSON in properties field.');
       return;
     }
 
-    const payload: Partial<GraphNode> = {
-      category,
-      type,
-      label: label.trim(),
-      properties: parsedProps
-    };
-
-    if (category === 'EVENT') {
-      payload.time = {
-        start: startTime.trim() || undefined,
-        end: endTime.trim() || undefined,
-        precision
-      };
-    } else if (category === 'EVIDENCE') {
-      if (!sourceName.trim()) {
-        setError('Evidence source name is required.');
-        return;
-      }
-      payload.evidenceType = type as any;
-      payload.source = {
-        name: sourceName.trim(),
-        kind: sourceKind
-      };
-      payload.reliability = reliability;
-      payload.hashChecksum = hashChecksum.trim() || undefined;
-      payload.collectionTime = new Date().toISOString();
-    }
-
+    setLoading(true);
     try {
-      setLoading(true);
+      const payload: Partial<GraphNode> = {
+        category,
+        type: type as any,
+        label: label.trim(),
+        properties: parsedProps
+      };
+
+      if (category === 'EVENT') {
+        payload.time = {
+          start: startTime,
+          end: endTime || undefined,
+          precision
+        };
+      }
+
+      if (category === 'EVIDENCE') {
+        payload.source = {
+          name: sourceName,
+          kind: sourceKind as any
+        };
+        payload.reliability = reliability;
+        if (hashChecksum.trim()) {
+          payload.hashChecksum = hashChecksum.trim();
+        }
+      }
+
       await onSubmit(payload);
       onClose();
     } catch (err: any) {
@@ -110,48 +106,44 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-          <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-            <Plus className="w-4 h-4 text-indigo-400" />
+        <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             Add Graph Node
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
           {error && (
-            <div className="p-2.5 rounded bg-red-950/60 border border-red-800/80 text-red-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Category Tabs */}
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Category</label>
-            <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded border border-slate-800">
+            <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1 text-[11px]">Category</label>
+            <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-lg">
               {(['ENTITY', 'EVENT', 'EVIDENCE'] as NodeCategory[]).map(cat => (
                 <button
                   type="button"
                   key={cat}
                   onClick={() => handleCategoryChange(cat)}
-                  className={`py-1 rounded font-medium transition ${
+                  className={`py-1 rounded-md font-medium text-xs transition ${
                     category === cat
-                      ? cat === 'ENTITY'
-                        ? 'bg-blue-600 text-white'
-                        : cat === 'EVENT'
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-emerald-600 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   {cat}
@@ -162,13 +154,13 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
 
           {/* Type Selector */}
           <div>
-            <label className="block text-slate-400 font-medium mb-1">
+            <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1 text-[11px]">
               {category === 'ENTITY' ? 'Entity Type' : category === 'EVENT' ? 'Event Type' : 'Evidence Type'}
             </label>
             <select
               value={type}
               onChange={e => setType(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:border-indigo-500"
             >
               {category === 'ENTITY' &&
                 ENTITY_TYPES.map(t => (
@@ -193,48 +185,48 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
 
           {/* Label */}
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Human-Readable Label *</label>
+            <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1 text-[11px]">Label *</label>
             <input
               type="text"
               required
               placeholder={category === 'ENTITY' ? 'e.g. Rahul Kumar, Prod-DB-01' : 'e.g. SSH Login to Server'}
               value={label}
               onChange={e => setLabel(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:border-indigo-500"
             />
           </div>
 
           {/* Event Specific Inputs */}
           {category === 'EVENT' && (
-            <div className="p-3 bg-slate-950 rounded border border-slate-800 space-y-2.5">
+            <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200/60 dark:border-amber-900/40 space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">Start ISO Time</label>
+                  <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">Start Time</label>
                   <input
                     type="text"
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
                     placeholder="2026-09-10T14:15:00Z"
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-200 font-mono text-[11px]"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">End ISO Time (Optional)</label>
+                  <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">End Time (Optional)</label>
                   <input
                     type="text"
                     value={endTime}
                     onChange={e => setEndTime(e.target.value)}
                     placeholder="2026-09-10T14:30:00Z"
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-200 font-mono text-[11px]"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Temporal Precision</label>
+                <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">Precision</label>
                 <select
                   value={precision}
                   onChange={e => setPrecision(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-200 text-xs"
                 >
                   {TEMPORAL_PRECISIONS.map(p => (
                     <option key={p} value={p}>
@@ -248,25 +240,25 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
 
           {/* Evidence Specific Inputs */}
           {category === 'EVIDENCE' && (
-            <div className="p-3 bg-slate-950 rounded border border-slate-800 space-y-2.5">
+            <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40 space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">Source Name *</label>
+                  <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">Source Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. /var/log/auth.log"
                     value={sourceName}
                     onChange={e => setSourceName(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px]"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-200 text-[11px]"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-[11px] mb-1">Source Kind</label>
+                  <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">Source Kind</label>
                   <select
                     value={sourceKind}
                     onChange={e => setSourceKind(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px]"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-200 text-[11px]"
                   >
                     <option value="SYSTEM">SYSTEM</option>
                     <option value="HUMAN">HUMAN</option>
@@ -277,9 +269,9 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
                 </div>
               </div>
               <div>
-                <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-                  <span>Source Reliability</span>
-                  <span className="font-mono text-emerald-400 font-bold">{Math.round(reliability * 100)}%</span>
+                <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">
+                  <span>Reliability</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{Math.round(reliability * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -292,13 +284,13 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">SHA-256 Hash / Checksum</label>
+                <label className="block text-slate-500 dark:text-slate-400 text-[10px] mb-0.5">SHA-256 Checksum</label>
                 <input
                   type="text"
-                  placeholder="Optional cryptographic integrity hash"
+                  placeholder="Optional cryptographic hash"
                   value={hashChecksum}
                   onChange={e => setHashChecksum(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 font-mono text-[10px]"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-200 font-mono text-[10px]"
                 />
               </div>
             </div>
@@ -306,28 +298,28 @@ export const AddNodeModal: React.FC<AddNodeModalProps> = ({
 
           {/* Properties JSON */}
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Properties (JSON format)</label>
+            <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1 text-[11px]">Properties (JSON)</label>
             <textarea
               rows={2}
               value={propertiesJson}
               onChange={e => setPropertiesJson(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-slate-200 font-mono text-[11px] focus:outline-hidden focus:border-indigo-500"
             />
           </div>
 
           {/* Form Actions */}
-          <div className="pt-2 flex justify-end gap-2 border-t border-slate-800">
+          <div className="pt-2 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition disabled:opacity-50"
+              className="px-4 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold transition disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Node'}
             </button>

@@ -7,8 +7,7 @@ import {
   ZoomOut,
   Maximize2,
   Crosshair,
-  GitFork,
-  Compass
+  Layers
 } from 'lucide-react';
 
 cytoscape.use(dagre);
@@ -19,6 +18,7 @@ interface CytoscapeCanvasProps {
   selectedElement: { type: 'node' | 'edge'; id: string } | null;
   onSelectElement: (element: { type: 'node' | 'edge'; id: string } | null) => void;
   layoutType: 'dagre' | 'cose' | 'concentric' | 'circle';
+  theme: 'light' | 'dark';
 }
 
 export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
@@ -26,15 +26,19 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   edges,
   selectedElement,
   onSelectElement,
-  layoutType
+  layoutType,
+  theme
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const [neighborhoodMode, setNeighborhoodMode] = useState<boolean>(false);
+  const [currentZoom, setCurrentZoom] = useState<number>(100);
 
   // Initialize Cytoscape Instance
   useEffect(() => {
     if (!containerRef.current) return;
+
+    const isLight = theme === 'light';
 
     const cy = cytoscape({
       container: containerRef.current,
@@ -46,61 +50,60 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: 'node',
           style: {
             'label': 'data(label)',
+            'font-family': 'Inter, system-ui, sans-serif',
             'font-size': '11px',
+            'font-weight': 500,
             'text-valign': 'center',
             'text-halign': 'center',
-            'color': '#f1f5f9',
+            'color': isLight ? '#0f172a' : '#f8fafc',
             'text-wrap': 'ellipsis',
-            'text-max-width': '110px',
-            'border-width': '2px',
+            'text-max-width': '125px',
+            'border-width': '1.5px',
+            'border-color': isLight ? '#cbd5e1' : '#334155',
+            'background-color': isLight ? '#ffffff' : '#1e293b',
+            'width': '135px',
+            'height': '42px',
+            'shape': 'round-rectangle',
             'transition-property': 'background-color, border-color, width, height, opacity',
-            'transition-duration': 0.2
+            'transition-duration': 0.15
           }
         },
         // Entity Nodes
         {
           selector: 'node[category = "ENTITY"]',
           style: {
-            'shape': 'round-rectangle',
-            'background-color': '#0f172a',
-            'border-color': '#3b82f6',
-            'width': '125px',
-            'height': '46px'
+            'background-color': isLight ? '#ffffff' : '#1e293b',
+            'border-color': isLight ? '#94a3b8' : '#475569',
+            'color': isLight ? '#0f172a' : '#f8fafc'
           }
         },
-        // Event Nodes (Hexagon/Diamond - First-Class Event Representation)
+        // Event Nodes (Soft amber tint)
         {
           selector: 'node[category = "EVENT"]',
           style: {
-            'shape': 'hexagon',
-            'background-color': '#2a1705',
-            'border-color': '#f59e0b',
-            'width': '145px',
-            'height': '54px',
-            'color': '#fef3c7'
+            'background-color': isLight ? '#fffbeb' : '#27190b',
+            'border-color': isLight ? '#f59e0b' : '#b45309',
+            'color': isLight ? '#92400e' : '#fef3c7'
           }
         },
-        // Evidence Nodes (Cut-Rectangle / Shield)
+        // Evidence Nodes (Soft emerald tint)
         {
           selector: 'node[category = "EVIDENCE"]',
           style: {
-            'shape': 'cut-rectangle',
-            'background-color': '#06281e',
-            'border-color': '#10b981',
-            'width': '135px',
-            'height': '48px',
-            'color': '#a7f3d0'
+            'background-color': isLight ? '#f0fdf4' : '#0a2318',
+            'border-color': isLight ? '#10b981' : '#059669',
+            'color': isLight ? '#166534' : '#a7f3d0'
           }
         },
         // Selected Node
         {
           selector: 'node:selected',
           style: {
-            'border-color': '#f43f5e',
-            'border-width': '3.5px',
-            'shadow-blur': 15,
-            'shadow-color': '#f43f5e',
-            'shadow-opacity': 0.6
+            'border-color': '#4f46e5',
+            'border-width': '3px',
+            'shadow-blur': 12,
+            'shadow-color': isLight ? 'rgba(79, 70, 229, 0.25)' : 'rgba(99, 102, 241, 0.4)',
+            'shadow-opacity': 1
           }
         },
         // Base Edge Style
@@ -109,59 +112,60 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           style: {
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
-            'arrow-scale': 1.1,
+            'arrow-scale': 0.9,
             'label': 'data(label)',
+            'font-family': 'Inter, system-ui, sans-serif',
             'font-size': '9px',
-            'font-family': 'monospace',
-            'color': '#94a3b8',
-            'text-background-opacity': 0.85,
-            'text-background-color': '#0f172a',
-            'text-background-padding': '2px',
+            'font-weight': 500,
+            'color': isLight ? '#475569' : '#94a3b8',
+            'text-background-opacity': 0.9,
+            'text-background-color': isLight ? '#ffffff' : '#0f172a',
+            'text-background-padding': '3px',
             'text-background-shape': 'roundrectangle',
             'text-rotation': 'autorotate',
-            'width': 2,
-            'line-color': '#64748b',
-            'target-arrow-color': '#64748b'
+            'width': 1.5,
+            'line-color': isLight ? '#94a3b8' : '#475569',
+            'target-arrow-color': isLight ? '#94a3b8' : '#475569'
           }
         },
-        // Observed Edge (Solid)
+        // Observed Edge
         {
           selector: 'edge[status = "OBSERVED"]',
           style: {
-            'line-color': '#6366f1',
-            'target-arrow-color': '#6366f1',
+            'line-color': isLight ? '#6366f1' : '#818cf8',
+            'target-arrow-color': isLight ? '#6366f1' : '#818cf8',
             'line-style': 'solid',
-            'width': 2.2
+            'width': 1.8
           }
         },
-        // Derived Edge (Dashed)
+        // Derived Edge
         {
           selector: 'edge[status = "DERIVED"]',
           style: {
-            'line-color': '#a855f7',
-            'target-arrow-color': '#a855f7',
+            'line-color': isLight ? '#8b5cf6' : '#a78bfa',
+            'target-arrow-color': isLight ? '#8b5cf6' : '#a78bfa',
             'line-style': 'dashed',
-            'line-dash-pattern': [6, 3],
-            'width': 2.2
+            'line-dash-pattern': [5, 3],
+            'width': 1.8
           }
         },
-        // Hypothesized Edge (Dotted)
+        // Hypothesized Edge
         {
           selector: 'edge[status = "HYPOTHESIZED"]',
           style: {
-            'line-color': '#f59e0b',
-            'target-arrow-color': '#f59e0b',
+            'line-color': isLight ? '#f59e0b' : '#fbbf24',
+            'target-arrow-color': isLight ? '#f59e0b' : '#fbbf24',
             'line-style': 'dotted',
-            'width': 2.5
+            'width': 2
           }
         },
-        // Contradicts Edge (Red Alert)
+        // Contradicts Edge
         {
           selector: 'edge[type = "CONTRADICTS"]',
           style: {
             'line-color': '#ef4444',
             'target-arrow-color': '#ef4444',
-            'width': 3,
+            'width': 2.5,
             'line-style': 'solid'
           }
         },
@@ -169,16 +173,16 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         {
           selector: 'edge:selected',
           style: {
-            'line-color': '#f43f5e',
-            'target-arrow-color': '#f43f5e',
-            'width': 3.5
+            'line-color': '#4f46e5',
+            'target-arrow-color': '#4f46e5',
+            'width': 3
           }
         },
         // Neighborhood Dimmed Class
         {
           selector: '.dimmed',
           style: {
-            'opacity': 0.15
+            'opacity': 0.12
           }
         },
         // Neighborhood Highlighted Class
@@ -186,8 +190,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: '.highlighted',
           style: {
             'opacity': 1.0,
-            'shadow-blur': 10,
-            'shadow-opacity': 0.5
+            'shadow-blur': 8,
+            'shadow-opacity': 0.3
           }
         }
       ] as any)
@@ -210,55 +214,81 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       }
     });
 
+    cy.on('zoom', () => {
+      setCurrentZoom(Math.round(cy.zoom() * 100));
+    });
+
     cyRef.current = cy;
 
     return () => {
       cy.destroy();
+      cyRef.current = null;
     };
-  }, []);
+  }, [theme]);
 
-  // Update Elements when nodes or edges change
+  // Update elements and apply layout
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
 
-    cy.batch(() => {
-      cy.elements().remove();
+    cy.elements().remove();
 
-      // Add nodes
-      nodes.forEach(n => {
-        cy.add({
-          group: 'nodes',
-          data: {
-            id: n.id,
-            label: n.label,
-            category: n.category,
-            type: n.type
-          }
-        });
-      });
+    const cyNodes = nodes.map(n => ({
+      group: 'nodes' as const,
+      data: {
+        id: n.id,
+        label: n.label,
+        category: n.category,
+        type: n.type
+      }
+    }));
 
-      // Add edges
-      edges.forEach(e => {
-        cy.add({
-          group: 'edges',
-          data: {
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            label: e.type,
-            type: e.type,
-            status: e.status,
-            cost: e.cost
-          }
-        });
-      });
-    });
+    const cyEdges = edges.map(e => ({
+      group: 'edges' as const,
+      data: {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        label: e.type,
+        type: e.type,
+        status: e.status
+      }
+    }));
 
-    runLayout();
+    cy.add([...cyNodes, ...cyEdges]);
+
+    // Apply layout
+    let layoutOptions: any;
+    if (layoutType === 'dagre') {
+      layoutOptions = {
+        name: 'dagre',
+        rankDir: 'LR',
+        nodeSep: 45,
+        rankSep: 85,
+        padding: 50
+      };
+    } else if (layoutType === 'cose') {
+      layoutOptions = {
+        name: 'cose',
+        animate: false,
+        nodeRepulsion: 7000,
+        idealEdgeLength: 120,
+        padding: 50
+      };
+    } else {
+      layoutOptions = {
+        name: layoutType,
+        padding: 50
+      };
+    }
+
+    const layout = cy.layout(layoutOptions);
+    layout.run();
+    cy.fit(undefined, 50);
+    setCurrentZoom(Math.round(cy.zoom() * 100));
   }, [nodes, edges, layoutType]);
 
-  // Handle selected element sync
+  // Sync selected element
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
@@ -267,12 +297,11 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
 
     if (selectedElement) {
       const el = cy.getElementById(selectedElement.id);
-      if (el.nonempty()) {
+      if (el.length > 0) {
         el.select();
 
         if (neighborhoodMode && selectedElement.type === 'node') {
-          // Highlight 1-hop neighborhood
-          const neighborhood = el.closedNeighborhood();
+          const neighborhood = el.neighborhood().add(el);
           cy.elements().addClass('dimmed').removeClass('highlighted');
           neighborhood.removeClass('dimmed').addClass('highlighted');
         } else {
@@ -284,157 +313,92 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     }
   }, [selectedElement, neighborhoodMode]);
 
-  const runLayout = () => {
-    const cy = cyRef.current;
-    if (!cy) return;
-
-    let layoutConfig: any;
-    if (layoutType === 'dagre') {
-      layoutConfig = {
-        name: 'dagre',
-        rankDir: 'TB',
-        nodeSep: 60,
-        rankSep: 80,
-        animate: true,
-        animationDuration: 400
-      };
-    } else if (layoutType === 'cose') {
-      layoutConfig = {
-        name: 'cose',
-        idealEdgeLength: 100,
-        nodeOverlap: 20,
-        refresh: 20,
-        fit: true,
-        padding: 30,
-        randomize: false,
-        componentSpacing: 100,
-        nodeRepulsion: 400000,
-        edgeElasticity: 100,
-        nestingFactor: 5,
-        gravity: 80,
-        numIter: 1000,
-        initialTemp: 200,
-        coolingFactor: 0.95,
-        minTemp: 1.0,
-        animate: true,
-        animationDuration: 400
-      };
-    } else if (layoutType === 'concentric') {
-      layoutConfig = {
-        name: 'concentric',
-        concentric: (node: any) => {
-          return node.data('category') === 'EVENT' ? 3 : node.data('category') === 'ENTITY' ? 2 : 1;
-        },
-        levelWidth: () => 1,
-        padding: 30,
-        animate: true,
-        animationDuration: 400
-      };
-    } else {
-      layoutConfig = {
-        name: 'circle',
-        padding: 30,
-        animate: true,
-        animationDuration: 400
-      };
-    }
-
-    const layout = cy.layout(layoutConfig);
-    layout.run();
-  };
-
+  // Controls
   const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() * 1.25);
   const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() * 0.8);
-  const handleFit = () => cyRef.current?.fit(undefined, 30);
-  const handleCenterSelected = () => {
-    if (selectedElement && cyRef.current) {
-      const el = cyRef.current.getElementById(selectedElement.id);
-      if (el.nonempty()) cyRef.current.center(el);
-    }
+  const handleFit = () => {
+    cyRef.current?.fit(undefined, 50);
+    setCurrentZoom(Math.round((cyRef.current?.zoom() || 1) * 100));
+  };
+  const handleToggleNeighborhood = () => {
+    setNeighborhoodMode(prev => !prev);
   };
 
   return (
-    <div className="relative flex-1 h-[calc(100vh-3.5rem-2rem)] bg-slate-950 overflow-hidden">
-      {/* Cytoscape Container */}
-      <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+    <div
+      className={`relative w-full h-full select-none ${
+        theme === 'light' ? 'canvas-grid-light' : 'canvas-grid-dark'
+      }`}
+    >
+      <div ref={containerRef} className="w-full h-full" />
 
-      {/* Floating Canvas Action Toolbar */}
-      <div className="absolute top-4 left-4 flex flex-col gap-1.5 bg-slate-900/90 border border-slate-800 rounded-lg p-1.5 shadow-xl backdrop-blur">
-        <button
-          onClick={handleZoomIn}
-          title="Zoom In"
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition"
-        >
-          <ZoomIn className="w-4 h-4" />
-        </button>
+      {/* Floating Bottom-Right Minimal Navigation Controls */}
+      <div className="absolute bottom-4 right-4 z-10 flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm p-1 text-slate-600 dark:text-slate-300">
         <button
           onClick={handleZoomOut}
           title="Zoom Out"
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition"
+          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
-        <div className="h-[1px] bg-slate-800 my-0.5" />
+
+        <span className="px-2 text-[11px] font-mono font-medium text-slate-500 min-w-[42px] text-center">
+          {currentZoom}%
+        </span>
+
+        <button
+          onClick={handleZoomIn}
+          title="Zoom In"
+          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+
+        <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
+
         <button
           onClick={handleFit}
-          title="Fit Graph to Viewport"
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition"
+          title="Fit View"
+          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
+
         <button
-          onClick={handleCenterSelected}
-          title="Center on Selected Element"
-          disabled={!selectedElement}
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white disabled:opacity-30 transition"
+          onClick={handleToggleNeighborhood}
+          title="Toggle 1-Hop Neighborhood Isolation"
+          className={`p-1.5 rounded-md transition ${
+            neighborhoodMode
+              ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold'
+              : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
         >
           <Crosshair className="w-4 h-4" />
         </button>
-        <div className="h-[1px] bg-slate-800 my-0.5" />
-        <button
-          onClick={() => setNeighborhoodMode(!neighborhoodMode)}
-          title={neighborhoodMode ? 'Disable Neighborhood Focus' : 'Isolate 1-Hop Neighborhood'}
-          className={`p-1.5 rounded transition ${
-            neighborhoodMode ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800 text-slate-300'
-          }`}
-        >
-          <GitFork className="w-4 h-4" />
-        </button>
-        <button
-          onClick={runLayout}
-          title="Re-run Layout Algorithm"
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition"
-        >
-          <Compass className="w-4 h-4" />
-        </button>
       </div>
 
-      {/* Floating Graph Legend */}
-      <div className="absolute bottom-4 left-4 bg-slate-900/85 border border-slate-800 rounded-lg px-3 py-2 text-[11px] shadow-lg backdrop-blur flex items-center gap-4 text-slate-400">
+      {/* Floating Bottom-Left Minimal Discrete Legend */}
+      <div className="absolute bottom-4 left-4 z-10 hidden sm:flex items-center gap-3 px-3 py-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800/80 rounded-lg shadow-xs text-[11px] text-slate-600 dark:text-slate-400 font-medium">
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-2 rounded bg-blue-500 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-sm bg-white dark:bg-slate-800 border border-slate-400" />
           <span>Entity</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rotate-45 bg-amber-500 inline-block" />
-          <span>Event Node</span>
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-100 dark:bg-amber-950 border border-amber-500" />
+          <span>Event</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-2 rounded bg-emerald-500 inline-block" />
-          <span>Evidence Node</span>
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-100 dark:bg-emerald-950 border border-emerald-500" />
+          <span>Evidence</span>
         </div>
-        <div className="h-3 w-[1px] bg-slate-800" />
+        <div className="h-3 w-[1px] bg-slate-200 dark:bg-slate-800" />
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 bg-indigo-500 inline-block" />
+          <span className="w-3 h-0.5 bg-indigo-500" />
           <span>Observed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 border-b border-dashed border-purple-400 inline-block" />
-          <span>Derived</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 border-b border-dotted border-amber-400 inline-block" />
-          <span>Hypothesized</span>
+          <span className="w-3 h-0.5 bg-rose-500" />
+          <span>Contradiction</span>
         </div>
       </div>
     </div>

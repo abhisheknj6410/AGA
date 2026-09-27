@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Filter,
   Layers,
@@ -7,14 +7,12 @@ import {
   Sliders,
   RotateCcw,
   CheckSquare,
-  Square
+  Square,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import {
-  ENTITY_TYPES,
-  EVENT_TYPES,
-  EVIDENCE_TYPES,
-  EDGE_TYPES,
-  EDGE_STATUSES,
   GraphNode,
   GraphEdge
 } from '../../types/graph';
@@ -53,6 +51,8 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
   edges,
   onResetFilters
 }) => {
+  const [collapsed, setCollapsed] = useState(false);
+
   // Compute counts
   const entityCount = nodes.filter(n => n.category === 'ENTITY').length;
   const eventCount = nodes.filter(n => n.category === 'EVENT').length;
@@ -77,45 +77,96 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
     });
   };
 
-  return (
-    <aside className="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col h-[calc(100vh-3.5rem-2rem)] select-none">
-      {/* Filter Header */}
-      <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-          <Filter className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Filters & Graph Layers</span>
-        </div>
+  if (collapsed) {
+    return (
+      <aside className="w-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col items-center py-3 select-none transition-all duration-200 z-10">
         <button
-          onClick={onResetFilters}
-          title="Reset All Filters"
-          className="text-[11px] text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition"
+          onClick={() => setCollapsed(false)}
+          title="Expand Filters & Layers"
+          className="p-2 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
         >
-          <RotateCcw className="w-3 h-3" />
-          Reset
+          <ChevronRight className="w-4 h-4" />
         </button>
+
+        <div className="h-px w-6 bg-slate-200 dark:bg-slate-800 my-2" />
+
+        <button
+          onClick={() => setCollapsed(false)}
+          title="Filters Active"
+          className="p-2 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 relative transition"
+        >
+          <Filter className="w-4 h-4" />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-slate-900" />
+        </button>
+
+        <button
+          onClick={() => setCollapsed(false)}
+          title="Graph Layers"
+          className="p-2 mt-2 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+        >
+          <Layers className="w-4 h-4" />
+        </button>
+
+        <div className="mt-auto">
+          <button
+            onClick={onResetFilters}
+            title="Reset All Filters"
+            className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="w-60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col h-[calc(100vh-3.5rem-1.75rem)] select-none transition-all duration-200 z-10">
+      {/* Filter Header */}
+      <div className="h-10 px-3 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+          <Filter className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          <span>Layers & Scope</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onResetFilters}
+            title="Reset Filters"
+            className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] transition"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setCollapsed(true)}
+            title="Collapse Sidebar"
+            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-5 text-xs">
+      <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs scrollbar-thin">
         {/* Layout Selector */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Sliders className="w-3 h-3 text-slate-400" />
             Graph Layout
           </label>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-1">
             {[
-              { id: 'dagre', label: 'Hierarchical' },
-              { id: 'cose', label: 'Force (CoSE)' },
+              { id: 'dagre', label: 'Hierarchy' },
+              { id: 'cose', label: 'Force' },
               { id: 'concentric', label: 'Concentric' },
               { id: 'circle', label: 'Radial' }
             ].map(l => (
               <button
                 key={l.id}
                 onClick={() => setFilters(prev => ({ ...prev, layout: l.id as any }))}
-                className={`px-2 py-1.5 rounded text-[11px] font-medium border transition ${
+                className={`px-2 py-1 rounded-md text-[11px] font-medium border text-center transition ${
                   filters.layout === l.id
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-semibold'
-                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-semibold shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
                 {l.label}
@@ -126,25 +177,25 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
 
         {/* Node Categories */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Layers className="w-3 h-3 text-slate-400" />
             Node Categories
           </label>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {/* Entities */}
             <button
               onClick={() => toggleCategory('ENTITY')}
-              className={`w-full flex items-center justify-between p-2 rounded border transition text-left ${
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition ${
                 filters.visibleCategories.ENTITY
-                  ? 'bg-blue-950/40 border-blue-800/60 text-blue-300'
-                  : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                  ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-200/80 dark:border-blue-900/50 text-blue-900 dark:text-blue-200'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-60'
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-blue-500" />
-                <span className="font-medium">Entities</span>
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="font-medium text-xs">Entities</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-400 font-mono">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-white dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-300 font-mono font-medium">
                 {entityCount}
               </span>
             </button>
@@ -152,17 +203,17 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
             {/* Events */}
             <button
               onClick={() => toggleCategory('EVENT')}
-              className={`w-full flex items-center justify-between p-2 rounded border transition text-left ${
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition ${
                 filters.visibleCategories.EVENT
-                  ? 'bg-amber-950/40 border-amber-800/60 text-amber-300'
-                  : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                  ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-900/50 text-amber-900 dark:text-amber-200'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-60'
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-amber-500" />
-                <span className="font-medium">Events (First-Class)</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="font-medium text-xs">Events</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-400 font-mono">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-white dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-300 font-mono font-medium">
                 {eventCount}
               </span>
             </button>
@@ -170,17 +221,17 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
             {/* Evidence */}
             <button
               onClick={() => toggleCategory('EVIDENCE')}
-              className={`w-full flex items-center justify-between p-2 rounded border transition text-left ${
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition ${
                 filters.visibleCategories.EVIDENCE
-                  ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
-                  : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                  ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-200'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-60'
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
-                <span className="font-medium">Evidence Nodes</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="font-medium text-xs">Evidence</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 font-mono">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-white dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-300 font-mono font-medium">
                 {evidenceCount}
               </span>
             </button>
@@ -189,45 +240,47 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
 
         {/* Relationship Statuses */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Activity className="w-3 h-3 text-slate-400" />
-            Relationship Status
+            Relationship Epistemics
           </label>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {[
-              { id: 'OBSERVED', label: 'OBSERVED', desc: 'Direct evidence', color: 'border-indigo-500 text-indigo-300' },
-              { id: 'DERIVED', label: 'DERIVED', desc: 'Algorithm graph fact', color: 'border-purple-500 text-purple-300' },
-              { id: 'HYPOTHESIZED', label: 'HYPOTHESIZED', desc: 'Unproven scenario', color: 'border-amber-500 text-amber-300' }
+              { id: 'OBSERVED', label: 'Observed', desc: 'Direct proof', dot: 'bg-indigo-500' },
+              { id: 'DERIVED', label: 'Derived', desc: 'Algorithm deduction', dot: 'bg-purple-500' },
+              { id: 'HYPOTHESIZED', label: 'Hypothesized', desc: 'Unproven scenario', dot: 'bg-amber-500' }
             ].map(s => {
               const active = filters.visibleStatuses.has(s.id);
               return (
                 <button
                   key={s.id}
                   onClick={() => toggleStatus(s.id)}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded border text-left text-xs transition ${
-                    active ? `bg-slate-800 ${s.color}` : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition ${
+                    active
+                      ? 'bg-slate-50 dark:bg-slate-800/60 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-60'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {active ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
-                    <span>{s.label}</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                    <span className="font-medium text-[11px]">{s.label}</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">{s.desc}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">{s.desc}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Temporal Filter Window */}
+        {/* Temporal Scope Window */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Clock className="w-3 h-3 text-slate-400" />
             Temporal Scope
           </label>
-          <div className="bg-slate-950/60 p-2.5 rounded border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Filter Event Timestamps</span>
+          <div className="bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
+            <label className="flex items-center justify-between text-[11px] cursor-pointer">
+              <span className="text-slate-600 dark:text-slate-300 font-medium">Filter Timestamps</span>
               <input
                 type="checkbox"
                 checked={filters.temporalRange.enabled}
@@ -237,16 +290,16 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
                     temporalRange: { ...prev.temporalRange, enabled: e.target.checked }
                   }))
                 }
-                className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
-            </div>
+            </label>
             {filters.temporalRange.enabled && (
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1.5 pt-1 border-t border-slate-200 dark:border-slate-700/60">
                 <div>
-                  <span className="text-[10px] text-slate-500 block">Start Time</span>
+                  <span className="text-[10px] text-slate-400 block mb-0.5">Start</span>
                   <input
                     type="datetime-local"
-                    className="w-full bg-slate-900 border border-slate-700 text-[11px] rounded px-2 py-1 text-slate-300"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] rounded px-2 py-1 text-slate-700 dark:text-slate-300 focus:outline-hidden focus:border-indigo-500"
                     value={filters.temporalRange.start.slice(0, 16)}
                     onChange={e =>
                       setFilters(prev => ({
@@ -257,10 +310,10 @@ export const SidebarFilters: React.FC<SidebarFiltersProps> = ({
                   />
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 block">End Time</span>
+                  <span className="text-[10px] text-slate-400 block mb-0.5">End</span>
                   <input
                     type="datetime-local"
-                    className="w-full bg-slate-900 border border-slate-700 text-[11px] rounded px-2 py-1 text-slate-300"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] rounded px-2 py-1 text-slate-700 dark:text-slate-300 focus:outline-hidden focus:border-indigo-500"
                     value={filters.temporalRange.end.slice(0, 16)}
                     onChange={e =>
                       setFilters(prev => ({

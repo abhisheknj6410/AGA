@@ -94,8 +94,23 @@ export const App: React.FC = () => {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [resolutionModalOpen, setResolutionModalOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
-  const [newCaseModalOpen, setNewCaseModalOpen] = useState(false);
   const [diagnosticsModalOpen, setDiagnosticsModalOpen] = useState(false);
+  const [newCaseModalOpen, setNewCaseModalOpen] = useState(false);
+
+  // Clean Theme State (default Light Mode)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('gis-theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('gis-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   // Load initial cases
   useEffect(() => {
@@ -292,7 +307,7 @@ export const App: React.FC = () => {
   const pendingResolutionCount = resolutionCandidates.filter(c => c.status === 'PENDING').length;
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 font-sans text-slate-100">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
       {/* Investigation Header */}
       <Header
         cases={cases}
@@ -304,6 +319,7 @@ export const App: React.FC = () => {
         onOpenImport={() => setImportModalOpen(true)}
         onOpenResolution={() => setResolutionModalOpen(true)}
         onOpenAudit={() => setAuditModalOpen(true)}
+        onOpenDiagnostics={() => setDiagnosticsModalOpen(true)}
         pendingResolutionCount={pendingResolutionCount}
         allNodes={graph?.nodes || []}
         allEdges={graph?.edges || []}
@@ -319,6 +335,8 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         possibilityCount={possibilities.length}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Workspace Layout by Active View */}
@@ -326,17 +344,17 @@ export const App: React.FC = () => {
         <div className="flex flex-1 overflow-hidden relative">
           {/* Active Possibility Overlay Banner */}
           {activePossibility && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-900/95 border border-indigo-500/80 shadow-2xl backdrop-blur-md text-xs">
-              <span className="font-semibold text-indigo-300">Possibility Overlay:</span>
-              <span className="text-white font-medium">{activePossibility.name}</span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-emerald-400 font-mono">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-800 shadow-md backdrop-blur-md text-xs">
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400">Overlay:</span>
+              <span className="text-slate-800 dark:text-slate-200 font-medium">{activePossibility.name}</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-medium border border-emerald-200 dark:border-emerald-800">
                 {activePossibility.status}
               </span>
               <button
                 onClick={() => setActivePossibility(null)}
-                className="ml-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+                className="ml-1 px-2 py-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-[11px] font-medium transition"
               >
-                Reset to Canonical Graph
+                Reset
               </button>
             </div>
           )}
@@ -358,6 +376,7 @@ export const App: React.FC = () => {
               selectedElement={selectedElement}
               onSelectElement={setSelectedElement}
               layoutType={filters.layout}
+              theme={theme}
             />
 
             {/* Chronological Event Stepper & Playback Toolbar */}
