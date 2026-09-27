@@ -509,3 +509,13 @@ export async function fetchEpistemicValidation(caseId: string): Promise<any> {
   }
   return res.json();
 }
+
+export async function fetchAlgorithmComparative(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/algorithms/comparative`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to fetch algorithm comparative evaluation');
+  }
+  return res.json();
+}
+

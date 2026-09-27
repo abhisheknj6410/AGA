@@ -15,13 +15,14 @@ import {
   ReasoningTrace,
   SyntheticBenchmarkResult
 } from '../../types/graph';
+import { AlgorithmValueLabView } from './AlgorithmValueLabView';
 
 interface AlgorithmLabViewProps {
   caseId: string;
 }
 
 export const AlgorithmLabView: React.FC<AlgorithmLabViewProps> = ({ caseId }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'SCORECARD' | 'ABLATION' | 'TRACE' | 'IMPACT_GRAPH' | 'CASES' | 'BENCHMARKS'>('SCORECARD');
+  const [activeSubTab, setActiveSubTab] = useState<'VALUE_LAB' | 'SCORECARD' | 'ABLATION' | 'TRACE' | 'IMPACT_GRAPH' | 'CASES' | 'BENCHMARKS'>('VALUE_LAB');
   const [audits, setAudits] = useState<AlgorithmEffectivenessAudit[]>([]);
   const [selectedAudit, setSelectedAudit] = useState<AlgorithmEffectivenessAudit | null>(null);
   const [ablationDiff, setAblationDiff] = useState<AblationDiff | null>(null);
@@ -285,6 +286,16 @@ export const AlgorithmLabView: React.FC<AlgorithmLabViewProps> = ({ caseId }) =>
       {/* Sub-Tab Navigation Bar */}
       <div className="flex border-b border-neutral-200 gap-2 mb-6 text-xs font-bold uppercase tracking-wider">
         <button
+          onClick={() => setActiveSubTab('VALUE_LAB')}
+          className={`pb-2.5 px-3 transition ${
+            activeSubTab === 'VALUE_LAB'
+              ? 'border-b-2 border-teal-700 text-teal-800'
+              : 'text-neutral-500 hover:text-neutral-900'
+          }`}
+        >
+          Value Lab (Comparative)
+        </button>
+        <button
           onClick={() => setActiveSubTab('SCORECARD')}
           className={`pb-2.5 px-3 transition ${
             activeSubTab === 'SCORECARD'
@@ -345,6 +356,11 @@ export const AlgorithmLabView: React.FC<AlgorithmLabViewProps> = ({ caseId }) =>
           Scaling Benchmarks (10k)
         </button>
       </div>
+
+      {/* Tab 0: Algorithm Value Lab (Comparative Evaluation) */}
+      {activeSubTab === 'VALUE_LAB' && (
+        <AlgorithmValueLabView caseId={caseId} />
+      )}
 
       {/* Tab 1: Scorecard & Inventory */}
       {activeSubTab === 'SCORECARD' && (

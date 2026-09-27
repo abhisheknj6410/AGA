@@ -130,14 +130,47 @@ Phase 9 introduces deterministic stress-testing and epistemic integrity checks t
 
 ---
 
-## 6. Verification Summary
+## 6. Phase 10: Graph Algorithm Comparative Validation
+
+Phase 10 answers the central architectural question: **Do our sophisticated graph algorithms provide investigative value that simpler methods would miss?**
+
+### Baseline vs. Sophisticated Algorithm Evaluation Matrix
+
+| Algorithm | Simpler Baseline | Baseline Capability | Sophisticated Algorithm Capability | Additional Investigative Insight | Verdict on Complex Graph |
+|---|---|---|---|---|---|
+| **Yen's K-Shortest Paths** | Single Shortest Path (Dijkstra / BFS) | Finds only 1 primary route; misses alternative hypotheses. | Computes $K$ loopless alternative paths exploring diverse intermediaries. | Discovers 3 alternative candidate corridors; prevents premature closure. | `SIGNIFICANT_VALUE` |
+| **Temporal Chronology & Kahn Sort** | Unordered / Timeless Traversal | Traverses edges topologically without checking timestamps. | Enforces strict chronological order ($t_i \le t_{i+1}$) and causal acyclicity. | Eliminates physically impossible backward-in-time causation sequences. | `SIGNIFICANT_VALUE` |
+| **Lengauer-Tarjan Dominator Tree** | Degree Centrality / Node Frequency | Confuses busy transit hubs with mandatory bottlenecks. | Mathematically proves unavoidable domination ($D \text{ dom } T$). | Distinguishes common invariant checkpoints from differentiating evidence. | `SIGNIFICANT_VALUE` |
+| **Edmonds-Karp / Dinic Min-Cut** | Single Bridge / Degree Cut | Only identifies trivial single bridge edges (cut size = 1). | Computes minimal capacity cut partition $(S, T)$ severing all routes. | Discovers coordinated multi-edge interdictions across parallel corridors. | `SIGNIFICANT_VALUE` (on multi-corridor graphs) |
+| **Disjoint Paths (Menger's Theorem)** | Hop Count / Path Distance | Measures path length only; treats overlapping paths as independent. | Computes maximal set of edge/node-disjoint paths. | Proves independent corroboration; verifies resilience against single-witness fraud. | `SIGNIFICANT_VALUE` |
+| **Structural Family Clustering** | Flat Hypothesis List | Presents unstructured flat list of $N$ micro-paths. | Clusters possibilities deterministically by backbone topology. | Compresses micro-paths into distinct macro-corridors for strategic triage. | `SIGNIFICANT_VALUE` |
+| **Shannon Entropy & Information Gain** | Uniform / Intuitive Action Ordering | Orders actions chronologically or by arbitrary intuition. | Computes exact Shannon entropy $H(S)$ and expected info gain $\Delta H$. | Ranks highest uncertainty-reducing action first; optimizes investigation budget. | `SIGNIFICANT_VALUE` |
+
+### Methodological Integrity: When Baselines Are Sufficient
+
+The comparative engine does NOT artificially force algorithms to win:
+1. **Single Linear Chain ($A \to B \to C$)**:
+   - Yen's discovers 1 path (baseline = 1, delta = 0) $\to$ **`BASELINE_SUFFICIENT`**
+   - Dominator tree identifies trivial parent nodes $\to$ **`BASELINE_SUFFICIENT`**
+   - Min-cut identifies single bridge edge $\to$ **`BASELINE_SUFFICIENT`**
+   - Disjoint paths = 1 $\to$ **`BASELINE_SUFFICIENT`**
+   - Shannon entropy = 0.0 bits $\to$ **`BASELINE_SUFFICIENT`**
+2. **Cyclic Dependency ($A \to B \to C \to A$)**:
+   - Kahn topological sort identifies causal cycle paradox $\to$ **`ASSUMPTION_VIOLATED`**
+   - System flags that DAG assumptions are violated, preventing corrupted linear scheduling.
+
+---
+
+## 7. Verification Summary
 
 * **Phase 6 Test Suite**: 30/30 tests passing (`backend/src/tests/algorithm-effectiveness.test.ts`).
 * **Phase 7 Closed-Loop Test Suite**: 15/15 tests passing (`backend/src/tests/closed-loop-investigation.test.ts`).
 * **Phase 8 Investigative Decision Test Suite**: 18/18 tests passing (`backend/src/tests/investigative-decision.test.ts`).
 * **Phase 9 Adversarial & Epistemic Test Suite**: 10/10 tests passing (`backend/src/tests/adversarial-epistemic.test.ts`).
-* **Total Backend Test Suite**: **203/203 tests passing** across 9 test suites (`npm test`).
+* **Phase 10 Comparative Validation Test Suite**: 6/6 tests passing (`backend/src/tests/algorithm-comparative.test.ts`).
+* **Total Backend Test Suite**: **209/209 tests passing** across 10 test suites (`npm test`).
 * **Frontend Production Build**: Zero compilation or lint errors (`npm --prefix frontend run build`).
+* **Algorithm Value Lab UI**: Delivered in `AlgorithmValueLabView.tsx` with side-by-side metric deltas and honest baseline-sufficiency badges.
 * **Architectural Invariant**: Zero decorative algorithms; 100% of active algorithms directly generate, prune, isolate, or rank the investigation space.
 
 

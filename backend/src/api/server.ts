@@ -42,6 +42,8 @@ import { createEffectivenessRouter } from './routes/effectiveness-routes.js';
 import { createClosedLoopRouter } from './routes/closed-loop-routes.js';
 import { createDecisionRouter } from './routes/decision-routes.js';
 import { createValidationRouter } from './routes/validation-routes.js';
+import { AlgorithmComparativeEngine } from '../application/algorithm-comparative-engine.js';
+import { createComparativeRouter } from './routes/comparative-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -101,6 +103,13 @@ export function createApp(customDb?: DatabaseSync): express.Application {
     decisionEngine
   );
 
+  const comparativeEngine = new AlgorithmComparativeEngine(
+    possibilityRepo,
+    possibilityEngine,
+    resolutionEngine,
+    planningEngine
+  );
+
   const app = express();
 
   app.use(cors());
@@ -117,6 +126,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases', createClosedLoopRouter(evidenceImpactEngine));
   app.use('/api/cases', createDecisionRouter(decisionEngine, graphService));
   app.use('/api/cases', createValidationRouter(validationEngine, graphService));
+  app.use('/api/cases', createComparativeRouter(comparativeEngine, graphService));
 
   // Case-Scoped Nested Routes
   app.use('/api/cases/:caseId/nodes', createNodeRouter(graphService));
