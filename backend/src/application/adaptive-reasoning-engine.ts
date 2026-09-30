@@ -16,6 +16,13 @@ import { DominatorsAlgorithm } from '../domain/algorithms/dominators.js';
 import { MinCutAlgorithm } from '../domain/algorithms/min-cut.js';
 import { DisjointPathsAlgorithm } from '../domain/algorithms/disjoint-paths.js';
 
+export type EngineExecutionMode = 'BASELINE' | 'FULL' | 'ADAPTIVE' | 'ABLATION';
+
+export interface AdaptiveExecutionConfig {
+  mode: EngineExecutionMode;
+  disabledAlgorithms?: string[];
+}
+
 export class AdaptiveReasoningEngine {
   /**
    * Executes the full adaptive reasoning pipeline on a graph:
@@ -30,7 +37,8 @@ export class AdaptiveReasoningEngine {
     topologyId?: string,
     topologyName?: string,
     designatedSourceId?: string,
-    designatedTargetId?: string
+    designatedTargetId?: string,
+    config: AdaptiveExecutionConfig = { mode: 'ADAPTIVE' }
   ): AdaptiveReasoningReport {
     const fingerprint = GraphFingerprintEngine.analyze(graph, designatedSourceId, designatedTargetId);
 
@@ -38,7 +46,19 @@ export class AdaptiveReasoningEngine {
     const targetId = designatedTargetId || this.findTargetId(graph.nodes, graph.edges, sourceId);
 
     // 1. Generate Selection Decisions
-    const decisions = this.determineAlgorithmApplicability(fingerprint, graph, sourceId, targetId);
+    let decisions = this.determineAlgorithmApplicability(fingerprint, graph, sourceId, targetId);
+
+    if (config.mode === 'BASELINE') {
+      decisions = decisions.map(d => ({ ...d, applicable: false, reason: 'Disabled by BASELINE mode' }));
+    } else if (config.mode === 'FULL') {
+      decisions = decisions.map(d => ({ ...d, applicable: true, reason: 'Forced by FULL mode' }));
+    } else if (config.mode === 'ABLATION' && config.disabledAlgorithms) {
+      decisions = decisions.map(d => ({
+        ...d,
+        applicable: config.disabledAlgorithms!.includes(d.algorithmKey) ? false : true,
+        reason: config.disabledAlgorithms!.includes(d.algorithmKey) ? 'Ablated by benchmark' : 'Forced by ABLATION mode'
+      }));
+    }
 
     // 2. Execute Adaptive Pipeline and build trace
     const { adaptiveMetrics, trace } = this.executeAdaptivePipeline(

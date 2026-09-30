@@ -19,9 +19,9 @@ const backend = spawn(npmCmd, ['run', 'dev'], {
   shell: true
 });
 
-// 2. Start Frontend
+// 2. Start Next.js Web App
 const frontend = spawn(npmCmd, ['run', 'dev'], {
-  cwd: path.join(rootDir, 'frontend'),
+  cwd: path.join(rootDir, 'web'),
   stdio: 'inherit',
   shell: true
 });

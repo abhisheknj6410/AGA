@@ -8,10 +8,12 @@
     "start": "node scripts/start-all.js",
     "dev": "node scripts/start-all.js",
     "dev:backend": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix web run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:backend": "npm --prefix backend run build",
+    "build:web": "npm --prefix web run build",
     "build:frontend": "npm --prefix frontend run build",
-    "build": "npm run build:backend && npm run build:frontend",
+    "build": "npm run build:backend && npm run build:web",
     "seed": "npm --prefix backend run seed",
     "test": "npm --prefix backend test"
   },

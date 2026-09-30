@@ -49,6 +49,7 @@ import { createAdaptiveRouter } from './routes/adaptive-routes.js';
 import { createReconstructionRouter } from './routes/reconstruction-routes.js';
 import { CaseReasoningPipeline } from '../application/case-reasoning-pipeline.js';
 import { createCasePipelineRouter } from './routes/case-pipeline-routes.js';
+import { createEvaluationRouter } from './routes/evaluation-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -147,6 +148,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/reconstruction', createReconstructionRouter(graphService));
   app.use('/api/cases', createCasePipelineRouter(caseReasoningPipeline));
   app.use('/api/pipeline', createCasePipelineRouter(caseReasoningPipeline));
+  app.use('/api/evaluation', createEvaluationRouter(caseReasoningPipeline));
 
   // Case-Scoped Nested Routes
   app.use('/api/cases/:caseId/nodes', createNodeRouter(graphService));

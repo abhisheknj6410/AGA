@@ -1,3 +1,4 @@
+import { DijkstraAlgorithm } from "../domain/algorithms/dijkstra.js";
 import { createHash, randomUUID } from 'node:crypto';
 import { GraphPayload, GraphNode, GraphEdge, ResolutionCandidate } from '../domain/types.js';
 import {
@@ -93,8 +94,17 @@ export class PossibilityEngine {
     const evidenceRejectionReasons: string[] = [];
 
     const kStart = performance.now();
-    if (options.includeAlternativePaths !== false && sourceId && targetId && sourceId !== targetId) {
-      const kPaths = KShortestPathsAlgorithm.findKShortestPaths(baseGraph.nodes, baseGraph.edges, sourceId, targetId, 8);
+    let kPaths = { paths: [] as any[] };
+    if (sourceId && targetId && sourceId !== targetId) {
+      if (options.includeAlternativePaths !== false) {
+        kPaths = KShortestPathsAlgorithm.findKShortestPaths(baseGraph.nodes, baseGraph.edges, sourceId, targetId, 8);
+      } else {
+        const p = DijkstraAlgorithm.findShortestPath(baseGraph.nodes, baseGraph.edges, sourceId, targetId);
+        if (p) kPaths.paths.push(p);
+      }
+    }
+    
+    if (kPaths.paths.length > 0) {
       rawKPathCount = kPaths.paths.length;
 
       kPaths.paths.forEach((path, idx) => {

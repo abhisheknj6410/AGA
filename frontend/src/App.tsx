@@ -30,6 +30,7 @@ import { AlgorithmGeneralizationLabView } from './components/effectiveness/Algor
 import { AlgorithmEfficiencyLabView } from './components/effectiveness/AlgorithmEfficiencyLabView';
 import { EvidenceReconstructionLabView } from './components/evidence/EvidenceReconstructionLabView';
 import { CasePipelineView } from './components/pipeline/CasePipelineView';
+import { EvaluationLab } from './components/EvaluationLab';
 import {
   Case,
   GraphPayload,
@@ -88,7 +89,7 @@ export const App: React.FC = () => {
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'BENCHMARK' | 'ADAPTIVE' | 'RECONSTRUCTION' | 'PIPELINE' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'BENCHMARK' | 'ADAPTIVE' | 'RECONSTRUCTION' | 'PIPELINE' | 'EVALUATION_LAB' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY'>('GRAPH');
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [activePossibility, setActivePossibility] = useState<Possibility | null>(null);
   const [comparisonData, setComparisonData] = useState<PossibilityComparison | null>(null);
@@ -599,6 +600,10 @@ export const App: React.FC = () => {
         <CasePipelineView
           caseId={currentCase?.id}
         />
+      )}
+
+      {activeTab === 'EVALUATION_LAB' && (
+        <EvaluationLab />
       )}
 
       {activeTab === 'COMPARISON' && (

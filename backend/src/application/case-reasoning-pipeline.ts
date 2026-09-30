@@ -81,7 +81,8 @@ export class CaseReasoningPipeline {
    */
   async executeCasePipeline(
     caseId: string,
-    rawFacts?: EvidenceFact[]
+    rawFacts?: EvidenceFact[],
+    config?: import('./adaptive-reasoning-engine.js').AdaptiveExecutionConfig
   ): Promise<EndToEndCaseReasoningReport> {
     const timestamp = new Date().toISOString();
     const facts = rawFacts && rawFacts.length > 0
@@ -121,12 +122,18 @@ export class CaseReasoningPipeline {
       // 0. Causal Upstream Graph Algorithm: Temporal Reachability
       const sourceId = this.findSourceId(interp.graph.nodes, interp.graph.edges);
       const targetId = this.findTargetId(interp.graph.nodes, interp.graph.edges, sourceId);
-      const reachability = TemporalReachabilityAlgorithm.evaluateReachability(
-        interp.graph.nodes,
-        interp.graph.edges,
-        sourceId,
-        targetId
-      );
+      
+      let reachability = { reachable: true, temporalFailure: false, violations: [] as any[], summary: 'Execution skipped by configuration', shortestTemporalPath: null as any, evidenceRefs: [] as string[] };
+      const skipReachability = config?.mode === 'BASELINE' || (config?.mode === 'ABLATION' && config?.disabledAlgorithms?.includes('TEMPORAL_REACHABILITY'));
+      
+      if (!skipReachability) {
+        reachability = TemporalReachabilityAlgorithm.evaluateReachability(
+          interp.graph.nodes,
+          interp.graph.edges,
+          sourceId,
+          targetId
+        );
+      }
 
       const reachabilityExecId = `exec-reachability-${interp.id}-${Date.now()}`;
       const branchAlgorithmExecutions: AlgorithmExecution[] = [
@@ -192,15 +199,17 @@ export class CaseReasoningPipeline {
         interp.id,
         interp.name,
         sourceId,
-        targetId
+        targetId,
+        config
       );
 
-      // B. Candidate Possibilities Generation
+      const skipTemporalGen = config?.mode === 'BASELINE' || (config?.mode === 'ABLATION' && config?.disabledAlgorithms?.includes('TEMPORAL_KAHN'));
+      const skipYen = config?.mode === 'BASELINE' || (config?.mode === 'ABLATION' && config?.disabledAlgorithms?.includes('YEN_K_SHORTEST'));
       const genResult = this.possibilityEngine.generatePossibilities(
         branchCaseId,
         interp.graph,
         [],
-        { persist: false, maxPossibilities: 10, sourceNodeId: sourceId, targetNodeId: targetId }
+        { persist: false, maxPossibilities: 10, sourceNodeId: sourceId, targetNodeId: targetId, disableTemporalValidation: skipTemporalGen, includeAlternativePaths: !skipYen }
       );
       let possibilities = genResult.possibilities;
 
