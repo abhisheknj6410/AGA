@@ -3,6 +3,12 @@ import { getDatabase, closeDatabase } from './db.js';
 import { runMigrations } from './migrations.js';
 import { CaseService } from '../application/case-service.js';
 import { GraphService } from '../application/graph-service.js';
+import { PossibilityRepository } from './repositories/possibility-repository.js';
+import { AlgorithmRepository } from './repositories/algorithm-repository.js';
+import { ResolutionRepository } from './repositories/resolution-repository.js';
+import { GraphAnalysisEngine } from '../application/graph-analysis-engine.js';
+import { PossibilityEngine } from '../application/possibility-engine.js';
+import { seedDemonstrationCase } from './seed-demo-case.js';
 
 export function seedDatabase(customDb?: any): { caseId: string } {
   const db = customDb || getDatabase();
@@ -627,6 +633,30 @@ export function seedDatabase(customDb?: any): { caseId: string } {
       hypothesis: 'Possible remote access trojan (RAT) or relay proxy installed on Laptop-RK-01'
     }
   });
+
+  // 7. Seed initial possibilities & algorithms
+  try {
+    const possibilityRepo = new PossibilityRepository(db);
+    const algorithmRepo = new AlgorithmRepository(db);
+    const resolutionRepo = new ResolutionRepository(db);
+    const analysisEngine = new GraphAnalysisEngine(algorithmRepo);
+    const possibilityEngine = new PossibilityEngine(possibilityRepo, analysisEngine);
+
+    const baseGraph = graphService.getGraph(caseId);
+    const candidates = resolutionRepo.getByCaseId(caseId);
+
+    const generated = possibilityEngine.generatePossibilities(caseId, baseGraph, candidates, { maxPossibilities: 10 });
+    console.log(`Initialized ${generated.survivingCount} initial possibility branches for investigation.`);
+  } catch (err) {
+    console.error('Failed to generate seed possibilities:', err);
+  }
+
+  // Also seed the domain-independent demonstration case
+  try {
+    seedDemonstrationCase(db);
+  } catch (err) {
+    console.error('Failed to seed demonstration case:', err);
+  }
 
   console.log(`Seed graph successfully populated for case '${caseId}'!`);
   console.log(

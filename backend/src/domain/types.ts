@@ -209,3 +209,6 @@ export interface GraphPayload {
     generatedAt: string;
   };
 }
+
+export * from './possibility-types.js';
+

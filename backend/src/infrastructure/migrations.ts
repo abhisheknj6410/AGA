@@ -94,6 +94,60 @@ export function runMigrations(db: DatabaseSync): void {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS case_graph_versions (
+      id TEXT PRIMARY KEY,
+      case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      version_number INTEGER NOT NULL,
+      snapshot_json TEXT,
+      change_summary TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS possibilities (
+      id TEXT PRIMARY KEY,
+      case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      base_graph_version INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'VALID',
+      generation_method TEXT NOT NULL,
+      assumptions_json TEXT NOT NULL DEFAULT '[]',
+      graph_changes_json TEXT NOT NULL DEFAULT '{}',
+      constraints_json TEXT NOT NULL DEFAULT '{}',
+      supporting_evidence_json TEXT NOT NULL DEFAULT '[]',
+      conflicting_evidence_json TEXT NOT NULL DEFAULT '[]',
+      unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+      canonical_signature TEXT NOT NULL,
+      algorithm_results_json TEXT DEFAULT '{}',
+      generation_trace_json TEXT DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS algorithm_runs (
+      id TEXT PRIMARY KEY,
+      case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      possibility_id TEXT REFERENCES possibilities(id) ON DELETE CASCADE,
+      algorithm TEXT NOT NULL,
+      algorithm_version TEXT NOT NULL DEFAULT '1.0.0',
+      parameters_json TEXT NOT NULL DEFAULT '{}',
+      graph_version INTEGER NOT NULL DEFAULT 1,
+      input_node_count INTEGER NOT NULL DEFAULT 0,
+      input_edge_count INTEGER NOT NULL DEFAULT 0,
+      execution_time_ms REAL NOT NULL DEFAULT 0.0,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS algorithm_results (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL REFERENCES algorithm_runs(id) ON DELETE CASCADE,
+      algorithm TEXT NOT NULL,
+      result_type TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      payload_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL
+    );
+
     -- Performance and Integrity Indexes
     CREATE INDEX IF NOT EXISTS idx_nodes_case_id ON nodes(case_id);
     CREATE INDEX IF NOT EXISTS idx_nodes_category_type ON nodes(category, type);
@@ -107,5 +161,30 @@ export function runMigrations(db: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_edge_evidence_evidence ON edge_evidence(evidence_id);
     CREATE INDEX IF NOT EXISTS idx_audit_case ON audit_logs(case_id);
     CREATE INDEX IF NOT EXISTS idx_resolution_case ON resolution_candidates(case_id);
+    CREATE INDEX IF NOT EXISTS idx_graph_versions_case ON case_graph_versions(case_id, version_number);
+    CREATE INDEX IF NOT EXISTS idx_possibilities_case ON possibilities(case_id);
+    CREATE INDEX IF NOT EXISTS idx_possibilities_signature ON possibilities(case_id, canonical_signature);
+    CREATE INDEX IF NOT EXISTS idx_algorithm_runs_case ON algorithm_runs(case_id);
+    CREATE INDEX IF NOT EXISTS idx_algorithm_runs_possibility ON algorithm_runs(possibility_id);
+    CREATE INDEX IF NOT EXISTS idx_algorithm_results_run ON algorithm_results(run_id);
   `);
+
+  try {
+    db.exec('ALTER TABLE possibilities ADD COLUMN algorithm_results_json TEXT DEFAULT "{}"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE possibilities ADD COLUMN generation_trace_json TEXT DEFAULT "[]"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN parent_version_number INTEGER');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN mutation_json TEXT DEFAULT "{}"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN delta_json TEXT DEFAULT "{}"');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE case_graph_versions ADD COLUMN affected_subgraph_json TEXT DEFAULT "{}"');
+  } catch {}
 }

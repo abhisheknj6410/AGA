@@ -20,6 +20,36 @@ import { createAuditRouter } from './routes/audit-routes.js';
 import { AiExtractionService } from '../application/ai-extraction-service.js';
 import { createExtractionRouter } from './routes/extraction-routes.js';
 import { createSnapshotRouter } from './routes/snapshot-routes.js';
+import { PossibilityRepository } from '../infrastructure/repositories/possibility-repository.js';
+import { AlgorithmRepository } from '../infrastructure/repositories/algorithm-repository.js';
+import { ResolutionRepository } from '../infrastructure/repositories/resolution-repository.js';
+import { GraphAnalysisEngine } from '../application/graph-analysis-engine.js';
+import { PossibilityEngine } from '../application/possibility-engine.js';
+import { InvestigationAgentService } from '../application/investigation-agent-service.js';
+import { createPossibilityRouter } from './routes/possibility-routes.js';
+import { createAnalysisRouter } from './routes/analysis-routes.js';
+import { createAgentRouter } from './routes/agent-routes.js';
+import { IncrementalReasoningEngine } from '../application/incremental-reasoning-engine.js';
+import { ResolutionReasoningEngine } from '../application/resolution-reasoning-engine.js';
+import { InvestigationPlanningEngine } from '../application/investigation-planning-engine.js';
+import { AlgorithmEffectivenessEngine } from '../application/algorithm-effectiveness-engine.js';
+import { EvidenceImpactEngine } from '../application/evidence-impact-engine.js';
+import { InvestigationDecisionEngine } from '../application/investigation-decision-engine.js';
+import { EpistemicValidationEngine } from '../application/epistemic-validation-engine.js';
+import { createIncrementalRouter } from './routes/incremental-routes.js';
+import { createPlanningRouter } from './routes/planning-routes.js';
+import { createEffectivenessRouter } from './routes/effectiveness-routes.js';
+import { createClosedLoopRouter } from './routes/closed-loop-routes.js';
+import { createDecisionRouter } from './routes/decision-routes.js';
+import { createValidationRouter } from './routes/validation-routes.js';
+import { AlgorithmComparativeEngine } from '../application/algorithm-comparative-engine.js';
+import { createComparativeRouter } from './routes/comparative-routes.js';
+import { createGeneralizationRouter } from './routes/generalization-routes.js';
+import { createAdaptiveRouter } from './routes/adaptive-routes.js';
+import { createReconstructionRouter } from './routes/reconstruction-routes.js';
+import { CaseReasoningPipeline } from '../application/case-reasoning-pipeline.js';
+import { createCasePipelineRouter } from './routes/case-pipeline-routes.js';
+import { createEvaluationRouter } from './routes/evaluation-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -31,6 +61,67 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   const resolutionService = new EntityResolutionService(db);
   const auditRepo = new AuditRepository(db);
   const aiService = new AiExtractionService();
+
+  const possibilityRepo = new PossibilityRepository(db);
+  const algorithmRepo = new AlgorithmRepository(db);
+  const resolutionRepo = new ResolutionRepository(db);
+  const analysisEngine = new GraphAnalysisEngine(algorithmRepo);
+  const possibilityEngine = new PossibilityEngine(possibilityRepo, analysisEngine);
+  const incrementalEngine = new IncrementalReasoningEngine(db, possibilityEngine);
+  const resolutionEngine = new ResolutionReasoningEngine(possibilityRepo, analysisEngine, incrementalEngine);
+  const planningEngine = new InvestigationPlanningEngine(possibilityRepo, resolutionEngine);
+  const effectivenessEngine = new AlgorithmEffectivenessEngine(
+    possibilityRepo,
+    possibilityEngine,
+    resolutionEngine,
+    planningEngine
+  );
+  const evidenceImpactEngine = new EvidenceImpactEngine(
+    db,
+    graphService,
+    possibilityEngine,
+    resolutionEngine,
+    planningEngine,
+    incrementalEngine
+  );
+  const agentService = new InvestigationAgentService(
+    possibilityRepo,
+    analysisEngine,
+    possibilityEngine,
+    incrementalEngine,
+    resolutionEngine,
+    planningEngine,
+    effectivenessEngine
+  );
+  agentService.setEvidenceImpactEngine(evidenceImpactEngine);
+
+  const decisionEngine = new InvestigationDecisionEngine(
+    possibilityRepo,
+    resolutionEngine,
+    planningEngine
+  );
+  agentService.setDecisionEngine(decisionEngine);
+
+  const validationEngine = new EpistemicValidationEngine(
+    possibilityRepo,
+    resolutionEngine,
+    planningEngine,
+    decisionEngine
+  );
+
+  const comparativeEngine = new AlgorithmComparativeEngine(
+    possibilityRepo,
+    possibilityEngine,
+    resolutionEngine,
+    planningEngine
+  );
+
+  const caseReasoningPipeline = new CaseReasoningPipeline(
+    possibilityEngine,
+    resolutionEngine,
+    decisionEngine,
+    validationEngine
+  );
 
   const app = express();
 
@@ -45,6 +136,19 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   // Snapshot Routes & Root Case Routes
   app.use('/api/cases', createSnapshotRouter(db, caseService, graphService));
   app.use('/api/cases', createCaseRouter(caseService));
+  app.use('/api/cases', createClosedLoopRouter(evidenceImpactEngine));
+  app.use('/api/cases', createDecisionRouter(decisionEngine, graphService));
+  app.use('/api/cases', createValidationRouter(validationEngine, graphService));
+  app.use('/api/cases', createComparativeRouter(comparativeEngine, graphService));
+  app.use('/api/cases', createGeneralizationRouter(graphService));
+  app.use('/api/algorithms', createGeneralizationRouter(graphService));
+  app.use('/api/cases', createAdaptiveRouter(graphService));
+  app.use('/api/adaptive', createAdaptiveRouter(graphService));
+  app.use('/api/cases', createReconstructionRouter(graphService));
+  app.use('/api/reconstruction', createReconstructionRouter(graphService));
+  app.use('/api/cases', createCasePipelineRouter(caseReasoningPipeline));
+  app.use('/api/pipeline', createCasePipelineRouter(caseReasoningPipeline));
+  app.use('/api/evaluation', createEvaluationRouter(caseReasoningPipeline));
 
   // Case-Scoped Nested Routes
   app.use('/api/cases/:caseId/nodes', createNodeRouter(graphService));
@@ -52,12 +156,19 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases/:caseId/evidence', createEvidenceRouter(graphService));
   app.use('/api/cases/:caseId/graph', createGraphRouter(graphService));
   app.use('/api/cases/:caseId/import', createImportRouter(importService));
-  app.use('/api/cases/:caseId/resolution', createResolutionRouter(resolutionService));
+  app.use('/api/cases/:caseId/resolution', createResolutionRouter(resolutionService, graphService, resolutionEngine));
+  app.use('/api/cases/:caseId/planning', createPlanningRouter(graphService, planningEngine));
+  app.use('/api/cases/:caseId/effectiveness', createEffectivenessRouter(graphService, effectivenessEngine));
   app.use('/api/cases/:caseId/audit', createAuditRouter(auditRepo));
   app.use('/api/cases/:caseId/extract', createExtractionRouter(aiService));
+  app.use('/api/cases/:caseId/possibilities', createPossibilityRouter(graphService, possibilityEngine, possibilityRepo, resolutionRepo, analysisEngine));
+  app.use('/api/cases/:caseId/analysis', createAnalysisRouter(graphService, analysisEngine, possibilityRepo, algorithmRepo));
+  app.use('/api/cases/:caseId/agent', createAgentRouter(graphService, agentService));
+  app.use('/api/cases/:caseId/incremental', createIncrementalRouter(graphService, incrementalEngine));
 
   // Global Error Handler
   app.use(errorHandler);
 
   return app;
 }
+

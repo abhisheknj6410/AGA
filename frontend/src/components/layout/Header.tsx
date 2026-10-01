@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Case, GraphNode, GraphEdge } from '../../types/graph';
 import {
   FolderOpen,
@@ -7,13 +7,31 @@ import {
   Upload,
   Users,
   History,
-  ShieldAlert,
-  Database,
-  Link,
-  FileCheck,
   Download,
   Clock,
-  ChevronDown
+  ChevronDown,
+  Network,
+  GitBranch,
+  GitCompare,
+  Cpu,
+  Bot,
+  Sun,
+  Moon,
+  Activity,
+  MoreHorizontal,
+  Link2,
+  FileCheck,
+  Calendar,
+  Layers,
+  Sliders,
+  Sparkles,
+  Target,
+  Zap,
+  Compass,
+  Scale,
+  Fingerprint,
+  Workflow,
+  X
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,12 +44,20 @@ interface HeaderProps {
   onOpenImport: () => void;
   onOpenResolution: () => void;
   onOpenAudit: () => void;
+  onOpenDiagnostics: () => void;
   pendingResolutionCount: number;
   allNodes: GraphNode[];
   allEdges: GraphEdge[];
   onSelectElement: (type: 'node' | 'edge', id: string) => void;
   isTimelineOpen?: boolean;
   onToggleTimeline?: () => void;
+  activeTab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'BENCHMARK' | 'ADAPTIVE' | 'RECONSTRUCTION' | 'PIPELINE' | 'EVALUATION_LAB' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY';
+  onTabChange: (tab: 'GRAPH' | 'POSSIBILITIES' | 'EVOLUTION' | 'RESOLUTION' | 'PLAN' | 'CLOSED_LOOP' | 'DECISION' | 'VALIDATION' | 'VALUE_LAB' | 'BENCHMARK' | 'ADAPTIVE' | 'RECONSTRUCTION' | 'PIPELINE' | 'EVALUATION_LAB' | 'COMPARISON' | 'ANALYSIS' | 'INGEST' | 'QUERY') => void;
+  possibilityCount: number;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
+  advancedMode?: boolean;
+  onToggleAdvancedMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,289 +70,579 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenImport,
   onOpenResolution,
   onOpenAudit,
+  onOpenDiagnostics,
   pendingResolutionCount,
   allNodes,
   allEdges,
   onSelectElement,
   isTimelineOpen,
-  onToggleTimeline
+  onToggleTimeline,
+  activeTab,
+  onTabChange,
+  possibilityCount,
+  theme,
+  onToggleTheme,
+  advancedMode = false,
+  onToggleAdvancedMode
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+
+  const addMenuRef = useRef<HTMLDivElement>(null);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false);
+      }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        setShowToolsMenu(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filteredNodes = searchQuery.trim()
-    ? allNodes.filter(
-        n =>
-          n.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          n.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          n.id.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 8)
+    ? allNodes
+        .filter(
+          n =>
+            n.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            n.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            n.id.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .slice(0, 6)
     : [];
 
   const filteredEdges = searchQuery.trim()
-    ? allEdges.filter(
-        e =>
-          e.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.id.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 4)
+    ? allEdges
+        .filter(
+          e =>
+            e.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            e.id.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .slice(0, 3)
     : [];
 
   return (
-    <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 select-none">
+    <header className="h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-5 z-30 select-none transition-colors duration-150">
       {/* Left: Brand & Case Selector */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
-            EG
+      <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white shadow-sm">
+            <Network className="w-4 h-4" />
           </div>
-          <div>
-            <h1 className="text-sm font-semibold tracking-wide text-slate-100 flex items-center gap-1.5">
-              Evidence Graph
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800/60 font-mono">
-                PHASE 1
-              </span>
-            </h1>
-          </div>
+          <span className="text-sm font-bold tracking-tight text-zinc-900 dark:text-white">
+            Evidence Studio
+          </span>
         </div>
 
-        <div className="h-5 w-[1px] bg-slate-800" />
+        <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
 
         {/* Case Switcher */}
-        <div className="flex items-center gap-2">
-          <FolderOpen className="w-4 h-4 text-slate-400" />
-          <select
-            className="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 max-w-[220px]"
-            value={currentCase?.id || ''}
-            onChange={e => {
-              const selected = cases.find(c => c.id === e.target.value);
-              if (selected) onSelectCase(selected);
-            }}
-          >
-            {cases.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex items-center">
+            <select
+              className="appearance-none bg-zinc-100 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-xs font-semibold rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer max-w-[200px] truncate transition-colors"
+              value={currentCase?.id || ''}
+              onChange={e => {
+                const selected = cases.find(c => c.id === e.target.value);
+                if (selected) onSelectCase(selected);
+              }}
+            >
+              {cases.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 pointer-events-none" />
+          </div>
+
           <button
             onClick={onNewCase}
-            title="Create New Investigation Case"
-            className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+            title="Create New Case"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Middle: Graph Search */}
-      <div className="relative w-80">
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search nodes, events, evidence, edges..."
-            className="w-full bg-slate-950 border border-slate-800 text-xs rounded pl-8 pr-3 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-            value={searchQuery}
-            onChange={e => {
-              setSearchQuery(e.target.value);
-              setShowSearchResults(true);
-            }}
-            onFocus={() => setShowSearchResults(true)}
-          />
-        </div>
-
-        {/* Search Results Dropdown */}
-        {showSearchResults && searchQuery.trim() && (
-          <div className="absolute left-0 right-0 top-10 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl py-1.5 max-h-72 overflow-y-auto z-50">
-            {filteredNodes.length === 0 && filteredEdges.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-slate-400 text-center">No matching elements found</div>
-            ) : (
-              <>
-                {filteredNodes.map(node => (
-                  <button
-                    key={node.id}
-                    onClick={() => {
-                      onSelectElement('node', node.id);
-                      setShowSearchResults(false);
-                      setSearchQuery('');
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center justify-between text-xs transition"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          node.category === 'ENTITY'
-                            ? 'bg-blue-400'
-                            : node.category === 'EVENT'
-                            ? 'bg-amber-400'
-                            : 'bg-emerald-400'
-                        }`}
-                      />
-                      <span className="text-slate-200 font-medium truncate">{node.label}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">{node.type}</span>
-                  </button>
-                ))}
-
-                {filteredEdges.map(edge => (
-                  <button
-                    key={edge.id}
-                    onClick={() => {
-                      onSelectElement('edge', edge.id);
-                      setShowSearchResults(false);
-                      setSearchQuery('');
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center justify-between text-xs transition border-t border-slate-800"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <Link className="w-3 h-3 text-slate-400" />
-                      <span className="text-slate-300 truncate">Edge: {edge.type}</span>
-                    </div>
-                    <span className="text-[10px] text-indigo-400 font-mono">{edge.status}</span>
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Right: Manual Creation & Utility Actions */}
-      <div className="flex items-center gap-2">
-        {/* Node & Edge Creation Dropdown / Buttons */}
-        <div className="flex items-center rounded border border-slate-700 bg-slate-950 p-0.5 text-xs">
-          <button
-            onClick={() => onAddNode('ENTITY')}
-            className="px-2 py-1 rounded hover:bg-slate-800 text-blue-400 hover:text-blue-300 font-medium transition"
-          >
-            + Entity
-          </button>
-          <div className="w-[1px] h-3 bg-slate-800 mx-0.5" />
-          <button
-            onClick={() => onAddNode('EVENT')}
-            className="px-2 py-1 rounded hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-medium transition"
-          >
-            + Event
-          </button>
-          <div className="w-[1px] h-3 bg-slate-800 mx-0.5" />
-          <button
-            onClick={() => onAddNode('EVIDENCE')}
-            className="px-2 py-1 rounded hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 font-medium transition"
-          >
-            + Evidence
-          </button>
-          <div className="w-[1px] h-3 bg-slate-800 mx-0.5" />
-          <button
-            onClick={onAddEdge}
-            className="px-2 py-1 rounded hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 font-medium transition flex items-center gap-1"
-          >
-            <Link className="w-3 h-3" />
-            + Relationship
-          </button>
-        </div>
-
-        <div className="h-5 w-[1px] bg-slate-800 mx-1" />
-
-        {/* Structured Import */}
+      {/* Center: Vercel Teal Segmented Navigation */}
+      <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-medium">
         <button
-          onClick={onOpenImport}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
-          title="Import Structured JSON or CSV Dataset"
+          onClick={() => onTabChange('GRAPH')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'GRAPH'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
         >
-          <Upload className="w-3.5 h-3.5" />
-          <span>Import</span>
+          <Network className="w-3.5 h-3.5" />
+          <span>Graph</span>
         </button>
 
-        {/* Safe Entity Resolution Review */}
         <button
-          onClick={onOpenResolution}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border transition ${
-            pendingResolutionCount > 0
-              ? 'bg-amber-950/60 border-amber-700 text-amber-300 hover:bg-amber-900/60'
-              : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+          onClick={() => onTabChange('POSSIBILITIES')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'POSSIBILITIES' || activeTab === 'COMPARISON'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
-          title="Safe Entity Resolution Review"
         >
-          <Users className="w-3.5 h-3.5" />
-          <span>Resolution</span>
-          {pendingResolutionCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-bold">
-              {pendingResolutionCount}
+          <GitBranch className="w-3.5 h-3.5" />
+          <span>Possibilities</span>
+          {possibilityCount > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700">
+              {possibilityCount}
             </span>
           )}
         </button>
 
-        {/* Timeline Playback Toggle */}
         <button
-          onClick={onToggleTimeline}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium border transition ${
-            isTimelineOpen
-              ? 'bg-amber-950/70 border-amber-500/70 text-amber-300 shadow-md shadow-amber-900/30'
-              : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+          onClick={() => onTabChange('EVOLUTION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'EVOLUTION'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
           }`}
-          title="Toggle Chronological Timeline Stepper"
         >
-          <Clock className={`w-3.5 h-3.5 ${isTimelineOpen ? 'text-amber-400' : 'text-slate-400'}`} />
-          <span>Timeline</span>
+          <GitCompare className="w-3.5 h-3.5" />
+          <span>Evolution & What-If</span>
         </button>
 
-        {/* Audit Log */}
         <button
-          onClick={onOpenAudit}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
-          title="Investigation Audit Trail"
+          onClick={() => onTabChange('RESOLUTION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'RESOLUTION'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
         >
-          <History className="w-3.5 h-3.5" />
-          <span>Audit</span>
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span>Resolution</span>
         </button>
 
-        {/* Export Formats Dropdown */}
-        {currentCase && (
+        <button
+          onClick={() => onTabChange('PLAN')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'PLAN'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Target className="w-3.5 h-3.5 text-teal-500" />
+          <span>Plan</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('CLOSED_LOOP')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'CLOSED_LOOP'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Closed Loop</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('DECISION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'DECISION'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Compass className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Decisions</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('VALIDATION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'VALIDATION'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Scale className="w-3.5 h-3.5 text-teal-500" />
+          <span>Validation</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('VALUE_LAB')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'VALUE_LAB'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Value Lab</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('BENCHMARK')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'BENCHMARK'
+              ? 'bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Network className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Benchmark</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('ADAPTIVE')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'ADAPTIVE'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5 text-teal-500" />
+          <span>Adaptive Lab</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('RECONSTRUCTION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'RECONSTRUCTION'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Fingerprint className="w-3.5 h-3.5 text-teal-500" />
+          <span>Reconstruction</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('PIPELINE')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'PIPELINE'
+              ? 'bg-white dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Workflow className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Case Pipeline</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('EVALUATION_LAB')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'EVALUATION_LAB'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Evaluation Lab</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('ANALYSIS')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'ANALYSIS'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Cpu className="w-3.5 h-3.5" />
+          <span>Algorithms</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('INGEST')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'INGEST'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          <span>Ingest Agent</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('QUERY')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+            activeTab === 'QUERY'
+              ? 'bg-white dark:bg-zinc-800 text-teal-600 dark:text-teal-400 shadow-xs font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Bot className="w-3.5 h-3.5" />
+          <span>Query Agent</span>
+        </button>
+      </div>
+
+      {/* Right: Search, Add Fact, Tools Drawer, Theme */}
+      <div className="flex items-center gap-2.5">
+        {/* Search */}
+        <div ref={searchRef} className="relative w-56">
           <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search graph..."
+              className="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs rounded-lg pl-8 pr-3 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:bg-white dark:focus:bg-zinc-950 transition"
+              value={searchQuery}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setShowSearchResults(true);
+              }}
+              onFocus={() => setShowSearchResults(true)}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Search Dropdown */}
+          {showSearchResults && searchQuery.trim() && (
+            <div className="absolute left-0 right-0 top-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 max-h-64 overflow-y-auto z-50 text-xs">
+              {filteredNodes.length === 0 && filteredEdges.length === 0 ? (
+                <div className="px-3 py-2 text-slate-400 text-center">No elements match search</div>
+              ) : (
+                <>
+                  {filteredNodes.map(node => (
+                    <button
+                      key={node.id}
+                      onClick={() => {
+                        onSelectElement('node', node.id);
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between transition"
+                    >
+                      <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {node.label}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">{node.type}</span>
+                    </button>
+                  ))}
+                  {filteredEdges.map(edge => (
+                    <button
+                      key={edge.id}
+                      onClick={() => {
+                        onSelectElement('edge', edge.id);
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between transition border-t border-zinc-100 dark:border-zinc-800"
+                    >
+                      <span className="text-zinc-600 dark:text-zinc-300 truncate">
+                        {edge.type}
+                      </span>
+                      <span className="text-xs text-teal-600 dark:text-teal-400 font-mono">{edge.status}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Studio Mode Toggle (Agent Mode vs Studio Mode) */}
+        <button
+          onClick={onToggleAdvancedMode}
+          title={advancedMode ? "Switch to Automated Agent Mode" : "Switch to Studio Mode (Manual Editing)"}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+            advancedMode
+              ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100 shadow-xs'
+              : 'bg-zinc-100 text-zinc-600 border-zinc-200 hover:text-zinc-900 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700 dark:hover:text-zinc-100'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5 text-teal-500" />
+          <span>{advancedMode ? 'Studio Mode' : 'Agent Mode'}</span>
+        </button>
+
+        {/* Unified + Add Fact Dropdown - Studio Mode Only */}
+        {advancedMode && (
+          <div ref={addMenuRef} className="relative">
             <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
-              title="Export Investigation in Multiple Formats"
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition"
             >
-              <Download className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Export</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Fact</span>
+              <ChevronDown className="w-3 h-3 ml-0.5 opacity-70" />
             </button>
 
-            {showExportMenu && (
-              <div
-                className="absolute right-0 mt-1.5 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl py-1 text-xs z-50 divide-y divide-slate-800"
-                onClick={() => setShowExportMenu(false)}
-              >
-                <a
-                  href={`/api/cases/${currentCase.id}/export?format=json`}
-                  download={`case-${currentCase.id.slice(0, 8)}-snapshot.json`}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-slate-200 transition"
+            {showAddMenu && (
+              <div className="absolute right-0 top-9 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs font-medium">
+                <button
+                  onClick={() => {
+                    onAddNode('ENTITY');
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
                 >
-                  <span className="font-medium">JSON Snapshot</span>
-                  <span className="text-[10px] text-indigo-400 font-mono">.json</span>
-                </a>
-                <a
-                  href={`/api/cases/${currentCase.id}/export?format=graphml`}
-                  download={`case-${currentCase.id.slice(0, 8)}.graphml`}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-slate-200 transition"
+                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+                  <span>Add Entity...</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onAddNode('EVENT');
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
                 >
-                  <span className="font-medium">GraphML (Standard)</span>
-                  <span className="text-[10px] text-amber-400 font-mono">.graphml</span>
-                </a>
-                <a
-                  href={`/api/cases/${currentCase.id}/export?format=dot`}
-                  download={`case-${currentCase.id.slice(0, 8)}.dot`}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-slate-800 text-slate-200 transition"
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <span>Add Event Node...</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onAddNode('EVIDENCE');
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
                 >
-                  <span className="font-medium">Graphviz DOT</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">.dot</span>
-                </a>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span>Add Evidence Item...</span>
+                </button>
+                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+                <button
+                  onClick={() => {
+                    onAddEdge();
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+                >
+                  <Link2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                  <span>Connect Relationship...</span>
+                </button>
               </div>
             )}
           </div>
         )}
+
+        {/* Tools Menu (Import, Resolution, Timeline, Diagnostics, Export) */}
+        <div ref={toolsMenuRef} className="relative">
+          <button
+            onClick={() => setShowToolsMenu(!showToolsMenu)}
+            title="Investigation Tools"
+            className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition relative"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+            {pendingResolutionCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            )}
+          </button>
+
+          {showToolsMenu && (
+            <div className="absolute right-0 top-8 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 z-50 text-xs font-medium">
+              <button
+                onClick={() => {
+                  onOpenResolution();
+                  setShowToolsMenu(false);
+                }}
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between text-zinc-700 dark:text-zinc-200 transition"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Entity Resolution</span>
+                </div>
+                {pendingResolutionCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 font-mono text-xs">
+                    {pendingResolutionCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (onToggleTimeline) onToggleTimeline();
+                  setShowToolsMenu(false);
+                }}
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between text-zinc-700 dark:text-zinc-200 transition"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Timeline Playback</span>
+                </div>
+                {isTimelineOpen && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenDiagnostics();
+                  setShowToolsMenu(false);
+                }}
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+              >
+                <Activity className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Topology & Diagnostics</span>
+              </button>
+
+              <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+              <button
+                onClick={() => {
+                  onOpenImport();
+                  setShowToolsMenu(false);
+                }}
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+              >
+                <Upload className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Import Dataset (JSON/CSV)</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenAudit();
+                  setShowToolsMenu(false);
+                }}
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+              >
+                <History className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Forensic Audit Trail</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (currentCase) {
+                    window.open(`/api/cases/${currentCase.id}/export`, '_blank');
+                  }
+                  setShowToolsMenu(false);
+                }}
+                className="w-full text-left px-3.5 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-200 transition"
+              >
+                <Download className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Export Snapshot (JSON)</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Theme Toggle (Light / Dark) */}
+        <button
+          onClick={onToggleTheme}
+          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition"
+        >
+          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
       </div>
     </header>
   );
