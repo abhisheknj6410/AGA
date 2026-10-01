@@ -10,9 +10,9 @@ The system evaluates 3 pipelines (Baseline, Full Graph Reasoning, Adaptive Graph
 
 | Pipeline | Possibilities | Valid Retained | Eliminated | Runtime (ms) | Precision | Recall | Algorithms Executed |
 |----------|---------------|----------------|------------|--------------|-----------|--------|---------------------|
-| Baseline | 1 | 1 | 0 | 27.2 | 1 | 1 | K_SHORTEST_PATHS, STRUCTURAL_FAMILIES |
-| Full | 1 | 1 | 0 | 11.1 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, STRUCTURAL_FAMILIES |
-| Adaptive | 1 | 1 | 0 | 7.6 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, STRUCTURAL_FAMILIES |
+| Baseline | 1 | 1 | 0 | 323.7 | 1 | 1 | K_SHORTEST_PATHS, STRUCTURAL_FAMILIES |
+| Full | 1 | 1 | 0 | 87.2 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, STRUCTURAL_FAMILIES |
+| Adaptive | 1 | 1 | 0 | 46.7 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, STRUCTURAL_FAMILIES |
 
 **Ablation Study (Full minus X):**
 
@@ -33,9 +33,9 @@ The system evaluates 3 pipelines (Baseline, Full Graph Reasoning, Adaptive Graph
 
 | Pipeline | Possibilities | Valid Retained | Eliminated | Runtime (ms) | Precision | Recall | Algorithms Executed |
 |----------|---------------|----------------|------------|--------------|-----------|--------|---------------------|
-| Baseline | 1 | 0 | 1 | 4.1 | 0 | 0 | K_SHORTEST_PATHS, TEMPORAL_KAHN |
-| Full | 0 | 0 | 1 | 1.4 | 0 | 0 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN |
-| Adaptive | 0 | 0 | 1 | 0.9 | 0 | 0 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN |
+| Baseline | 1 | 0 | 1 | 32.9 | 0 | 0 | K_SHORTEST_PATHS, TEMPORAL_KAHN |
+| Full | 0 | 0 | 1 | 11.4 | 0 | 0 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN |
+| Adaptive | 0 | 0 | 1 | 16.1 | 0 | 0 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN |
 
 **Ablation Study (Full minus X):**
 
@@ -56,9 +56,9 @@ The system evaluates 3 pipelines (Baseline, Full Graph Reasoning, Adaptive Graph
 
 | Pipeline | Possibilities | Valid Retained | Eliminated | Runtime (ms) | Precision | Recall | Algorithms Executed |
 |----------|---------------|----------------|------------|--------------|-----------|--------|---------------------|
-| Baseline | 1 | 1 | 0 | 7.2 | 1 | 0.5 | K_SHORTEST_PATHS, TEMPORAL_KAHN, DISJOINT_PATHS, STRUCTURAL_FAMILIES |
-| Full | 2 | 2 | 0 | 16.5 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN, DISJOINT_PATHS, DOMINATORS, STRUCTURAL_FAMILIES, SHANNON_INFORMATION_GAIN |
-| Adaptive | 2 | 2 | 0 | 15.0 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN, DISJOINT_PATHS, DOMINATORS, STRUCTURAL_FAMILIES, SHANNON_INFORMATION_GAIN |
+| Baseline | 1 | 1 | 0 | 60.1 | 1 | 0.5 | K_SHORTEST_PATHS, TEMPORAL_KAHN, DISJOINT_PATHS, STRUCTURAL_FAMILIES |
+| Full | 2 | 2 | 0 | 147.5 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN, DISJOINT_PATHS, DOMINATORS, STRUCTURAL_FAMILIES, SHANNON_INFORMATION_GAIN |
+| Adaptive | 2 | 2 | 0 | 49.7 | 1 | 1 | TEMPORAL_REACHABILITY, K_SHORTEST_PATHS, TEMPORAL_KAHN, DISJOINT_PATHS, DOMINATORS, STRUCTURAL_FAMILIES, SHANNON_INFORMATION_GAIN |
 
 **Ablation Study (Full minus X):**
 

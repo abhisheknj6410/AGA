@@ -98,7 +98,7 @@ export class PossibilityEngine {
     if (sourceId && targetId && sourceId !== targetId) {
       if (options.includeAlternativePaths !== false) {
         kPaths = KShortestPathsAlgorithm.findKShortestPaths(baseGraph.nodes, baseGraph.edges, sourceId, targetId, 8);
-      } else {
+      } else if (options.fallbackToShortestPath) {
         const p = DijkstraAlgorithm.findShortestPath(baseGraph.nodes, baseGraph.edges, sourceId, targetId);
         if (p) kPaths.paths.push(p);
       }

@@ -209,7 +209,7 @@ export class CaseReasoningPipeline {
         branchCaseId,
         interp.graph,
         [],
-        { persist: false, maxPossibilities: 10, sourceNodeId: sourceId, targetNodeId: targetId, disableTemporalValidation: skipTemporalGen, includeAlternativePaths: !skipYen }
+        { persist: false, maxPossibilities: 10, sourceNodeId: sourceId, targetNodeId: targetId, disableTemporalValidation: skipTemporalGen, includeAlternativePaths: !skipYen, fallbackToShortestPath: skipYen }
       );
       let possibilities = genResult.possibilities;
 

@@ -8,6 +8,8 @@ import { PossibilitiesView } from '../components/possibilities/PossibilitiesView
 import { InvestigationPlanView } from '../components/planning/InvestigationPlanView';
 import { EvaluationLabView } from '../components/evaluation/EvaluationLabView';
 import { AddFactModal } from '../components/modals/AddFactModal';
+import { ResolutionLabView } from '../components/resolution/ResolutionLabView';
+import { TimelinePlayback } from '../components/timeline/TimelinePlayback';
 import {
   Case,
   GraphPayload,
@@ -19,7 +21,10 @@ import {
   fetchCases,
   fetchCaseGraph,
   createNode,
+  updateNode,
+  deleteNode,
   createEdge,
+  deleteEdge,
   fetchPossibilities,
   generatePossibilities,
   createCase
@@ -32,7 +37,7 @@ export default function Home() {
   const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION'>('GRAPH');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +47,20 @@ export default function Home() {
 
   // Algorithm highlight state
   const [highlightNodeIds, setHighlightNodeIds] = useState<string[]>([]);
+
+  // Timeline playback state
+  const [timelineActive, setTimelineActive] = useState(false);
+  const [timelineStep, setTimelineStep] = useState(0);
+  const [timelinePlaying, setTimelinePlaying] = useState(false);
+  const [timelineCumulative, setTimelineCumulative] = useState(false);
+
+  // Derive chronologically sorted EVENT nodes for timeline
+  const timelineEvents = React.useMemo(() => {
+    if (!graph?.nodes) return [];
+    return graph.nodes
+      .filter(n => n.type === 'EVENT' && n.time?.start)
+      .sort((a, b) => new Date(a.time!.start!).getTime() - new Date(b.time!.start!).getTime());
+  }, [graph]);
 
   // Initial load
   useEffect(() => {
@@ -116,6 +135,24 @@ export default function Home() {
     await loadCaseData();
   };
 
+  const handleDeleteNode = async (nodeId: string) => {
+    if (!currentCase) return;
+    await deleteNode(currentCase.id, nodeId);
+    await loadCaseData();
+  };
+
+  const handleDeleteEdge = async (edgeId: string) => {
+    if (!currentCase) return;
+    await deleteEdge(currentCase.id, edgeId);
+    await loadCaseData();
+  };
+
+  const handleUpdateNode = async (nodeId: string, updates: Partial<GraphNode>) => {
+    if (!currentCase) return;
+    await updateNode(currentCase.id, nodeId, updates);
+    await loadCaseData();
+  };
+
   const handleGeneratePossibilities = async () => {
     if (!currentCase) return;
     await generatePossibilities(currentCase.id);
@@ -167,14 +204,49 @@ export default function Home() {
       {/* Main View Area */}
       <main className="flex-1 w-full h-[calc(100vh-4rem)] relative overflow-hidden">
         {activeTab === 'GRAPH' && (
-          <CytoscapeCanvas
-            nodes={graph?.nodes || []}
-            edges={graph?.edges || []}
-            selectedElement={selectedElement}
-            onSelectElement={setSelectedElement}
-            theme={theme}
-            highlightNodeIds={highlightNodeIds}
-          />
+          <div className="relative w-full h-full">
+            <CytoscapeCanvas
+              nodes={graph?.nodes || []}
+              edges={graph?.edges || []}
+              selectedElement={selectedElement}
+              onSelectElement={setSelectedElement}
+              onDeleteNode={handleDeleteNode}
+              onDeleteEdge={handleDeleteEdge}
+              onUpdateNode={handleUpdateNode}
+              theme={theme}
+              highlightNodeIds={highlightNodeIds}
+            />
+            {/* Timeline trigger button */}
+            {!timelineActive && timelineEvents.length > 0 && (
+              <button
+                onClick={() => { setTimelineActive(true); setTimelineStep(0); }}
+                className="absolute bottom-6 right-6 flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-zinc-900/90 border border-primary-200 dark:border-primary-800/40 rounded-xl shadow-lg backdrop-blur text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 z-20"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Timeline ({timelineEvents.length})
+              </button>
+            )}
+            {/* Timeline overlay */}
+            {timelineActive && (
+              <TimelinePlayback
+                events={timelineEvents}
+                allNodes={graph?.nodes || []}
+                allEdges={graph?.edges || []}
+                currentStep={timelineStep}
+                onStepChange={(s) => {
+                  setTimelineStep(s);
+                  if (timelineEvents[s]) {
+                    setHighlightNodeIds([timelineEvents[s].id]);
+                  }
+                }}
+                isPlaying={timelinePlaying}
+                onTogglePlay={() => setTimelinePlaying(p => !p)}
+                cumulativeMode={timelineCumulative}
+                onToggleCumulative={() => setTimelineCumulative(c => !c)}
+                onClose={() => { setTimelineActive(false); setTimelinePlaying(false); setHighlightNodeIds([]); }}
+              />
+            )}
+          </div>
         )}
 
         {activeTab === 'INGEST' && (
@@ -210,6 +282,10 @@ export default function Home() {
 
         {activeTab === 'EVALUATION' && (
           <EvaluationLabView />
+        )}
+
+        {activeTab === 'RESOLUTION' && currentCase && (
+          <ResolutionLabView currentCase={currentCase} />
         )}
       </main>
 

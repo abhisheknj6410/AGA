@@ -9,7 +9,9 @@ import {
   Chip,
   Progress,
   Divider,
-  Alert
+  Alert,
+  Tabs,
+  Tab
 } from '@heroui/react';
 import {
   Target,
@@ -20,9 +22,11 @@ import {
   TrendingDown,
   Layers,
   HelpCircle,
-  Activity
+  Activity,
+  Sliders
 } from 'lucide-react';
 import { GraphPayload } from '../../types/graph';
+import { AlgorithmEfficiencyLabView } from '../effectiveness/AlgorithmEfficiencyLabView';
 
 interface InvestigationPlanViewProps {
   caseId?: string;
@@ -59,10 +63,15 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
   }, [caseId]);
 
   return (
-    <div className="w-full h-full p-6 bg-slate-50 dark:bg-zinc-950 overflow-y-auto">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm">
+    <div className="w-full h-full flex flex-col bg-slate-50 dark:bg-zinc-950 overflow-hidden">
+      {/* Inner sub-tabs: Plan | Efficiency Lab */}
+      <div className="border-b border-divider bg-background px-6 pt-3 shrink-0">
+        <Tabs variant="underlined" color="primary" size="sm" aria-label="Intelligence sub-views">
+          <Tab key="plan" title={<span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/>Strategic Plan</span>}>
+            <div className="overflow-y-auto p-6" style={{ height: 'calc(100vh - 9rem)' }}>
+              <div className="max-w-6xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
@@ -247,6 +256,21 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
             </div>
           </CardBody>
         </Card>
+              </div>
+            </div>
+          </Tab>
+          <Tab key="efficiency" title={<span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5"/>Adaptive Efficiency Lab</span>}>
+            <div style={{ height: 'calc(100vh - 9rem)' }}>
+              {caseId ? (
+                <AlgorithmEfficiencyLabView caseId={caseId} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-sm text-foreground-400">
+                  Select a case to view adaptive reasoning analysis.
+                </div>
+              )}
+            </div>
+          </Tab>
+        </Tabs>
       </div>
     </div>
   );

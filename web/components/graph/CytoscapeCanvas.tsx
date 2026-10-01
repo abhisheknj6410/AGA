@@ -16,7 +16,10 @@ import {
   Calendar,
   Tag,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  Edit3,
+  Check
 } from 'lucide-react';
 
 if (typeof window !== 'undefined') {
@@ -32,6 +35,9 @@ interface CytoscapeCanvasProps {
   edges: GraphEdge[];
   selectedElement: { type: 'node' | 'edge'; id: string } | null;
   onSelectElement: (element: { type: 'node' | 'edge'; id: string } | null) => void;
+  onDeleteNode?: (nodeId: string) => Promise<void>;
+  onDeleteEdge?: (edgeId: string) => Promise<void>;
+  onUpdateNode?: (nodeId: string, updates: Partial<GraphNode>) => Promise<void>;
   layoutType?: 'dagre' | 'cose' | 'concentric' | 'circle';
   theme?: 'light' | 'dark';
   highlightNodeIds?: string[];
@@ -43,6 +49,9 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   edges,
   selectedElement,
   onSelectElement,
+  onDeleteNode,
+  onDeleteEdge,
+  onUpdateNode,
   layoutType = 'dagre',
   theme = 'light',
   highlightNodeIds = [],
@@ -52,6 +61,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   const cyRef = useRef<Core | null>(null);
   const [activeLayout, setActiveLayout] = useState<'dagre' | 'cose' | 'concentric' | 'circle'>(layoutType);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [isEditingLabel, setIsEditingLabel] = useState<boolean>(false);
+  const [editLabelValue, setEditLabelValue] = useState<string>('');
   const [neighborhoodMode, setNeighborhoodMode] = useState<boolean>(false);
 
   const isLight = theme === 'light';
@@ -501,6 +512,26 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
                 <div className="pt-2 text-[11px] text-slate-500">
                   ID: <span className="font-mono text-slate-700 dark:text-zinc-300">{selectedNodeData.id}</span>
                 </div>
+
+                {onDeleteNode && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end">
+                    <Button
+                      size="sm"
+                      color="danger"
+                      variant="light"
+                      className="text-xs h-7 px-2 font-medium"
+                      startContent={<Trash2 className="w-3.5 h-3.5" />}
+                      onPress={async () => {
+                        if (confirm(`Delete node "${selectedNodeData.label}"?`)) {
+                          await onDeleteNode(selectedNodeData.id);
+                          onSelectElement(null);
+                        }
+                      }}
+                    >
+                      Delete Node
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -519,11 +550,60 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
                     <span className="font-medium text-slate-700 dark:text-zinc-300">{selectedEdgeData.target}</span>
                   </div>
                 </div>
+
+                {onDeleteEdge && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end">
+                    <Button
+                      size="sm"
+                      color="danger"
+                      variant="light"
+                      className="text-xs h-7 px-2 font-medium"
+                      startContent={<Trash2 className="w-3.5 h-3.5" />}
+                      onPress={async () => {
+                        if (confirm(`Delete relationship "${selectedEdgeData.type}"?`)) {
+                          await onDeleteEdge(selectedEdgeData.id);
+                          onSelectElement(null);
+                        }
+                      }}
+                    >
+                      Delete Relationship
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardBody>
         </Card>
       )}
+
+      {/* Graph Legend — bottom-left floating */}
+      <div className="absolute bottom-4 left-4 z-20">
+        <div className="bg-white/92 dark:bg-zinc-900/92 border border-slate-200/80 dark:border-zinc-800/80 rounded-xl shadow-lg backdrop-blur-sm p-3 text-xs space-y-2 min-w-[160px]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1">Legend</div>
+          {[
+            { color: 'bg-teal-500', label: 'Entity (Person/Org/Asset)' },
+            { color: 'bg-amber-500', label: 'Event (Action/Occurrence)' },
+            { color: 'bg-blue-500', label: 'Evidence (Document/Log)' },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-2">
+              <span className={`w-3 h-3 rounded-full shrink-0 ${item.color}`} />
+              <span className="text-slate-600 dark:text-zinc-400 leading-tight">{item.label}</span>
+            </div>
+          ))}
+          <div className="border-t border-slate-100 dark:border-zinc-800 pt-2 mt-1 space-y-1">
+            {[
+              { color: 'bg-indigo-400', label: 'Causal Link' },
+              { color: 'bg-red-400', label: 'Contradiction' },
+              { color: 'bg-emerald-400', label: 'Supports / Corroborates' },
+            ].map(item => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className={`w-5 h-0.5 shrink-0 ${item.color}`} />
+                <span className="text-slate-500 dark:text-zinc-500 leading-tight">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

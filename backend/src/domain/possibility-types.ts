@@ -185,6 +185,7 @@ export interface PossibilityGenerationOptions {
   includeTemporalBranches?: boolean;
   includeContradictionBranches?: boolean;
   includeAlternativePaths?: boolean;
+  fallbackToShortestPath?: boolean;
   minEvidenceSupport?: number;
   disableTemporalValidation?: boolean; // For ablation testing
   disableEvidenceConstraints?: boolean; // For ablation testing
