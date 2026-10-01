@@ -1,8 +1,0 @@
-import { EvidenceReconstructionEngine } from './backend/src/application/evidence-reconstruction-engine.js';
-const baseProv = { sourceKind: 'DOCUMENT' as const, reliability: 1.0, sourceName: 'Test', sourceReference: 'ref' };
-const facts: any[] = [
-    { id: 'f1', caseId: 'c_temporal_conflict', subject: { id: 's1', label: 'Source', category: 'ENTITY', type: 'PERSON' }, predicate: 'INVOLVED', object: { id: 'm1', label: 'Mid1', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'SECOND' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
-    { id: 'f2', caseId: 'c_temporal_conflict', subject: { id: 'm1', label: 'Mid1', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'SECOND' } }, predicate: 'CAUSED', object: { id: 'm2', label: 'Mid2', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T10:00:00Z', end: '2025-01-01T10:00:00Z', precision: 'SECOND' } }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv },
-    { id: 'f3', caseId: 'c_temporal_conflict', subject: { id: 'm2', label: 'Mid2', category: 'EVENT', type: 'ACTION', time: { start: '2025-01-01T10:00:00Z', end: '2025-01-01T10:00:00Z', precision: 'SECOND' } }, predicate: 'INVOLVED', object: { id: 't1', label: 'Target', category: 'ENTITY', type: 'PERSON' }, epistemicStatus: 'OBSERVED', extractionMethod: 'MANUAL_ENTRY', provenance: baseProv }
-];
-console.log(JSON.stringify(EvidenceReconstructionEngine.reconstruct('c1', facts), null, 2));
