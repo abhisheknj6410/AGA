@@ -45,7 +45,7 @@ test('Causal Graph Algorithm Pipeline: Path Filtering & Elimination', () => {
   // 2. Filter paths causally through PossibilityConstraintEngine
   const survivingPaths = kPaths.paths.filter(p => {
     const pEdges = edges.filter(e => p.edgeIds.includes(e.id));
-    const check = PossibilityConstraintEngine.isPathValid(p.nodes, pEdges, 1);
+    const check = PossibilityConstraintEngine.isPathValid(p.nodes as GraphNode[], pEdges, 1);
     return check.valid;
   });
 
@@ -66,7 +66,7 @@ test('Causal Graph Algorithm Pipeline: Entity Resolution Identity Rewiring', () 
     edges: [
       { id: 'e1', caseId: 'test', source: 'user-b', target: 'vault', type: 'ACCESSED', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-1'], properties: {}, createdAt: '', updatedAt: '' }
     ],
-    metadata: { caseId: 'test', nodeCount: 3, edgeCount: 1, entityCount: 3, eventCount: 0, evidenceCount: 0 }
+    metadata: { caseId: 'test', nodeCount: 3, edgeCount: 1, entityCount: 3, eventCount: 0, evidenceCount: 0, generatedAt: new Date().toISOString() }
   };
 
   // Branch A: Entities Merged (Alias One == Alias Two)
@@ -138,11 +138,11 @@ test('Causal Graph Algorithm Pipeline: Common Invariants & Resolving Evidence', 
     edges: [
       { id: 'e-common', caseId: 'test', source: 'origin', target: 'shared-node', type: 'LOCATED_AT', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-common'], properties: {}, createdAt: '', updatedAt: '' },
       { id: 'e-a1', caseId: 'test', source: 'shared-node', target: 'branch-a-node', type: 'USES', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-a'], properties: {}, createdAt: '', updatedAt: '' },
-      { id: 'e-a2', caseId: 'test', source: 'branch-a-node', target: 'dest', type: 'COMMUNICATED_WITH', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-a'], properties: {}, createdAt: '', updatedAt: '' },
+      { id: 'e-a2', caseId: 'test', source: 'branch-a-node', target: 'dest', type: 'CONNECTED_TO', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-a'], properties: {}, createdAt: '', updatedAt: '' },
       { id: 'e-b1', caseId: 'test', source: 'shared-node', target: 'branch-b-node', type: 'USES', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-b'], properties: {}, createdAt: '', updatedAt: '' },
-      { id: 'e-b2', caseId: 'test', source: 'branch-b-node', target: 'dest', type: 'COMMUNICATED_WITH', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-b'], properties: {}, createdAt: '', updatedAt: '' }
+      { id: 'e-b2', caseId: 'test', source: 'branch-b-node', target: 'dest', type: 'CONNECTED_TO', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-b'], properties: {}, createdAt: '', updatedAt: '' }
     ],
-    metadata: { caseId: 'test', nodeCount: 5, edgeCount: 5, entityCount: 5, eventCount: 0, evidenceCount: 0 }
+    metadata: { caseId: 'test', nodeCount: 5, edgeCount: 5, entityCount: 5, eventCount: 0, evidenceCount: 0, generatedAt: new Date().toISOString() }
   };
 
   const possibilities: Possibility[] = [

@@ -94,7 +94,7 @@ test('Comparative 3: Algorithm adds no information on simple linear chain (Basel
 
   // Create a trivial linear chain: Mercer -> NodeB -> Vault
   const linearGraph: GraphPayload = {
-    caseId: 'linear-case',
+
     nodes: [
       { id: 'person-mercer', category: 'ENTITY', type: 'PERSON', label: 'Alex Mercer' },
       { id: 'evt-direct-transit', category: 'EVENT', type: 'LOCATION_CHANGE', label: 'Transit', time: { start: '2026-03-01T14:00:00Z', precision: 'SECOND' } },
@@ -103,7 +103,8 @@ test('Comparative 3: Algorithm adds no information on simple linear chain (Basel
     edges: [
       { id: 'e1', source: 'person-mercer', target: 'evt-direct-transit', type: 'PERFORMED', status: 'OBSERVED', cost: 1 },
       { id: 'e2', source: 'evt-direct-transit', target: 'location-vault', type: 'AFFECTED', status: 'OBSERVED', cost: 1 }
-    ]
+    ],
+    metadata: { caseId: 'linear-case', nodeCount: 3, edgeCount: 2, entityCount: 2, eventCount: 1, evidenceCount: 0, generatedAt: new Date().toISOString() }
   };
 
   const report = await comparativeEngine.evaluateCaseComparison('linear-case', linearGraph);
@@ -139,7 +140,7 @@ test('Comparative 4: Min-Cut and Information Gain are necessary for optimal inte
 
   // 2. Min-Cut on parallel corridors discovering coordinated multi-edge interdiction
   const parallelCorridorGraph: GraphPayload = {
-    caseId: 'parallel-case',
+
     nodes: [
       { id: 'person-mercer', category: 'ENTITY', type: 'PERSON', label: 'Alex Mercer' },
       { id: 'evt-ground-gate', category: 'EVENT', type: 'LOCATION_CHANGE', label: 'Ground Gate' },
@@ -151,7 +152,8 @@ test('Comparative 4: Min-Cut and Information Gain are necessary for optimal inte
       { id: 'e-g2', source: 'evt-ground-gate', target: 'location-vault', type: 'AFFECTED', status: 'OBSERVED', cost: 1 },
       { id: 'e-s1', source: 'person-mercer', target: 'evt-sat-receiver', type: 'PERFORMED', status: 'OBSERVED', cost: 1 },
       { id: 'e-s2', source: 'evt-sat-receiver', target: 'location-vault', type: 'AFFECTED', status: 'OBSERVED', cost: 1 }
-    ]
+    ],
+    metadata: { caseId: 'parallel-case', nodeCount: 4, edgeCount: 4, entityCount: 2, eventCount: 2, evidenceCount: 0, generatedAt: new Date().toISOString() }
   };
 
   const parallelReport = await comparativeEngine.evaluateCaseComparison('parallel-case', parallelCorridorGraph);

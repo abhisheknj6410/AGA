@@ -125,14 +125,14 @@ export interface NodeMetadata {
 
 export interface GraphNode {
   id: string;
-  caseId: string;
+  caseId?: string;
   category: NodeCategory;
   type: string; // Specific EntityType, EventType, or EvidenceType
   label: string;
-  properties: Record<string, unknown>;
-  metadata: NodeMetadata;
-  createdAt: string;
-  updatedAt: string;
+  properties?: Record<string, unknown>;
+  metadata?: NodeMetadata;
+  createdAt?: string;
+  updatedAt?: string;
 
   // Event-specific fields
   time?: TemporalInfo;
@@ -147,17 +147,17 @@ export interface GraphNode {
 
 export interface GraphEdge {
   id: string;
-  caseId: string;
+  caseId?: string;
   source: string; // Node ID
   target: string; // Node ID
   type: EdgeType;
   status: EdgeStatus;
   cost: number;
-  confidence: number | null; // Nullable for OBSERVED, 0.0 - 1.0 for derived
-  evidenceRefs: string[]; // List of Evidence Node IDs
-  properties: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
+  confidence?: number | null; // Nullable for OBSERVED, 0.0 - 1.0 for derived
+  evidenceRefs?: string[]; // List of Evidence Node IDs
+  properties?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Case {
@@ -165,13 +165,13 @@ export interface Case {
   name: string;
   description: string;
   status: 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuditLog {
   id: string;
-  caseId: string;
+  caseId?: string;
   who: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'MERGE' | 'IMPORT' | 'RESOLVE';
   objectType: 'CASE' | 'NODE' | 'EDGE' | 'EVIDENCE' | 'RESOLUTION';
@@ -186,21 +186,21 @@ export type ResolutionMatchType = 'EXACT_MATCH' | 'CONFIRMED_MATCH' | 'POSSIBLE_
 
 export interface ResolutionCandidate {
   id: string;
-  caseId: string;
+  caseId?: string;
   sourceNodeId: string;
   targetNodeId: string;
   matchType: ResolutionMatchType;
   similarityScore: number;
   reason: string;
   status: 'PENDING' | 'MERGED' | 'REJECTED';
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface GraphPayload {
   nodes: GraphNode[];
   edges: GraphEdge[];
   metadata: {
-    caseId: string;
+    caseId?: string;
     nodeCount: number;
     edgeCount: number;
     entityCount: number;

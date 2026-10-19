@@ -54,7 +54,7 @@ test('Test 1 — Evidence addition increases valid possibility space', () => {
     category: 'EVIDENCE',
     type: 'INTERVIEW',
     label: 'Informant Audio Wiretap',
-    source: { name: 'wiretap-01.wav', kind: 'AUDIO' },
+    source: { name: 'wiretap-01.wav', kind: 'SENSOR' },
     reliability: 0.95
   });
 
