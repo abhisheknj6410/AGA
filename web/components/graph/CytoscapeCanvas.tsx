@@ -224,95 +224,98 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             'target-arrow-color': '#6366f1'
           }
         },
-        // Algorithm Highlight Overlays
+        // Algorithm Highlight Overlays (Refined Forensic Focus)
         {
           selector: '.algorithm-highlighted-node',
           style: {
-            'border-color': '#ec4899',
-            'border-width': 3,
-            'shadow-blur': 20,
-            'shadow-color': 'rgba(236, 72, 153, 0.6)'
+            'border-color': isLight ? '#0284c7' : '#38bdf8',
+            'border-width': 2.5,
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(2, 132, 199, 0.35)' : 'rgba(56, 189, 248, 0.45)',
+            'font-weight': 700
           }
         },
         {
           selector: '.algorithm-highlighted-edge',
           style: {
-            'width': 3.5,
-            'line-color': '#ec4899',
-            'target-arrow-color': '#ec4899',
+            'width': 2.75,
+            'line-color': isLight ? '#0284c7' : '#38bdf8',
+            'target-arrow-color': isLight ? '#0284c7' : '#38bdf8',
+            'shadow-blur': 10,
+            'shadow-color': isLight ? 'rgba(2, 132, 199, 0.35)' : 'rgba(56, 189, 248, 0.45)',
             'opacity': 1
           }
         },
         {
           selector: '.dimmed',
           style: {
-            'opacity': 0.15
+            'opacity': 0.45
           }
         },
         // Interactive Algorithm Simulation Classes
         {
           selector: '.sim-frontier-node',
           style: {
-            'border-color': '#06b6d4',
-            'border-width': 3.5,
-            'shadow-blur': 25,
-            'shadow-color': 'rgba(6, 182, 212, 0.85)',
-            'background-color': isLight ? '#ecfeff' : '#083344',
-            'color': isLight ? '#0e7490' : '#a5f3fc'
+            'border-color': isLight ? '#0284c7' : '#38bdf8',
+            'border-width': 2.5,
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(2, 132, 199, 0.4)' : 'rgba(56, 189, 248, 0.5)',
+            'background-color': isLight ? '#f0f9ff' : '#0c2a4a',
+            'color': isLight ? '#0369a1' : '#e0f2fe'
           }
         },
         {
           selector: '.sim-visited-node',
           style: {
-            'border-color': '#10b981',
-            'border-width': 3,
-            'shadow-blur': 16,
-            'shadow-color': 'rgba(16, 185, 129, 0.6)',
-            'background-color': isLight ? '#f0fdf4' : '#064e3b',
+            'border-color': isLight ? '#059669' : '#10b981',
+            'border-width': 2,
+            'shadow-blur': 12,
+            'shadow-color': isLight ? 'rgba(5, 150, 105, 0.3)' : 'rgba(16, 185, 129, 0.4)',
+            'background-color': isLight ? '#f0fdf4' : '#063f2e',
             'color': isLight ? '#047857' : '#a7f3d0'
           }
         },
         {
           selector: '.sim-choke-node',
           style: {
-            'border-color': '#ef4444',
-            'border-width': 4.5,
-            'shadow-blur': 30,
-            'shadow-color': 'rgba(239, 68, 68, 0.95)',
-            'background-color': isLight ? '#fef2f2' : '#450a0a',
-            'color': isLight ? '#b91c1c' : '#fca5a5'
+            'border-color': isLight ? '#e11d48' : '#f43f5e',
+            'border-width': 2.5,
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(225, 29, 72, 0.4)' : 'rgba(244, 63, 94, 0.5)',
+            'background-color': isLight ? '#fff1f2' : '#4c0519',
+            'color': isLight ? '#be123c' : '#fecdd3'
           }
         },
         {
           selector: '.sim-severed-node',
           style: {
-            'opacity': 0.3,
+            'opacity': 0.35,
             'border-style': 'dashed',
-            'border-color': '#dc2626',
-            'background-color': '#292524'
+            'border-color': isLight ? '#e11d48' : '#f43f5e',
+            'background-color': isLight ? '#f8fafc' : '#18181b'
           }
         },
         {
           selector: '.sim-path-edge',
           style: {
-            'width': 4.5,
-            'line-color': '#10b981',
-            'target-arrow-color': '#10b981',
-            'shadow-blur': 16,
-            'shadow-color': 'rgba(16, 185, 129, 0.8)',
+            'width': 2.75,
+            'line-color': isLight ? '#059669' : '#10b981',
+            'target-arrow-color': isLight ? '#059669' : '#10b981',
+            'shadow-blur': 10,
+            'shadow-color': isLight ? 'rgba(5, 150, 105, 0.3)' : 'rgba(16, 185, 129, 0.4)',
             'opacity': 1
           }
         },
         {
           selector: '.sim-cut-edge',
           style: {
-            'width': 4.5,
+            'width': 2.5,
             'line-style': 'dashed',
-            'line-dash-pattern': [8, 5],
-            'line-color': '#f43f5e',
-            'target-arrow-color': '#f43f5e',
-            'shadow-blur': 20,
-            'shadow-color': 'rgba(244, 63, 94, 0.9)',
+            'line-dash-pattern': [6, 4],
+            'line-color': isLight ? '#e11d48' : '#f43f5e',
+            'target-arrow-color': isLight ? '#e11d48' : '#f43f5e',
+            'shadow-blur': 10,
+            'shadow-color': isLight ? 'rgba(225, 29, 72, 0.4)' : 'rgba(244, 63, 94, 0.5)',
             'opacity': 1
           }
         },
@@ -320,7 +323,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           selector: '.sim-source-partition',
           style: {
             'border-color': '#0284c7',
-            'border-width': 2.5,
+            'border-width': 2,
             'background-color': isLight ? '#e0f2fe' : '#082f49',
             'color': isLight ? '#0369a1' : '#bae6fd'
           }
@@ -328,16 +331,16 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         {
           selector: '.sim-target-partition',
           style: {
-            'border-color': '#9333ea',
-            'border-width': 2.5,
-            'background-color': isLight ? '#f3e8ff' : '#3b0764',
-            'color': isLight ? '#7e22ce' : '#e9d5ff'
+            'border-color': '#7c3aed',
+            'border-width': 2,
+            'background-color': isLight ? '#f5f3ff' : '#2e1065',
+            'color': isLight ? '#6d28d9' : '#ddd6fe'
           }
         },
         {
           selector: '.sim-dimmed',
           style: {
-            'opacity': 0.12
+            'opacity': 0.45
           }
         }
       ] as any),
@@ -410,7 +413,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
 
     // Run layout
     runLayout(activeLayout);
-  }, [nodes, edges, activeLayout]);
+  }, [nodes, edges, activeLayout, isLight]);
 
   // Highlight synchronization
   useEffect(() => {
@@ -434,7 +437,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         });
       }
     });
-  }, [highlightNodeIds, highlightEdgeIds]);
+  }, [highlightNodeIds, highlightEdgeIds, isLight]);
 
   // Timer loop for simulation playback
   useEffect(() => {
