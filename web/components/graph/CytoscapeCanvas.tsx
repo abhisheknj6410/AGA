@@ -19,8 +19,26 @@ import {
   ArrowRight,
   Trash2,
   Edit3,
-  Check
+  Check,
+  Zap,
+  Target,
+  Scissors,
+  X,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
+
+import { SimulationState } from './AlgorithmSimulationDeck';
+import { runAlgorithm } from '../../api/client';
+import {
+  ForensicMode,
+  ForensicStep,
+  compileDijkstraSteps,
+  compileDominatorSteps,
+  compileMinCutSteps,
+  detectCandidatePair
+} from './forensic-simulation';
+import { ForensicTelemetryBar } from './ForensicTelemetryBar';
 
 if (typeof window !== 'undefined') {
   try {
@@ -31,6 +49,7 @@ if (typeof window !== 'undefined') {
 }
 
 interface CytoscapeCanvasProps {
+  caseId?: string;
   nodes: GraphNode[];
   edges: GraphEdge[];
   selectedElement: { type: 'node' | 'edge'; id: string } | null;
@@ -42,9 +61,11 @@ interface CytoscapeCanvasProps {
   theme?: 'light' | 'dark';
   highlightNodeIds?: string[];
   highlightEdgeIds?: string[];
+  simulationState?: SimulationState | null;
 }
 
 export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
+  caseId,
   nodes,
   edges,
   selectedElement,
@@ -55,7 +76,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   layoutType = 'dagre',
   theme = 'light',
   highlightNodeIds = [],
-  highlightEdgeIds = []
+  highlightEdgeIds = [],
+  simulationState = null
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -64,6 +86,16 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   const [isEditingLabel, setIsEditingLabel] = useState<boolean>(false);
   const [editLabelValue, setEditLabelValue] = useState<string>('');
   const [neighborhoodMode, setNeighborhoodMode] = useState<boolean>(false);
+
+  // Forensic Investigation Mode State
+  const [forensicMode, setForensicMode] = useState<ForensicMode>('NORMAL');
+  const [forensicSteps, setForensicSteps] = useState<ForensicStep[]>([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [isSevered, setIsSevered] = useState<boolean>(false);
+  const [isModeLoading, setIsModeLoading] = useState<boolean>(false);
+  const [isLegendOpen, setIsLegendOpen] = useState<boolean>(false);
 
   const isLight = theme === 'light';
 
@@ -192,29 +224,123 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             'target-arrow-color': '#6366f1'
           }
         },
-        // Algorithm Highlight Overlays
+        // Algorithm Highlight Overlays (Refined Forensic Focus)
         {
           selector: '.algorithm-highlighted-node',
           style: {
-            'border-color': '#ec4899',
-            'border-width': 3,
-            'shadow-blur': 20,
-            'shadow-color': 'rgba(236, 72, 153, 0.6)'
+            'border-color': isLight ? '#0284c7' : '#38bdf8',
+            'border-width': 2.5,
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(2, 132, 199, 0.35)' : 'rgba(56, 189, 248, 0.45)',
+            'font-weight': 700
           }
         },
         {
           selector: '.algorithm-highlighted-edge',
           style: {
-            'width': 3.5,
-            'line-color': '#ec4899',
-            'target-arrow-color': '#ec4899',
+            'width': 2.75,
+            'line-color': isLight ? '#0284c7' : '#38bdf8',
+            'target-arrow-color': isLight ? '#0284c7' : '#38bdf8',
+            'shadow-blur': 10,
+            'shadow-color': isLight ? 'rgba(2, 132, 199, 0.35)' : 'rgba(56, 189, 248, 0.45)',
             'opacity': 1
           }
         },
         {
           selector: '.dimmed',
           style: {
-            'opacity': 0.15
+            'opacity': 0.45
+          }
+        },
+        // Interactive Algorithm Simulation Classes
+        {
+          selector: '.sim-frontier-node',
+          style: {
+            'border-color': isLight ? '#0284c7' : '#38bdf8',
+            'border-width': 2.5,
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(2, 132, 199, 0.4)' : 'rgba(56, 189, 248, 0.5)',
+            'background-color': isLight ? '#f0f9ff' : '#0c2a4a',
+            'color': isLight ? '#0369a1' : '#e0f2fe'
+          }
+        },
+        {
+          selector: '.sim-visited-node',
+          style: {
+            'border-color': isLight ? '#059669' : '#10b981',
+            'border-width': 2,
+            'shadow-blur': 12,
+            'shadow-color': isLight ? 'rgba(5, 150, 105, 0.3)' : 'rgba(16, 185, 129, 0.4)',
+            'background-color': isLight ? '#f0fdf4' : '#063f2e',
+            'color': isLight ? '#047857' : '#a7f3d0'
+          }
+        },
+        {
+          selector: '.sim-choke-node',
+          style: {
+            'border-color': isLight ? '#e11d48' : '#f43f5e',
+            'border-width': 2.5,
+            'shadow-blur': 16,
+            'shadow-color': isLight ? 'rgba(225, 29, 72, 0.4)' : 'rgba(244, 63, 94, 0.5)',
+            'background-color': isLight ? '#fff1f2' : '#4c0519',
+            'color': isLight ? '#be123c' : '#fecdd3'
+          }
+        },
+        {
+          selector: '.sim-severed-node',
+          style: {
+            'opacity': 0.35,
+            'border-style': 'dashed',
+            'border-color': isLight ? '#e11d48' : '#f43f5e',
+            'background-color': isLight ? '#f8fafc' : '#18181b'
+          }
+        },
+        {
+          selector: '.sim-path-edge',
+          style: {
+            'width': 2.75,
+            'line-color': isLight ? '#059669' : '#10b981',
+            'target-arrow-color': isLight ? '#059669' : '#10b981',
+            'shadow-blur': 10,
+            'shadow-color': isLight ? 'rgba(5, 150, 105, 0.3)' : 'rgba(16, 185, 129, 0.4)',
+            'opacity': 1
+          }
+        },
+        {
+          selector: '.sim-cut-edge',
+          style: {
+            'width': 2.5,
+            'line-style': 'dashed',
+            'line-dash-pattern': [6, 4],
+            'line-color': isLight ? '#e11d48' : '#f43f5e',
+            'target-arrow-color': isLight ? '#e11d48' : '#f43f5e',
+            'shadow-blur': 10,
+            'shadow-color': isLight ? 'rgba(225, 29, 72, 0.4)' : 'rgba(244, 63, 94, 0.5)',
+            'opacity': 1
+          }
+        },
+        {
+          selector: '.sim-source-partition',
+          style: {
+            'border-color': '#0284c7',
+            'border-width': 2,
+            'background-color': isLight ? '#e0f2fe' : '#082f49',
+            'color': isLight ? '#0369a1' : '#bae6fd'
+          }
+        },
+        {
+          selector: '.sim-target-partition',
+          style: {
+            'border-color': '#7c3aed',
+            'border-width': 2,
+            'background-color': isLight ? '#f5f3ff' : '#2e1065',
+            'color': isLight ? '#6d28d9' : '#ddd6fe'
+          }
+        },
+        {
+          selector: '.sim-dimmed',
+          style: {
+            'opacity': 0.45
           }
         }
       ] as any),
@@ -287,7 +413,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
 
     // Run layout
     runLayout(activeLayout);
-  }, [nodes, edges, activeLayout]);
+  }, [nodes, edges, activeLayout, isLight]);
 
   // Highlight synchronization
   useEffect(() => {
@@ -311,7 +437,168 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         });
       }
     });
-  }, [highlightNodeIds, highlightEdgeIds]);
+  }, [highlightNodeIds, highlightEdgeIds, isLight]);
+
+  // Timer loop for simulation playback
+  useEffect(() => {
+    if (!isPlaying || forensicSteps.length <= 1) return;
+    const delay = Math.max(500, Math.round(1800 / playbackSpeed));
+    const interval = setInterval(() => {
+      setCurrentStepIndex(prev => {
+        if (prev >= forensicSteps.length - 1) {
+          setIsPlaying(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, delay);
+    return () => clearInterval(interval);
+  }, [isPlaying, forensicSteps.length, playbackSpeed]);
+
+  const activeStep = forensicMode !== 'NORMAL' ? forensicSteps[currentStepIndex] : simulationState?.currentStep;
+  const activeSevered = forensicMode !== 'NORMAL' ? isSevered : simulationState?.isSevered;
+
+  // Algorithm Simulation Synchronization
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    cy.batch(() => {
+      cy.elements().removeClass(
+        'sim-frontier-node sim-visited-node sim-choke-node sim-severed-node sim-path-edge sim-cut-edge sim-source-partition sim-target-partition sim-dimmed'
+      );
+
+      if (!activeStep) return;
+
+      const step = activeStep;
+
+      // Dim non-participating elements
+      const allActiveNodeIds = new Set([
+        ...(step.activeNodeIds || []),
+        ...(step.frontierNodeIds || []),
+        ...(step.visitedNodeIds || []),
+        ...(step.chokeNodeIds || []),
+        ...(step.sourcePartitionIds || []),
+        ...(step.targetPartitionIds || [])
+      ]);
+      const allActiveEdgeIds = new Set([
+        ...(step.activeEdgeIds || []),
+        ...(step.cutEdgeIds || [])
+      ]);
+
+      if (allActiveNodeIds.size > 0 || allActiveEdgeIds.size > 0) {
+        cy.nodes().forEach(n => {
+          if (!allActiveNodeIds.has(n.id())) n.addClass('sim-dimmed');
+        });
+        cy.edges().forEach(e => {
+          if (!allActiveEdgeIds.has(e.id())) e.addClass('sim-dimmed');
+        });
+      }
+
+      step.frontierNodeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-frontier-node'));
+      step.visitedNodeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-visited-node'));
+      step.chokeNodeIds?.forEach(id => {
+        if (activeSevered) {
+          cy.$id(id).addClass('sim-severed-node');
+        } else {
+          cy.$id(id).removeClass('sim-dimmed').addClass('sim-choke-node');
+        }
+      });
+      step.activeEdgeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-path-edge'));
+      step.cutEdgeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-cut-edge'));
+      step.sourcePartitionIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-source-partition'));
+      step.targetPartitionIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-target-partition'));
+
+      if (activeSevered && step.chokeNodeIds && step.chokeNodeIds.length > 0) {
+        step.targetPartitionIds?.forEach(id => cy.$id(id).addClass('sim-dimmed'));
+      }
+    });
+
+    if (activeStep?.frontierNodeIds && activeStep.frontierNodeIds.length === 1) {
+      const targetCyNode = cy.$id(activeStep.frontierNodeIds[0]);
+      if (targetCyNode && targetCyNode.length > 0) {
+        cy.animate({
+          center: { eles: targetCyNode },
+          duration: 350
+        });
+      }
+    }
+  }, [activeStep, activeSevered]);
+
+  const handleSelectMode = async (mode: ForensicMode) => {
+    if (mode === 'NORMAL') {
+      setForensicMode('NORMAL');
+      setForensicSteps([]);
+      setCurrentStepIndex(0);
+      setIsPlaying(false);
+      setIsSevered(false);
+      const cy = cyRef.current;
+      if (cy) {
+        cy.batch(() => {
+          cy.elements().removeClass(
+            'sim-frontier-node sim-visited-node sim-choke-node sim-severed-node sim-path-edge sim-cut-edge sim-source-partition sim-target-partition sim-dimmed'
+          );
+        });
+      }
+      return;
+    }
+
+    if (!caseId) {
+      alert("No active case selected.");
+      return;
+    }
+
+    setIsModeLoading(true);
+    setIsSevered(false);
+    try {
+      const { sourceId, targetId } = detectCandidatePair(
+        nodes,
+        edges,
+        selectedElement?.type === 'node' ? selectedElement.id : undefined
+      );
+      if (!sourceId || !targetId) {
+        alert("At least 2 nodes are required to trace causal corridors.");
+        return;
+      }
+
+      let compiledSteps: ForensicStep[] = [];
+
+      if (mode === 'CAUSAL_PATH') {
+        const res = await runAlgorithm(caseId, 'DIJKSTRA', {
+          sourceId,
+          targetId,
+          sourceNodeId: sourceId,
+          targetNodeId: targetId
+        });
+        compiledSteps = compileDijkstraSteps(nodes, edges, res, sourceId, targetId);
+      } else if (mode === 'DOMINATORS') {
+        const res = await runAlgorithm(caseId, 'DOMINATORS', {
+          rootId: sourceId,
+          targetId,
+          rootNodeId: sourceId,
+          targetNodeId: targetId
+        });
+        compiledSteps = compileDominatorSteps(nodes, edges, res, sourceId, targetId);
+      } else if (mode === 'MIN_CUT') {
+        const res = await runAlgorithm(caseId, 'MIN_CUT', {
+          sourceId,
+          targetId,
+          sourceNodeId: sourceId,
+          sinkNodeId: targetId
+        });
+        compiledSteps = compileMinCutSteps(nodes, edges, res, sourceId, targetId);
+      }
+
+      setForensicSteps(compiledSteps);
+      setCurrentStepIndex(0);
+      setForensicMode(mode);
+      setIsPlaying(false);
+    } catch (e: any) {
+      alert(`Simulation error: ${e.message}`);
+    } finally {
+      setIsModeLoading(false);
+    }
+  };
 
   const runLayout = (layoutName: string) => {
     const cy = cyRef.current;
@@ -442,25 +729,57 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         </Dropdown>
       </div>
 
-      {/* Floating Graph Stats (Bottom Left) */}
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-400 font-medium">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-teal-500" />
-          {nodes.length} Nodes
-        </span>
-        <span className="text-slate-300 dark:text-zinc-700">•</span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-indigo-500" />
-          {edges.length} Directed Relationships
-        </span>
-        {highlightNodeIds.length > 0 && (
-          <>
-            <span className="text-slate-300 dark:text-zinc-700">•</span>
-            <Chip size="sm" color="danger" variant="flat" className="h-5 text-[10px]">
-              Algorithm Trace Active ({highlightNodeIds.length})
-            </Chip>
-          </>
-        )}
+      {/* Top Center Investigation Mode Bar */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm">
+        <Button
+          size="sm"
+          variant={forensicMode === 'NORMAL' ? 'solid' : 'light'}
+          color={forensicMode === 'NORMAL' ? 'primary' : 'default'}
+          radius="full"
+          className="text-xs font-semibold h-7 px-3"
+          onPress={() => handleSelectMode('NORMAL')}
+        >
+          Normal
+        </Button>
+
+        <Button
+          size="sm"
+          variant={forensicMode === 'CAUSAL_PATH' ? 'solid' : 'light'}
+          color={forensicMode === 'CAUSAL_PATH' ? 'success' : 'default'}
+          radius="full"
+          className="text-xs font-semibold h-7 px-3"
+          isLoading={isModeLoading && forensicMode === 'CAUSAL_PATH'}
+          startContent={<Zap className="w-3.5 h-3.5" />}
+          onPress={() => handleSelectMode('CAUSAL_PATH')}
+        >
+          Causal Corridor
+        </Button>
+
+        <Button
+          size="sm"
+          variant={forensicMode === 'DOMINATORS' ? 'solid' : 'light'}
+          color={forensicMode === 'DOMINATORS' ? 'danger' : 'default'}
+          radius="full"
+          className="text-xs font-semibold h-7 px-3"
+          isLoading={isModeLoading && forensicMode === 'DOMINATORS'}
+          startContent={<Target className="w-3.5 h-3.5" />}
+          onPress={() => handleSelectMode('DOMINATORS')}
+        >
+          Choke Points
+        </Button>
+
+        <Button
+          size="sm"
+          variant={forensicMode === 'MIN_CUT' ? 'solid' : 'light'}
+          color={forensicMode === 'MIN_CUT' ? 'warning' : 'default'}
+          radius="full"
+          className="text-xs font-semibold h-7 px-3"
+          isLoading={isModeLoading && forensicMode === 'MIN_CUT'}
+          startContent={<Scissors className="w-3.5 h-3.5" />}
+          onPress={() => handleSelectMode('MIN_CUT')}
+        >
+          Containment Cut
+        </Button>
       </div>
 
       {/* Floating Mini Inspector Slide-over (Top Right) */}
@@ -491,7 +810,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
                 radius="full"
                 onPress={() => onSelectElement(null)}
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </Button>
             </div>
 
@@ -576,34 +895,83 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         </Card>
       )}
 
-      {/* Graph Legend — bottom-left floating */}
-      <div className="absolute bottom-4 left-4 z-20">
-        <div className="bg-white/92 dark:bg-zinc-900/92 border border-slate-200/80 dark:border-zinc-800/80 rounded-xl shadow-lg backdrop-blur-sm p-3 text-xs space-y-2 min-w-[160px]">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-1">Legend</div>
-          {[
-            { color: 'bg-teal-500', label: 'Entity (Person/Org/Asset)' },
-            { color: 'bg-amber-500', label: 'Event (Action/Occurrence)' },
-            { color: 'bg-blue-500', label: 'Evidence (Document/Log)' },
-          ].map(item => (
-            <div key={item.label} className="flex items-center gap-2">
-              <span className={`w-3 h-3 rounded-full shrink-0 ${item.color}`} />
-              <span className="text-slate-600 dark:text-zinc-400 leading-tight">{item.label}</span>
+      {/* Consolidated Bottom-Left Stats & Legend Popover */}
+      <div className="absolute bottom-4 left-4 z-20 flex flex-col items-start gap-2">
+        {/* Expandable Legend Popover */}
+        {isLegendOpen && (
+          <div className="bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-xl backdrop-blur-md p-3.5 text-xs space-y-2.5 min-w-[190px] animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-zinc-800">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Forensic Graph Legend</span>
+              <button
+                onClick={() => setIsLegendOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded"
+                aria-label="Close legend"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-          ))}
-          <div className="border-t border-slate-100 dark:border-zinc-800 pt-2 mt-1 space-y-1">
             {[
-              { color: 'bg-indigo-400', label: 'Causal Link' },
-              { color: 'bg-red-400', label: 'Contradiction' },
-              { color: 'bg-emerald-400', label: 'Supports / Corroborates' },
+              { color: 'bg-teal-500', label: 'Entity (Person/Org/Asset)' },
+              { color: 'bg-amber-500', label: 'Event (Action/Occurrence)' },
+              { color: 'bg-blue-500', label: 'Evidence (Document/Log)' },
             ].map(item => (
               <div key={item.label} className="flex items-center gap-2">
-                <span className={`w-5 h-0.5 shrink-0 ${item.color}`} />
-                <span className="text-slate-500 dark:text-zinc-500 leading-tight">{item.label}</span>
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`} />
+                <span className="text-slate-600 dark:text-zinc-400 font-medium leading-tight">{item.label}</span>
               </div>
             ))}
+            <div className="border-t border-slate-100 dark:border-zinc-800 pt-2 space-y-1.5">
+              {[
+                { color: 'bg-indigo-400', label: 'Causal Link' },
+                { color: 'bg-red-400', label: 'Contradiction' },
+                { color: 'bg-emerald-400', label: 'Supports / Corroborates' },
+              ].map(item => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <span className={`w-4 h-0.5 shrink-0 ${item.color}`} />
+                  <span className="text-slate-500 dark:text-zinc-500 text-[11px] leading-tight">{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Bottom-left pill */}
+        <div className="flex items-center gap-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-200/80 dark:border-zinc-800 shadow-sm text-xs text-slate-600 dark:text-zinc-400 font-medium">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-teal-500" />
+            {nodes.length} Nodes
+          </span>
+          <span className="text-slate-300 dark:text-zinc-700">•</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-indigo-500" />
+            {edges.length} Relationships
+          </span>
+          <span className="text-slate-300 dark:text-zinc-700">•</span>
+          <button
+            onClick={() => setIsLegendOpen(!isLegendOpen)}
+            className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors inline-flex items-center gap-1"
+          >
+            Legend {isLegendOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
         </div>
       </div>
+
+      {/* Docked Forensic Telemetry Bar */}
+      <ForensicTelemetryBar
+        mode={forensicMode}
+        currentStep={activeStep || null}
+        currentStepIndex={currentStepIndex}
+        totalSteps={forensicSteps.length}
+        isPlaying={isPlaying}
+        playbackSpeed={playbackSpeed}
+        isSevered={isSevered}
+        onTogglePlay={() => setIsPlaying(!isPlaying)}
+        onStepBack={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))}
+        onStepForward={() => setCurrentStepIndex(prev => Math.min(forensicSteps.length - 1, prev + 1))}
+        onToggleSpeed={() => setPlaybackSpeed(s => s === 1 ? 2 : 1)}
+        onToggleSever={() => setIsSevered(!isSevered)}
+        onClose={() => handleSelectMode('NORMAL')}
+      />
     </div>
   );
 };

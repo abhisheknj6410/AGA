@@ -29,7 +29,8 @@ import {
   Link2,
   Calendar,
   Layers,
-  Activity
+  Activity,
+  ChevronDown
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -85,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   size="sm"
                   variant="light"
                   className="h-6 px-1.5 text-xs text-slate-600 dark:text-zinc-400 font-medium hover:text-slate-900"
-                  endContent={<span className="text-[10px] opacity-60">▼</span>}
+                  endContent={<ChevronDown className="w-3 h-3 text-slate-400 opacity-60" />}
                 >
                   <span className="truncate max-w-[120px]">
                     {currentCase?.name || 'Select Case'}

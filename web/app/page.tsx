@@ -10,6 +10,8 @@ import { EvaluationLabView } from '../components/evaluation/EvaluationLabView';
 import { AddFactModal } from '../components/modals/AddFactModal';
 import { ResolutionLabView } from '../components/resolution/ResolutionLabView';
 import { TimelinePlayback } from '../components/timeline/TimelinePlayback';
+import { AlgorithmSimulationDeck, SimulationState } from '../components/graph/AlgorithmSimulationDeck';
+import { Zap } from 'lucide-react';
 import {
   Case,
   GraphPayload,
@@ -53,6 +55,10 @@ export default function Home() {
   const [timelineStep, setTimelineStep] = useState(0);
   const [timelinePlaying, setTimelinePlaying] = useState(false);
   const [timelineCumulative, setTimelineCumulative] = useState(false);
+
+  // Algorithm Simulation state
+  const [simulationActive, setSimulationActive] = useState(false);
+  const [simulationState, setSimulationState] = useState<SimulationState | null>(null);
 
   // Derive chronologically sorted EVENT nodes for timeline
   const timelineEvents = React.useMemo(() => {
@@ -160,8 +166,21 @@ export default function Home() {
   };
 
   const handleSelectPossibilityForGraph = (p: Possibility) => {
-    if (p.graphChanges?.addedNodes) {
+    const traversedIds: string[] = (p.constraints as any)?.traversedNodeIds || [];
+    if (traversedIds.length > 0) {
+      setHighlightNodeIds(traversedIds);
+    } else if (p.graphChanges?.addedNodes?.length) {
       setHighlightNodeIds(p.graphChanges.addedNodes.map(n => n.id));
+    } else if (p.criticalDependency?.length) {
+      setHighlightNodeIds(p.criticalDependency.map(c => c.nodeId));
+    } else if (p.assumptions && p.assumptions[0] && p.assumptions[0].includes('sequence:')) {
+      const parts = p.assumptions[0].replace(/.*sequence:\s*/i, '').split(' → ');
+      const matchedIds = parts
+        .map(name => graph?.nodes?.find(n => n.label.trim().toLowerCase() === name.trim().toLowerCase())?.id)
+        .filter(Boolean) as string[];
+      if (matchedIds.length > 0) {
+        setHighlightNodeIds(matchedIds);
+      }
     }
     setActiveTab('GRAPH');
   };
@@ -206,6 +225,7 @@ export default function Home() {
         {activeTab === 'GRAPH' && (
           <div className="relative w-full h-full">
             <CytoscapeCanvas
+              caseId={currentCase?.id}
               nodes={graph?.nodes || []}
               edges={graph?.edges || []}
               selectedElement={selectedElement}
@@ -215,17 +235,25 @@ export default function Home() {
               onUpdateNode={handleUpdateNode}
               theme={theme}
               highlightNodeIds={highlightNodeIds}
+              simulationState={simulationState}
             />
-            {/* Timeline trigger button */}
+
+            {/* Bottom Right Floating Timeline Button */}
             {!timelineActive && timelineEvents.length > 0 && (
-              <button
-                onClick={() => { setTimelineActive(true); setTimelineStep(0); }}
-                className="absolute bottom-6 right-6 flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-zinc-900/90 border border-primary-200 dark:border-primary-800/40 rounded-xl shadow-lg backdrop-blur text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 z-20"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Timeline ({timelineEvents.length})
-              </button>
+              <div className="absolute bottom-6 right-6 z-20">
+                <button
+                  onClick={() => {
+                    setTimelineActive(true);
+                    setTimelineStep(0);
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-lg backdrop-blur text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all duration-200"
+                >
+                  <svg className="w-3.5 h-3.5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Replay Timeline ({timelineEvents.length})
+                </button>
+              </div>
             )}
+
             {/* Timeline overlay */}
             {timelineActive && (
               <TimelinePlayback

@@ -34,13 +34,19 @@ export function getDatabase(customPath?: string): DatabaseSync {
 }
 
 export function runInTransaction<T>(db: DatabaseSync, fn: () => T): T {
-  db.exec('BEGIN TRANSACTION;');
+  const sp = `sp_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  db.exec(`SAVEPOINT ${sp};`);
   try {
     const result = fn();
-    db.exec('COMMIT;');
+    db.exec(`RELEASE ${sp};`);
     return result;
   } catch (error) {
-    db.exec('ROLLBACK;');
+    try {
+      db.exec(`ROLLBACK TO ${sp};`);
+      db.exec(`RELEASE ${sp};`);
+    } catch {
+      // Ignore secondary rollback error
+    }
     throw error;
   }
 }
