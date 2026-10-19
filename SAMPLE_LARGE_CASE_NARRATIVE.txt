@@ -1,0 +1,18 @@
+CASE INCIDENT DOSSIER: OPERATION CHIMERA
+DATE: 2026-09-15
+LOCATION: Sovereign Trust Building & North Vault Complex
+
+At 2026-09-15T21:10:00Z, Marcus Vance entered the North Loading Bay Door under badge authorization #MV-901.
+Loading Bay 4K CCTV recorded Marcus Vance entering the facility with an oversized pelican briefcase.
+At 2026-09-15T21:14:22Z, Security Guard David Chen executed a manual lock override from the security console for the inner corridor door.
+At 2026-09-15T21:20:05Z, Elena Rostova initiated an external VPN session through Amsterdam exit node 185.220.101.44 using Sarah Jenkins account credentials.
+At 2026-09-15T21:25:30Z, Workstation WS-FIN-09 was powered on locally inside the Finance secure suite.
+At 2026-09-15T21:28:10Z, Drive-Chimera high-speed NVMe USB storage was mounted on Workstation WS-FIN-09, logged under Windows Event ID 20001.
+At 2026-09-15T21:32:45Z, a lateral SSH session was established from Workstation WS-FIN-09 to Jump Host BASTION-EAST-01 using Marcus Vance private key.
+At 2026-09-15T21:35:00Z, an automated privilege escalation script bypassed MFA via session hijacking on BASTION-EAST-01.
+At 2026-09-15T21:38:15Z, an unauthorized database dump of the SWIFT Core Gateway Vault swift_ledger_q3.enc was initiated.
+At 2026-09-15T21:42:00Z, 14.8 GB of encrypted ledger binaries were transferred directly to Drive-Chimera over the local bus.
+At 2026-09-15T21:44:30Z, an outbound encrypted socket transfer began uploading duplicate fragments to the AWS Exfiltration Mirror s3://chimera-drop-bucket.
+At 2026-09-15T21:48:00Z, the physical door sensor at South Fire Exit Stairwell was triggered, followed by camera footage of a subject in a dark hoodie departing on foot.
+At 2026-09-15T22:05:00Z, a disputed credit card transaction for Marcus Vance was logged at Downtown Bar #8842, located 8 miles from the building.
+At 2026-09-15T21:49:00Z, Cell Tower East-34 registered an IMSI ping matching Marcus Vance cellular handset moving away from the South Fire Exit.
