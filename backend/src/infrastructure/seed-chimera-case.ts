@@ -34,39 +34,39 @@ export function seedOperationChimera(
   // 2. Nodes Definition (Entities, Events, Evidence)
   const nodes: GraphNode[] = [
     // Entities
-    { id: 'ent-marcus', caseId, category: 'ENTITY', type: 'PERSON', label: 'Marcus Vance (DevOps Lead)', status: 'OBSERVED', properties: { role: 'Inside Suspect' } },
-    { id: 'ent-elena', caseId, category: 'ENTITY', type: 'PERSON', label: 'Elena Rostova (Threat Proxy)', status: 'OBSERVED', properties: { role: 'External Broker' } },
-    { id: 'ent-david', caseId, category: 'ENTITY', type: 'PERSON', label: 'David Chen (Security Guard)', status: 'OBSERVED', properties: { shift: 'Night Shift A' } },
-    { id: 'ent-sarah', caseId, category: 'ENTITY', type: 'ACCOUNT', label: 'Sarah Jenkins (Account)', status: 'OBSERVED', properties: { department: 'Finance' } },
-    { id: 'ent-ws-fin', caseId, category: 'ENTITY', type: 'DEVICE', label: 'Workstation WS-FIN-09', status: 'OBSERVED', properties: { ip: '10.20.4.15' } },
-    { id: 'ent-bastion', caseId, category: 'ENTITY', type: 'SERVER', label: 'Jump Host BASTION-EAST-01', status: 'OBSERVED', properties: { ip: '10.20.1.5' } },
-    { id: 'ent-swift-gw', caseId, category: 'ENTITY', type: 'SERVER', label: 'SWIFT Core Gateway Vault', status: 'OBSERVED', properties: { target: true } },
-    { id: 'ent-drive-x', caseId, category: 'ENTITY', type: 'DEVICE', label: 'Drive-Chimera (NVMe USB)', status: 'OBSERVED', properties: { serial: 'CHIM-9912' } },
-    { id: 'ent-vpn-proxy', caseId, category: 'ENTITY', type: 'IP_ADDRESS', label: 'VPN Proxy 185.220.101.44', status: 'OBSERVED', properties: { location: 'Amsterdam' } },
-    { id: 'ent-bay-door', caseId, category: 'ENTITY', type: 'LOCATION', label: 'North Loading Bay Door', status: 'OBSERVED', properties: { accessLevel: 'Tier 3' } },
-    { id: 'ent-fire-exit', caseId, category: 'ENTITY', type: 'LOCATION', label: 'South Fire Exit Stairwell', status: 'OBSERVED', properties: { alarmed: true } },
-    { id: 'ent-aws-s3', caseId, category: 'ENTITY', type: 'APPLICATION', label: 'AWS Exfiltration Mirror', status: 'OBSERVED', properties: { bucket: 's3://chimera-drop-bucket' } },
+    { id: 'ent-marcus', caseId, category: 'ENTITY', type: 'PERSON', label: 'Marcus Vance (DevOps Lead)', properties: { role: 'Inside Suspect' } },
+    { id: 'ent-elena', caseId, category: 'ENTITY', type: 'PERSON', label: 'Elena Rostova (Threat Proxy)', properties: { role: 'External Broker' } },
+    { id: 'ent-david', caseId, category: 'ENTITY', type: 'PERSON', label: 'David Chen (Security Guard)', properties: { shift: 'Night Shift A' } },
+    { id: 'ent-sarah', caseId, category: 'ENTITY', type: 'ACCOUNT', label: 'Sarah Jenkins (Account)', properties: { department: 'Finance' } },
+    { id: 'ent-ws-fin', caseId, category: 'ENTITY', type: 'DEVICE', label: 'Workstation WS-FIN-09', properties: { ip: '10.20.4.15' } },
+    { id: 'ent-bastion', caseId, category: 'ENTITY', type: 'SERVER', label: 'Jump Host BASTION-EAST-01', properties: { ip: '10.20.1.5' } },
+    { id: 'ent-swift-gw', caseId, category: 'ENTITY', type: 'SERVER', label: 'SWIFT Core Gateway Vault', properties: { target: true } },
+    { id: 'ent-drive-x', caseId, category: 'ENTITY', type: 'DEVICE', label: 'Drive-Chimera (NVMe USB)', properties: { serial: 'CHIM-9912' } },
+    { id: 'ent-vpn-proxy', caseId, category: 'ENTITY', type: 'IP_ADDRESS', label: 'VPN Proxy 185.220.101.44', properties: { location: 'Amsterdam' } },
+    { id: 'ent-bay-door', caseId, category: 'ENTITY', type: 'LOCATION', label: 'North Loading Bay Door', properties: { accessLevel: 'Tier 3' } },
+    { id: 'ent-fire-exit', caseId, category: 'ENTITY', type: 'LOCATION', label: 'South Fire Exit Stairwell', properties: { alarmed: true } },
+    { id: 'ent-aws-s3', caseId, category: 'ENTITY', type: 'APPLICATION', label: 'AWS Exfiltration Mirror', properties: { bucket: 's3://chimera-drop-bucket' } },
 
     // Evidence Items
-    { id: 'ev-cctv-bay', caseId, category: 'EVIDENCE', type: 'CCTV', label: 'Evidence: Loading Bay 4K CCTV', source: { name: 'CCTV-CAM-102', kind: 'SURVEILLANCE' }, reliability: 0.95, collectionTime: '2026-09-15T21:10:00Z' },
+    { id: 'ev-cctv-bay', caseId, category: 'EVIDENCE', type: 'CCTV', label: 'Evidence: Loading Bay 4K CCTV', source: { name: 'CCTV-CAM-102', kind: 'DEVICE' }, reliability: 0.95, collectionTime: '2026-09-15T21:10:00Z' },
     { id: 'ev-syslog-ssh', caseId, category: 'EVIDENCE', type: 'LOG', label: 'Evidence: Bastion Secure Syslog', source: { name: '/var/log/secure', kind: 'SYSTEM' }, reliability: 0.99, collectionTime: '2026-09-15T21:32:45Z' },
-    { id: 'ev-usb-kernel', caseId, category: 'EVIDENCE', type: 'LOG', label: 'Evidence: Windows Event ID 20001 (USB)', source: { name: 'WS-FIN-09 Registry', kind: 'HARDWARE' }, reliability: 0.98, collectionTime: '2026-09-15T21:28:10Z' },
-    { id: 'ev-bar-receipt', caseId, category: 'EVIDENCE', type: 'DOCUMENT', label: 'Evidence: Downtown Bar POS Record', source: { name: 'Bar Tab #8842', kind: 'FINANCIAL' }, reliability: 0.70, collectionTime: '2026-09-15T22:05:00Z' },
-    { id: 'ev-cell-tower', caseId, category: 'EVIDENCE', type: 'PHONE_RECORD', label: 'Evidence: Cell Tower Sector Ping', source: { name: 'Cell Tower East-34', kind: 'TELECOMMUNICATION' }, reliability: 0.91, collectionTime: '2026-09-15T21:49:00Z' },
+    { id: 'ev-usb-kernel', caseId, category: 'EVIDENCE', type: 'LOG', label: 'Evidence: Windows Event ID 20001 (USB)', source: { name: 'WS-FIN-09 Registry', kind: 'DEVICE' }, reliability: 0.98, collectionTime: '2026-09-15T21:28:10Z' },
+    { id: 'ev-bar-receipt', caseId, category: 'EVIDENCE', type: 'DOCUMENT', label: 'Evidence: Downtown Bar POS Record', source: { name: 'Bar Tab #8842', kind: 'THIRD_PARTY' }, reliability: 0.70, collectionTime: '2026-09-15T22:05:00Z' },
+    { id: 'ev-cell-tower', caseId, category: 'EVIDENCE', type: 'PHONE_RECORD', label: 'Evidence: Cell Tower Sector Ping', source: { name: 'Cell Tower East-34', kind: 'NETWORK' }, reliability: 0.91, collectionTime: '2026-09-15T21:49:00Z' },
 
     // Chronological Events
-    { id: 'evt-01-bay-entry', caseId, category: 'EVENT', type: 'LOCATION_CHANGE', label: '21:10 Incursion at North Bay', time: { start: '2026-09-15T21:10:00Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-02-guard-override', caseId, category: 'EVENT', type: 'ACCOUNT_MODIFICATION', label: '21:14 Security Lock Override', time: { start: '2026-09-15T21:14:22Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-03-vpn-connect', caseId, category: 'EVENT', type: 'LOGIN', label: '21:20 VPN Login (Sarah Creds)', time: { start: '2026-09-15T21:20:05Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-04-ws-power', caseId, category: 'EVENT', type: 'DEVICE_CONNECTION', label: '21:25 WS-FIN-09 Powered On', time: { start: '2026-09-15T21:25:30Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-05-usb-mount', caseId, category: 'EVENT', type: 'DEVICE_CONNECTION', label: '21:28 Drive-Chimera Mounted', time: { start: '2026-09-15T21:28:10Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-06-lateral-ssh', caseId, category: 'EVENT', type: 'NETWORK_CONNECTION', label: '21:32 Lateral SSH to Bastion', time: { start: '2026-09-15T21:32:45Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-07-mfa-bypass', caseId, category: 'EVENT', type: 'PROCESS_EXECUTION', label: '21:35 Session Hijack MFA Bypass', time: { start: '2026-09-15T21:35:00Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-08-swift-dump', caseId, category: 'EVENT', type: 'DATA_ACCESS', label: '21:38 SWIFT Ledger 14.8GB Dump', time: { start: '2026-09-15T21:38:15Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-09-usb-transfer', caseId, category: 'EVENT', type: 'FILE_TRANSFER', label: '21:42 Direct Exfil to USB', time: { start: '2026-09-15T21:42:00Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-10-cloud-sync', caseId, category: 'EVENT', type: 'FILE_TRANSFER', label: '21:44 Encrypted Socket to AWS', time: { start: '2026-09-15T21:44:30Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-11-fire-exit', caseId, category: 'EVENT', type: 'LOCATION_CHANGE', label: '21:48 South Fire Exit Egress', time: { start: '2026-09-15T21:48:00Z', precision: 'SECOND' }, status: 'OBSERVED' },
-    { id: 'evt-12-disputed-alibi', caseId, category: 'EVENT', type: 'TRANSACTION', label: '22:05 Disputed Downtown Bar Tab', time: { start: '2026-09-15T22:05:00Z', precision: 'MINUTE' }, status: 'OBSERVED' }
+    { id: 'evt-01-bay-entry', caseId, category: 'EVENT', type: 'LOCATION_CHANGE', label: '21:10 Incursion at North Bay', time: { start: '2026-09-15T21:10:00Z', precision: 'SECOND' } },
+    { id: 'evt-02-guard-override', caseId, category: 'EVENT', type: 'ACCOUNT_MODIFICATION', label: '21:14 Security Lock Override', time: { start: '2026-09-15T21:14:22Z', precision: 'SECOND' } },
+    { id: 'evt-03-vpn-connect', caseId, category: 'EVENT', type: 'LOGIN', label: '21:20 VPN Login (Sarah Creds)', time: { start: '2026-09-15T21:20:05Z', precision: 'SECOND' } },
+    { id: 'evt-04-ws-power', caseId, category: 'EVENT', type: 'DEVICE_CONNECTION', label: '21:25 WS-FIN-09 Powered On', time: { start: '2026-09-15T21:25:30Z', precision: 'SECOND' } },
+    { id: 'evt-05-usb-mount', caseId, category: 'EVENT', type: 'DEVICE_CONNECTION', label: '21:28 Drive-Chimera Mounted', time: { start: '2026-09-15T21:28:10Z', precision: 'SECOND' } },
+    { id: 'evt-06-lateral-ssh', caseId, category: 'EVENT', type: 'NETWORK_CONNECTION', label: '21:32 Lateral SSH to Bastion', time: { start: '2026-09-15T21:32:45Z', precision: 'SECOND' } },
+    { id: 'evt-07-mfa-bypass', caseId, category: 'EVENT', type: 'PROCESS_EXECUTION', label: '21:35 Session Hijack MFA Bypass', time: { start: '2026-09-15T21:35:00Z', precision: 'SECOND' } },
+    { id: 'evt-08-swift-dump', caseId, category: 'EVENT', type: 'DATA_ACCESS', label: '21:38 SWIFT Ledger 14.8GB Dump', time: { start: '2026-09-15T21:38:15Z', precision: 'SECOND' } },
+    { id: 'evt-09-usb-transfer', caseId, category: 'EVENT', type: 'FILE_TRANSFER', label: '21:42 Direct Exfil to USB', time: { start: '2026-09-15T21:42:00Z', precision: 'SECOND' } },
+    { id: 'evt-10-cloud-sync', caseId, category: 'EVENT', type: 'FILE_TRANSFER', label: '21:44 Encrypted Socket to AWS', time: { start: '2026-09-15T21:44:30Z', precision: 'SECOND' } },
+    { id: 'evt-11-fire-exit', caseId, category: 'EVENT', type: 'LOCATION_CHANGE', label: '21:48 South Fire Exit Egress', time: { start: '2026-09-15T21:48:00Z', precision: 'SECOND' } },
+    { id: 'evt-12-disputed-alibi', caseId, category: 'EVENT', type: 'TRANSACTION', label: '22:05 Disputed Downtown Bar Tab', time: { start: '2026-09-15T22:05:00Z', precision: 'MINUTE' } }
   ];
 
   for (const n of nodes) {

@@ -11,6 +11,7 @@ import { PossibilityEngine } from '../application/possibility-engine.js';
 import { seedDemonstrationCase } from './seed-demo-case.js';
 import { seedMultiDomainCases } from './multi-domain-cases.js';
 import { seedOperationChimera } from './seed-chimera-case.js';
+import { seedOperationGrandMeridian } from './seed-physical-heist.js';
 
 export function seedDatabase(customDb?: any): { caseId: string } {
   const db = customDb || getDatabase();
@@ -23,13 +24,13 @@ export function seedDatabase(customDb?: any): { caseId: string } {
   try {
     const possibilityRepo = new PossibilityRepository(db);
     const algorithmRepo = new AlgorithmRepository(db);
-    const resolutionRepo = new ResolutionRepository(db);
-    const graphAnalysisEngine = new GraphAnalysisEngine(graphService, algorithmRepo);
-    const possibilityEngine = new PossibilityEngine(possibilityRepo, graphAnalysisEngine, resolutionRepo);
+    const graphAnalysisEngine = new GraphAnalysisEngine(algorithmRepo);
+    const possibilityEngine = new PossibilityEngine(possibilityRepo, graphAnalysisEngine);
     seedMultiDomainCases(db, possibilityEngine);
     seedOperationChimera(db, possibilityEngine);
+    seedOperationGrandMeridian(db, possibilityEngine);
   } catch (err) {
-    console.error('Failed to seed multi-domain or chimera cases:', err);
+    console.error('Failed to seed multi-domain or physical heist cases:', err);
   }
 
   // Check if primary seed case already exists
