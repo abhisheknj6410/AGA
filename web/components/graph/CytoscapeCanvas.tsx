@@ -22,6 +22,8 @@ import {
   Check
 } from 'lucide-react';
 
+import { SimulationState } from './AlgorithmSimulationDeck';
+
 if (typeof window !== 'undefined') {
   try {
     cytoscape.use(dagre);
@@ -42,6 +44,7 @@ interface CytoscapeCanvasProps {
   theme?: 'light' | 'dark';
   highlightNodeIds?: string[];
   highlightEdgeIds?: string[];
+  simulationState?: SimulationState | null;
 }
 
 export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
@@ -55,7 +58,8 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   layoutType = 'dagre',
   theme = 'light',
   highlightNodeIds = [],
-  highlightEdgeIds = []
+  highlightEdgeIds = [],
+  simulationState = null
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -216,6 +220,97 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           style: {
             'opacity': 0.15
           }
+        },
+        // Interactive Algorithm Simulation Classes
+        {
+          selector: '.sim-frontier-node',
+          style: {
+            'border-color': '#06b6d4',
+            'border-width': 3.5,
+            'shadow-blur': 25,
+            'shadow-color': 'rgba(6, 182, 212, 0.85)',
+            'background-color': isLight ? '#ecfeff' : '#083344',
+            'color': isLight ? '#0e7490' : '#a5f3fc'
+          }
+        },
+        {
+          selector: '.sim-visited-node',
+          style: {
+            'border-color': '#10b981',
+            'border-width': 3,
+            'shadow-blur': 16,
+            'shadow-color': 'rgba(16, 185, 129, 0.6)',
+            'background-color': isLight ? '#f0fdf4' : '#064e3b',
+            'color': isLight ? '#047857' : '#a7f3d0'
+          }
+        },
+        {
+          selector: '.sim-choke-node',
+          style: {
+            'border-color': '#ef4444',
+            'border-width': 4.5,
+            'shadow-blur': 30,
+            'shadow-color': 'rgba(239, 68, 68, 0.95)',
+            'background-color': isLight ? '#fef2f2' : '#450a0a',
+            'color': isLight ? '#b91c1c' : '#fca5a5'
+          }
+        },
+        {
+          selector: '.sim-severed-node',
+          style: {
+            'opacity': 0.3,
+            'border-style': 'dashed',
+            'border-color': '#dc2626',
+            'background-color': '#292524'
+          }
+        },
+        {
+          selector: '.sim-path-edge',
+          style: {
+            'width': 4.5,
+            'line-color': '#10b981',
+            'target-arrow-color': '#10b981',
+            'shadow-blur': 16,
+            'shadow-color': 'rgba(16, 185, 129, 0.8)',
+            'opacity': 1
+          }
+        },
+        {
+          selector: '.sim-cut-edge',
+          style: {
+            'width': 4.5,
+            'line-style': 'dashed',
+            'line-dash-pattern': [8, 5],
+            'line-color': '#f43f5e',
+            'target-arrow-color': '#f43f5e',
+            'shadow-blur': 20,
+            'shadow-color': 'rgba(244, 63, 94, 0.9)',
+            'opacity': 1
+          }
+        },
+        {
+          selector: '.sim-source-partition',
+          style: {
+            'border-color': '#0284c7',
+            'border-width': 2.5,
+            'background-color': isLight ? '#e0f2fe' : '#082f49',
+            'color': isLight ? '#0369a1' : '#bae6fd'
+          }
+        },
+        {
+          selector: '.sim-target-partition',
+          style: {
+            'border-color': '#9333ea',
+            'border-width': 2.5,
+            'background-color': isLight ? '#f3e8ff' : '#3b0764',
+            'color': isLight ? '#7e22ce' : '#e9d5ff'
+          }
+        },
+        {
+          selector: '.sim-dimmed',
+          style: {
+            'opacity': 0.12
+          }
         }
       ] as any),
       elements: []
@@ -312,6 +407,73 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       }
     });
   }, [highlightNodeIds, highlightEdgeIds]);
+
+  // Algorithm Simulation Synchronization
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    cy.batch(() => {
+      cy.elements().removeClass(
+        'sim-frontier-node sim-visited-node sim-choke-node sim-severed-node sim-path-edge sim-cut-edge sim-source-partition sim-target-partition sim-dimmed'
+      );
+
+      if (!simulationState || !simulationState.currentStep) return;
+
+      const step = simulationState.currentStep;
+
+      // Dim non-participating elements
+      const allActiveNodeIds = new Set([
+        ...(step.activeNodeIds || []),
+        ...(step.frontierNodeIds || []),
+        ...(step.visitedNodeIds || []),
+        ...(step.chokeNodeIds || []),
+        ...(step.sourcePartitionIds || []),
+        ...(step.targetPartitionIds || [])
+      ]);
+      const allActiveEdgeIds = new Set([
+        ...(step.activeEdgeIds || []),
+        ...(step.cutEdgeIds || [])
+      ]);
+
+      if (allActiveNodeIds.size > 0 || allActiveEdgeIds.size > 0) {
+        cy.nodes().forEach(n => {
+          if (!allActiveNodeIds.has(n.id())) n.addClass('sim-dimmed');
+        });
+        cy.edges().forEach(e => {
+          if (!allActiveEdgeIds.has(e.id())) e.addClass('sim-dimmed');
+        });
+      }
+
+      step.frontierNodeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-frontier-node'));
+      step.visitedNodeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-visited-node'));
+      step.chokeNodeIds?.forEach(id => {
+        if (simulationState.isSevered) {
+          cy.$id(id).addClass('sim-severed-node');
+        } else {
+          cy.$id(id).removeClass('sim-dimmed').addClass('sim-choke-node');
+        }
+      });
+      step.activeEdgeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-path-edge'));
+      step.cutEdgeIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-cut-edge'));
+      step.sourcePartitionIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-source-partition'));
+      step.targetPartitionIds?.forEach(id => cy.$id(id).removeClass('sim-dimmed').addClass('sim-target-partition'));
+
+      if (simulationState.isSevered && step.chokeNodeIds && step.chokeNodeIds.length > 0) {
+        step.targetPartitionIds?.forEach(id => cy.$id(id).addClass('sim-dimmed'));
+      }
+    });
+
+    if (simulationState?.currentStep?.frontierNodeIds && simulationState.currentStep.frontierNodeIds.length === 1) {
+      const targetCyNode = cy.$id(simulationState.currentStep.frontierNodeIds[0]);
+      if (targetCyNode && targetCyNode.length > 0) {
+        cy.animate({
+          center: { eles: targetCyNode },
+          duration: 350
+        });
+      }
+    }
+  }, [simulationState]);
 
   const runLayout = (layoutName: string) => {
     const cy = cyRef.current;

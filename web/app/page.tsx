@@ -10,6 +10,8 @@ import { EvaluationLabView } from '../components/evaluation/EvaluationLabView';
 import { AddFactModal } from '../components/modals/AddFactModal';
 import { ResolutionLabView } from '../components/resolution/ResolutionLabView';
 import { TimelinePlayback } from '../components/timeline/TimelinePlayback';
+import { AlgorithmSimulationDeck, SimulationState } from '../components/graph/AlgorithmSimulationDeck';
+import { Zap } from 'lucide-react';
 import {
   Case,
   GraphPayload,
@@ -53,6 +55,10 @@ export default function Home() {
   const [timelineStep, setTimelineStep] = useState(0);
   const [timelinePlaying, setTimelinePlaying] = useState(false);
   const [timelineCumulative, setTimelineCumulative] = useState(false);
+
+  // Algorithm Simulation state
+  const [simulationActive, setSimulationActive] = useState(false);
+  const [simulationState, setSimulationState] = useState<SimulationState | null>(null);
 
   // Derive chronologically sorted EVENT nodes for timeline
   const timelineEvents = React.useMemo(() => {
@@ -215,17 +221,55 @@ export default function Home() {
               onUpdateNode={handleUpdateNode}
               theme={theme}
               highlightNodeIds={highlightNodeIds}
+              simulationState={simulationState}
             />
-            {/* Timeline trigger button */}
-            {!timelineActive && timelineEvents.length > 0 && (
-              <button
-                onClick={() => { setTimelineActive(true); setTimelineStep(0); }}
-                className="absolute bottom-6 right-6 flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-zinc-900/90 border border-primary-200 dark:border-primary-800/40 rounded-xl shadow-lg backdrop-blur text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 z-20"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Timeline ({timelineEvents.length})
-              </button>
+
+            {/* Bottom Floating Control Buttons */}
+            <div className="absolute bottom-6 right-6 flex items-center gap-2.5 z-20">
+              {/* Algorithm Simulation Trigger button */}
+              {!simulationActive && (
+                <button
+                  onClick={() => {
+                    setSimulationActive(true);
+                    setTimelineActive(false);
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl shadow-lg shadow-teal-500/25 hover:brightness-110 active:scale-98 transition-all duration-200 text-sm font-semibold backdrop-blur"
+                >
+                  <Zap className="w-4 h-4 fill-current" />
+                  Simulate Algorithms
+                </button>
+              )}
+
+              {/* Timeline trigger button */}
+              {!timelineActive && timelineEvents.length > 0 && (
+                <button
+                  onClick={() => {
+                    setTimelineActive(true);
+                    setSimulationActive(false);
+                    setTimelineStep(0);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-lg backdrop-blur text-sm font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Timeline ({timelineEvents.length})
+                </button>
+              )}
+            </div>
+
+            {/* Algorithm Simulation Deck Overlay */}
+            {simulationActive && currentCase && (
+              <AlgorithmSimulationDeck
+                caseId={currentCase.id}
+                nodes={graph?.nodes || []}
+                edges={graph?.edges || []}
+                onSimulationStateChange={setSimulationState}
+                onClose={() => {
+                  setSimulationActive(false);
+                  setSimulationState(null);
+                }}
+              />
             )}
+
             {/* Timeline overlay */}
             {timelineActive && (
               <TimelinePlayback
