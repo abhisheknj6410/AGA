@@ -87,6 +87,18 @@ Raw Evidence & Facts
   - Calculates $H(S) = - \sum p_i \log_2(p_i)$ and scores potential investigation questions by their expected entropy reduction $\Delta H$.
   - Dictates the top 3 recommended investigative actions in the Decision Engine.
 
+### 7. PageRank Centrality & Covert Coordinator Discovery
+* **Domain Algorithm**: `backend/src/domain/algorithms/pagerank.ts` & `backend/src/domain/algorithms/centrality-leads.ts`
+* **Direct Influence**:
+  - Discovers high-influence intermediary nodes ("Hidden Influencers") whose structural centrality significantly exceeds local degree.
+  - Generates critical investigation action directives (`ADV-*`) to target covert coordinators before they sever links.
+
+### 8. Weakly Connected Components (Community Detection)
+* **Domain Algorithm**: `backend/src/domain/algorithms/community-detection.ts` & `backend/src/domain/algorithms/centrality-leads.ts`
+* **Direct Influence**:
+  - Traverses the graph to segment disjoint sub-graphs into isolated operational cells.
+  - Automatically flags disjoint groups as potential burner phone rings or rogue communication islands.
+
 ---
 
 ## 3. Why This Beats Pure Generative AI / LLMs
@@ -122,7 +134,7 @@ Raw Evidence & Facts
 |---|---|---|
 | `CytoscapeCanvas` | All algorithms (highlight via IDs) | Graph Canvas tab |
 | `TimelinePlayback` | Temporal Reachability, Kahn's Sort | Graph Canvas → Timeline button |
-| `InvestigationPlanView` | Shannon Entropy, Lengauer-Tarjan, Edmonds-Karp | Strategic Planning tab |
+| `InvestigationPlanView` | Shannon Entropy, Lengauer-Tarjan, Edmonds-Karp, PageRank, Community Detection | Strategic Planning tab |
 | `AlgorithmEfficiencyLabView` | All 7 (adaptive selection decisions + trace) | Strategic Planning → Adaptive Efficiency Lab |
 | `PossibilitiesView` | Yen K-Shortest, Suurballe Disjoint, Cycle Detection | Hypotheses tab |
 | `ResolutionLabView` | Dominator Tree, Min-Cut, Structural Entropy | Resolution Lab tab |

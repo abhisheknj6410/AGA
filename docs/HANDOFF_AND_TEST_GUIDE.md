@@ -281,7 +281,7 @@ cd web && npx next start
 
 ## 7. Test Suite
 
-### Run all 237 tests
+### Run all 239 tests
 
 ```bash
 cd backend && npm test
@@ -289,9 +289,9 @@ cd backend && npm test
 
 Expected output:
 ```
-# tests 237
+# tests 239
 # suites 9
-# pass 237
+# pass 239
 # fail 0
 ```
 
@@ -300,6 +300,7 @@ Expected output:
 | Test File | Tests | What It Covers |
 |---|---|---|
 | `algorithms.test.ts` | ~25 | Core algorithm correctness (Yen, Suurballe, Dominator, Min-Cut, etc.) |
+| `advanced-leads.test.ts` | 2 | PageRank hidden influencer + Community Detection disjoint cell |
 | `algorithm-effectiveness.test.ts` | ~20 | Ablation studies — "removing algorithm X breaks these outputs" |
 | `algorithm-generalization.test.ts` | ~15 | 12-topology generalization + performance bounds |
 | `algorithm-comparative.test.ts` | ~10 | Comparing algorithm outputs on same graph |
@@ -393,6 +394,8 @@ SQLite 3 (evidence_graph.db)
 | **Kahn's Topological Sort** | `graph-analysis-engine.ts` | Validates causal ordering — timestamps must respect topo order |
 | **Tarjan's Articulation Points** | `graph-analysis-engine.ts` | Detects bridge nodes — single points of structural failure |
 | **Shannon Entropy** | `investigation-planning.ts` | Scores investigative leads by maximum uncertainty reduction |
+| **PageRank Centrality** | `pagerank.ts` | Discovers disproportionate influence nodes / covert coordinator hubs |
+| **Community Detection (WCC)** | `community-detection.ts` | Traverses weak components to uncover isolated operational cells |
 | **Temporal Reachability** | `temporal-reachability.ts` | Prunes possibilities where timestamps violate causality |
 | **Cycle Detection** | `cycle-detector.ts` | Catches circular dependencies that would invalidate hypotheses |
 
