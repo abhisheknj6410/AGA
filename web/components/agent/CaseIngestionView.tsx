@@ -149,16 +149,24 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
         properties: ev.properties || {}
       }));
 
-      const edges: any[] = (extractedData.relationships || []).map((r: any, idx: number) => ({
-        id: r.id || `edge-${Date.now()}-${idx}`,
-        caseId,
-        source: r.source,
-        target: r.target,
-        type: r.type || 'INVOLVED',
-        status: 'OBSERVED',
-        cost: r.cost ?? 1.0,
-        evidenceRefs: r.evidenceRefs && r.evidenceRefs.length > 0 ? r.evidenceRefs : [sourceEvidenceId]
-      }));
+      const edges: any[] = (extractedData.relationships || []).map((r: any, idx: number) => {
+        let relType = String(r.type || 'CONNECTED_TO').toUpperCase();
+        if (relType === 'TARGETS' || relType === 'TARGET') relType = 'TARGETED';
+        if (relType === 'CAUSES' || relType === 'CAUSE') relType = 'CAUSED';
+        if (relType === 'PRECEDES' || relType === 'PRECEDE') relType = 'PRECEDED';
+        if (relType === 'INVOLVED') relType = 'CONNECTED_TO';
+
+        return {
+          id: r.id || `edge-${Date.now()}-${idx}`,
+          caseId,
+          source: r.source,
+          target: r.target,
+          type: relType,
+          status: 'OBSERVED',
+          cost: r.cost ?? 1.0,
+          evidenceRefs: r.evidenceRefs && r.evidenceRefs.length > 0 ? r.evidenceRefs : [sourceEvidenceId]
+        };
+      });
 
       const payload = {
         evidence: evidenceNodes,
@@ -177,7 +185,12 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
         setTimeout(onNavigateToGraph, 700);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to commit graph dataset.');
+      if (err.result?.errors && err.result.errors.length > 0) {
+        const detail = err.result.errors.map((e: any) => `${e.type}: ${e.errors?.map((x: any) => x.message).join('; ')}`).slice(0, 3).join(' | ');
+        setErrorMsg(`Import rejected: ${detail}`);
+      } else {
+        setErrorMsg(err.message || 'Failed to commit graph dataset.');
+      }
     } finally {
       setIsCommitting(false);
     }

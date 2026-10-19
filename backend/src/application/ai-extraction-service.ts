@@ -768,7 +768,7 @@ ${input.rawText}
         }
       }
 
-      // Link event to target (TARGETS)
+      // Link event to target (TARGETED)
       if (evt.target) {
         const targetRef = nameToId.get(String(evt.target).toLowerCase());
         if (targetRef && targetRef.category === 'ENTITY') {
@@ -776,7 +776,7 @@ ${input.rawText}
             id: `edge-${uuidv4().slice(0, 8)}`,
             source: evtId,
             target: targetRef.id,
-            type: 'TARGETS',
+            type: 'TARGETED',
             status: 'OBSERVED',
             cost: 1.0,
             evidenceRefs: [evidenceId],
@@ -796,21 +796,31 @@ ${input.rawText}
 
       if (src && tgt && src.id !== tgt.id) {
         let relType = String(rel.type || 'CONNECTED_TO').toUpperCase();
+        // Normalize common synonym types from LLM
+        if (relType === 'TARGETS' || relType === 'TARGET') relType = 'TARGETED';
+        if (relType === 'CAUSES' || relType === 'CAUSE') relType = 'CAUSED';
+        if (relType === 'PRECEDES' || relType === 'PRECEDE') relType = 'PRECEDED';
+        if (relType === 'ACCESSES' || relType === 'ACCESS') relType = 'ACCESSED';
+        if (relType === 'CREATES' || relType === 'CREATE') relType = 'CREATED';
+        if (relType === 'MODIFIES' || relType === 'MODIFY') relType = 'MODIFIED';
+        if (relType === 'DELETES' || relType === 'DELETE') relType = 'DELETED';
+        if (relType === 'AFFECTS' || relType === 'AFFECT') relType = 'AFFECTED';
+
         if (src.category === 'ENTITY' && tgt.category === 'ENTITY') {
-          if (!['OWNS', 'USES', 'LOCATED_AT', 'MEMBER_OF', 'ASSOCIATED_WITH', 'CONTACTED'].includes(relType)) {
+          if (!['OWNS', 'USES', 'LOCATED_AT', 'MEMBER_OF', 'ASSOCIATED_WITH', 'CONTACTED', 'CONNECTED_TO'].includes(relType)) {
             relType = 'ASSOCIATED_WITH';
           }
         } else if (src.category === 'ENTITY' && tgt.category === 'EVENT') {
-          if (!['PERFORMED', 'PARTICIPATED_IN', 'TRIGGERED'].includes(relType)) {
+          if (!['PERFORMED', 'PARTICIPATED_IN', 'INITIATED'].includes(relType)) {
             relType = 'PARTICIPATED_IN';
           }
         } else if (src.category === 'EVENT' && tgt.category === 'ENTITY') {
-          if (!['TARGETS', 'CONNECTED_TO', 'AFFECTS', 'OBSERVED_BY'].includes(relType)) {
-            relType = 'CONNECTED_TO';
+          if (!['TARGETED', 'AFFECTED', 'ACCESSED', 'CREATED', 'MODIFIED', 'DELETED', 'USED', 'CONNECTED_TO'].includes(relType)) {
+            relType = 'TARGETED';
           }
         } else if (src.category === 'EVENT' && tgt.category === 'EVENT') {
-          if (!['CAUSES', 'PRECEDES'].includes(relType)) {
-            relType = 'CAUSES';
+          if (!['CAUSED', 'PRECEDED', 'DEPENDS_ON'].includes(relType)) {
+            relType = 'CAUSED';
           }
         }
 
