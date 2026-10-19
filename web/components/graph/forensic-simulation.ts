@@ -117,8 +117,8 @@ export function compileDijkstraSteps(
 ): ForensicStep[] {
   const srcNode = nodes.find(n => n.id === srcId);
   const tgtNode = nodes.find(n => n.id === tgtId);
-  const pathNodeIds: string[] = rawOutput.nodeIds || [];
-  const pathEdgeIds: string[] = rawOutput.edgeIds || [];
+  const pathNodeIds: string[] = rawOutput?.nodeIds || [];
+  const pathEdgeIds: string[] = rawOutput?.edgeIds || [];
 
   if (pathNodeIds.length === 0) {
     return [{

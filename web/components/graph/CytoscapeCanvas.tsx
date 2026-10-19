@@ -19,7 +19,13 @@ import {
   ArrowRight,
   Trash2,
   Edit3,
-  Check
+  Check,
+  Zap,
+  Target,
+  Scissors,
+  X,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 import { SimulationState } from './AlgorithmSimulationDeck';
@@ -740,9 +746,10 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           radius="full"
           className="text-xs font-semibold h-7 px-3"
           isLoading={isModeLoading && forensicMode === 'CAUSAL_PATH'}
+          startContent={<Zap className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('CAUSAL_PATH')}
         >
-          ⚡ Causal Corridor
+          Causal Corridor
         </Button>
 
         <Button
@@ -752,9 +759,10 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           radius="full"
           className="text-xs font-semibold h-7 px-3"
           isLoading={isModeLoading && forensicMode === 'DOMINATORS'}
+          startContent={<Target className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('DOMINATORS')}
         >
-          🎯 Choke Points
+          Choke Points
         </Button>
 
         <Button
@@ -764,9 +772,10 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           radius="full"
           className="text-xs font-semibold h-7 px-3"
           isLoading={isModeLoading && forensicMode === 'MIN_CUT'}
+          startContent={<Scissors className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('MIN_CUT')}
         >
-          ✂️ Containment Cut
+          Containment Cut
         </Button>
       </div>
 
@@ -798,7 +807,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
                 radius="full"
                 onPress={() => onSelectElement(null)}
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </Button>
             </div>
 
@@ -890,7 +899,13 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           <div className="bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-xl backdrop-blur-md p-3.5 text-xs space-y-2.5 min-w-[190px] animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-zinc-800">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Forensic Graph Legend</span>
-              <button onClick={() => setIsLegendOpen(false)} className="text-slate-400 hover:text-slate-600 text-xs font-bold">✕</button>
+              <button
+                onClick={() => setIsLegendOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded"
+                aria-label="Close legend"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
             {[
               { color: 'bg-teal-500', label: 'Entity (Person/Org/Asset)' },
@@ -931,9 +946,9 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           <span className="text-slate-300 dark:text-zinc-700">•</span>
           <button
             onClick={() => setIsLegendOpen(!isLegendOpen)}
-            className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors inline-flex items-center gap-1"
           >
-            Legend {isLegendOpen ? '▴' : '▾'}
+            Legend {isLegendOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
         </div>
       </div>

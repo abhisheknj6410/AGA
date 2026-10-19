@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ArrowDown } from 'lucide-react';
 
 interface EntropyGaugeProps {
   currentEntropy: number;
@@ -128,7 +129,7 @@ export const EntropyGauge: React.FC<EntropyGaugeProps> = ({
           animate={{ opacity: 1, y: 0 }}
           className="mt-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1"
         >
-          <span>↓ -{delta.toFixed(2)} bits</span>
+          <span className="flex items-center gap-0.5"><ArrowDown className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> -{delta.toFixed(2)} bits</span>
           <span className="font-normal opacity-75">({Math.round((delta / currentEntropy) * 100)}% resolved)</span>
         </motion.div>
       )}
