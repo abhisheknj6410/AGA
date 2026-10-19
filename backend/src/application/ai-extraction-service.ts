@@ -584,6 +584,256 @@ export class AiExtractionService {
     };
   }
 
+  async extractWithLLM(input: ExtractionInput): Promise<ImportPayload> {
+    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY;
+    const baseUrl = process.env.LLM_BASE_URL || 'https://api.deepseek.com';
+    const model = process.env.LLM_MODEL || 'deepseek-chat';
+
+    if (!apiKey) {
+      return this.extractStructuredCandidates(input);
+    }
+
+    try {
+      const prompt = `You are an expert forensic intelligence extraction engine.
+Analyze the following investigative narrative, report, or telemetry and extract structured entities, events, and causal relations.
+
+Return a JSON object conforming strictly to this format:
+{
+  "entities": [
+    {
+      "name": "string (unique descriptive name/label)",
+      "type": "PERSON | ACCOUNT | DEVICE | IP_ADDRESS | LOCATION | PHONE_NUMBER | EMAIL | VEHICLE | FILE | SERVER | DOMAIN",
+      "role": "string (e.g. SUSPECT, WITNESS, TARGET, VICTIM, WEAPON, CORRIDOR)"
+    }
+  ],
+  "events": [
+    {
+      "name": "string (clear action label)",
+      "type": "LOGIN | LOGOUT | FILE_ACCESS | FILE_CREATION | FILE_TRANSFER | COMMUNICATION | TRANSACTION | LOCATION_CHANGE | DEVICE_CONNECTION | NETWORK_CONNECTION | DATA_ACCESS",
+      "time": "YYYY-MM-DDTHH:MM:SSZ or HH:MM:SS",
+      "actor": "string (name of entity who acted, or empty)",
+      "target": "string (name of entity affected, or empty)"
+    }
+  ],
+  "relationships": [
+    {
+      "source": "string (entity or event name)",
+      "target": "string (entity or event name)",
+      "type": "PERFORMED | PARTICIPATED_IN | CONNECTED_TO | CAUSES | TARGETS | LOCATED_AT | USES | OWNS"
+    }
+  ]
+}
+
+Investigative Text:
+"""
+${input.rawText}
+"""`;
+
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'You are an advanced forensic intelligence extraction model. Respond with valid JSON only.' },
+            { role: 'user', content: prompt }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.1,
+          max_tokens: 1500
+        }),
+        signal: AbortSignal.timeout(15000)
+      });
+
+      if (!response.ok) {
+        console.warn(`[AI Extraction] LLM returned ${response.status}, falling back to deterministic extraction.`);
+        return this.extractStructuredCandidates(input);
+      }
+
+      const resJson: any = await response.json();
+      const content = resJson.choices?.[0]?.message?.content;
+      if (!content) {
+        return this.extractStructuredCandidates(input);
+      }
+
+      const parsed = JSON.parse(content);
+      const mapped = this.mapLlmResultToImportPayload(parsed, input);
+      if ((mapped.nodes?.length || 0) > 0 || (mapped.events?.length || 0) > 0) {
+        return mapped;
+      }
+      return this.extractStructuredCandidates(input);
+    } catch (err) {
+      console.warn('[AI Extraction] LLM extraction failed, using deterministic engine fallback:', err);
+      return this.extractStructuredCandidates(input);
+    }
+  }
+
+  private mapLlmResultToImportPayload(llmOutput: any, input: ExtractionInput): ImportPayload {
+    const now = new Date().toISOString();
+    const runSalt = uuidv4().slice(0, 8);
+    const evidenceId = `ev-extracted-${runSalt}`;
+
+    const candidateEvidence = [
+      {
+        id: evidenceId,
+        category: 'EVIDENCE' as const,
+        type: input.evidenceType || 'DOCUMENT',
+        label: `Evidence: ${input.sourceName || 'Case Ingestion'}`,
+        source: {
+          name: input.sourceName || 'Ingested Document',
+          kind: 'SYSTEM' as const
+        },
+        reliability: 0.95,
+        collectionTime: now,
+        metadata: {
+          aiExtracted: true,
+          model: process.env.LLM_MODEL || 'deepseek-chat',
+          extractedAt: now
+        }
+      }
+    ];
+
+    const nodes: any[] = [];
+    const events: any[] = [];
+    const edges: any[] = [];
+    const nameToId = new Map<string, { id: string; category: string }>();
+
+    // 1. Entities
+    const rawEntities = Array.isArray(llmOutput.entities) ? llmOutput.entities : [];
+    const validEntityTypes = new Set(['PERSON', 'ORGANIZATION', 'ACCOUNT', 'DEVICE', 'IP_ADDRESS', 'LOCATION', 'PHONE_NUMBER', 'EMAIL', 'VEHICLE', 'FILE', 'SERVER', 'DOMAIN', 'PROCESS', 'APPLICATION']);
+
+    for (const ent of rawEntities) {
+      const name = String(ent.name || '').trim();
+      if (!name) continue;
+      const cleanType = String(ent.type || 'PERSON').toUpperCase();
+      const finalType = validEntityTypes.has(cleanType) ? cleanType : 'PERSON';
+      const entId = `ent-${runSalt}-${name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)}`;
+
+      nameToId.set(name.toLowerCase(), { id: entId, category: 'ENTITY' });
+      nodes.push({
+        id: entId,
+        category: 'ENTITY',
+        type: finalType,
+        label: name,
+        properties: { role: ent.role || 'FORENSIC_TARGET' },
+        metadata: { aiExtracted: true, rawSource: input.sourceName }
+      });
+    }
+
+    // 2. Events
+    const rawEvents = Array.isArray(llmOutput.events) ? llmOutput.events : [];
+    const validEventTypes = new Set(['LOGIN', 'LOGOUT', 'FILE_ACCESS', 'FILE_CREATION', 'FILE_DELETION', 'FILE_TRANSFER', 'PROCESS_EXECUTION', 'ACCOUNT_CREATION', 'ACCOUNT_MODIFICATION', 'PASSWORD_CHANGE', 'COMMUNICATION', 'TRANSACTION', 'LOCATION_CHANGE', 'DEVICE_CONNECTION', 'NETWORK_CONNECTION', 'DATA_ACCESS']);
+
+    for (const evt of rawEvents) {
+      const name = String(evt.name || '').trim();
+      if (!name) continue;
+      const cleanType = String(evt.type || 'COMMUNICATION').toUpperCase();
+      const finalType = validEventTypes.has(cleanType) ? cleanType : 'COMMUNICATION';
+      const evtId = `evt-${runSalt}-${name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)}`;
+
+      let eventTime = now;
+      if (evt.time) {
+        eventTime = this.extractTimestamp(String(evt.time)) || now;
+      }
+
+      nameToId.set(name.toLowerCase(), { id: evtId, category: 'EVENT' });
+      events.push({
+        id: evtId,
+        category: 'EVENT',
+        type: finalType,
+        label: name,
+        time: { start: eventTime, precision: 'SECOND' },
+        properties: { actor: evt.actor, target: evt.target },
+        metadata: { aiExtracted: true, rawSource: input.sourceName }
+      });
+
+      // Link actor to event (PERFORMED)
+      if (evt.actor) {
+        const actorRef = nameToId.get(String(evt.actor).toLowerCase());
+        if (actorRef && actorRef.category === 'ENTITY') {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: actorRef.id,
+            target: evtId,
+            type: 'PERFORMED',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { aiExtracted: true }
+          });
+        }
+      }
+
+      // Link event to target (TARGETS)
+      if (evt.target) {
+        const targetRef = nameToId.get(String(evt.target).toLowerCase());
+        if (targetRef && targetRef.category === 'ENTITY') {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: evtId,
+            target: targetRef.id,
+            type: 'TARGETS',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { aiExtracted: true }
+          });
+        }
+      }
+    }
+
+    // 3. Relationships
+    const rawRels = Array.isArray(llmOutput.relationships) ? llmOutput.relationships : [];
+    for (const rel of rawRels) {
+      const srcName = String(rel.source || '').toLowerCase();
+      const tgtName = String(rel.target || '').toLowerCase();
+      const src = nameToId.get(srcName);
+      const tgt = nameToId.get(tgtName);
+
+      if (src && tgt && src.id !== tgt.id) {
+        let relType = String(rel.type || 'CONNECTED_TO').toUpperCase();
+        if (src.category === 'ENTITY' && tgt.category === 'ENTITY') {
+          if (!['OWNS', 'USES', 'LOCATED_AT', 'MEMBER_OF', 'ASSOCIATED_WITH', 'CONTACTED'].includes(relType)) {
+            relType = 'ASSOCIATED_WITH';
+          }
+        } else if (src.category === 'ENTITY' && tgt.category === 'EVENT') {
+          if (!['PERFORMED', 'PARTICIPATED_IN', 'TRIGGERED'].includes(relType)) {
+            relType = 'PARTICIPATED_IN';
+          }
+        } else if (src.category === 'EVENT' && tgt.category === 'ENTITY') {
+          if (!['TARGETS', 'CONNECTED_TO', 'AFFECTS', 'OBSERVED_BY'].includes(relType)) {
+            relType = 'CONNECTED_TO';
+          }
+        } else if (src.category === 'EVENT' && tgt.category === 'EVENT') {
+          if (!['CAUSES', 'PRECEDES'].includes(relType)) {
+            relType = 'CAUSES';
+          }
+        }
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: src.id,
+          target: tgt.id,
+          type: relType,
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { aiExtracted: true }
+        });
+      }
+    }
+
+    return {
+      evidence: candidateEvidence,
+      nodes,
+      events,
+      edges
+    };
+  }
+
   private extractTimestamp(line: string, fallbackDate = '2026-09-10'): string | null {
     // 1. Matches "2026-09-10 at 14:15:00" or "2026-09-10T14:15:00" or "2026-09-10 14:15:00"
     const fullMatch = line.match(/(\d{4}-\d{2}-\d{2})(?:\s+(?:at\s+)?|[T\s])(\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?Z?)/i);
@@ -603,3 +853,4 @@ export class AiExtractionService {
     return null;
   }
 }
+
