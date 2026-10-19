@@ -596,6 +596,7 @@ export class AiExtractionService {
     try {
       const prompt = `You are an expert forensic intelligence extraction engine.
 Analyze the following investigative narrative, report, or telemetry and extract structured entities, events, and causal relations.
+Extract concise, essential entities, chronological events, and key causal edges. Avoid redundant duplicates.
 
 Return a JSON object conforming strictly to this format:
 {
@@ -638,14 +639,14 @@ ${input.rawText}
         body: JSON.stringify({
           model,
           messages: [
-            { role: 'system', content: 'You are an advanced forensic intelligence extraction model. Respond with valid JSON only.' },
+            { role: 'system', content: 'You are an advanced forensic intelligence extraction model. Respond with complete, valid JSON only.' },
             { role: 'user', content: prompt }
           ],
           response_format: { type: 'json_object' },
           temperature: 0.1,
-          max_tokens: 1500
+          max_tokens: 4096
         }),
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
