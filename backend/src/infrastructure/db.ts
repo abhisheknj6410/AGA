@@ -33,31 +33,19 @@ export function getDatabase(customPath?: string): DatabaseSync {
   return db;
 }
 
-let transactionDepth = 0;
-
 export function runInTransaction<T>(db: DatabaseSync, fn: () => T): T {
-  const isOuter = transactionDepth === 0;
-  if (isOuter) {
-    db.exec('BEGIN TRANSACTION;');
-  } else {
-    db.exec(`SAVEPOINT sp_${transactionDepth};`);
-  }
-  transactionDepth++;
+  const sp = `sp_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  db.exec(`SAVEPOINT ${sp};`);
   try {
     const result = fn();
-    transactionDepth--;
-    if (isOuter) {
-      db.exec('COMMIT;');
-    } else {
-      db.exec(`RELEASE sp_${transactionDepth};`);
-    }
+    db.exec(`RELEASE ${sp};`);
     return result;
   } catch (error) {
-    transactionDepth--;
-    if (isOuter) {
-      db.exec('ROLLBACK;');
-    } else {
-      db.exec(`ROLLBACK TO sp_${transactionDepth};`);
+    try {
+      db.exec(`ROLLBACK TO ${sp};`);
+      db.exec(`RELEASE ${sp};`);
+    } catch {
+      // Ignore secondary rollback error
     }
     throw error;
   }
