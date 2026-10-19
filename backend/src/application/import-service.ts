@@ -40,6 +40,8 @@ export class ImportService {
     const existingGraph = this.graphService.getGraph(caseId);
     const existingNodeMap = new Map<string, GraphNode>(existingGraph.nodes.map(n => [n.id, n]));
     const existingEvidenceIds = new Set(existingGraph.nodes.filter(n => n.category === 'EVIDENCE').map(n => n.id));
+    const alreadyInDbNodeIds = new Set(existingGraph.nodes.map(n => n.id));
+    const alreadyInDbEdgeIds = new Set(existingGraph.edges.map(e => e.id));
 
     const stagedNodes: GraphNode[] = [];
     const stagedEdges: GraphEdge[] = [];
@@ -95,7 +97,8 @@ export class ImportService {
           properties: item.properties || {},
           metadata: { ...(item.metadata || {}), importedAt: now },
           createdAt: item.createdAt || now,
-          updatedAt: item.updatedAt || now
+          updatedAt: item.updatedAt || now,
+          time: item.time
         };
 
         const v = validateNode(fullNode);
@@ -183,10 +186,18 @@ export class ImportService {
     // Atomic transaction commit
     runInTransaction(this.db, () => {
       for (const node of stagedNodes) {
-        this.graphService.addNode(caseId, node, who, 'Structured dataset import');
+        if (alreadyInDbNodeIds.has(node.id)) {
+          this.graphService.updateNode(caseId, node.id, node, who, 'Structured dataset import update');
+        } else {
+          this.graphService.addNode(caseId, node, who, 'Structured dataset import');
+        }
       }
       for (const edge of stagedEdges) {
-        this.graphService.addEdge(caseId, edge, who, 'Structured dataset import');
+        if (alreadyInDbEdgeIds.has(edge.id)) {
+          this.graphService.updateEdge(caseId, edge.id, edge, who, 'Structured dataset import update');
+        } else {
+          this.graphService.addEdge(caseId, edge, who, 'Structured dataset import');
+        }
       }
 
       this.auditRepo.log({

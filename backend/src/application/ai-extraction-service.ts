@@ -49,6 +49,9 @@ export class AiExtractionService {
     const edges: any[] = [];
     const seenNodeIds = new Set<string>();
 
+    const runSalt = uuidv4().slice(0, 8);
+    const toId = (prefix: string, name: string) => `${prefix}-${runSalt}-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
     const addNode = (node: any) => {
       if (!seenNodeIds.has(node.id)) {
         seenNodeIds.add(node.id);
@@ -70,8 +73,8 @@ export class AiExtractionService {
       const authMatch = sentence.match(/(Accepted|Failed)\s+(publickey|password)\s+for\s+(\S+)\s+from\s+(\d+\.\d+\.\d+\.\d+)/i);
       if (authMatch) {
         const [, status, method, accountName, ipAddr] = authMatch;
-        const accId = `ent-acc-${accountName.replace(/[^a-zA-Z0-9]/g, '-')}`;
-        const ipId = `ent-ip-${ipAddr.replace(/[^0-9]/g, '-')}`;
+        const accId = toId('ent-acc', accountName);
+        const ipId = toId('ent-ip', ipAddr);
         const eventId = `ev-login-${uuidv4().slice(0, 8)}`;
 
         addNode({
@@ -126,16 +129,273 @@ export class AiExtractionService {
         continue;
       }
 
-      // 2. Pattern: Natural Language Person action on target (Server, Database, File)
+      // 2. Pattern: CCTV / Surveillance Camera Observation
+      // Example: "Building B Cafeteria CCTV shows a subject resembling Rahul Kumar at 14:20:00."
+      const cctvMatch = sentence.match(/([A-Za-z0-9_\s.-]+?(?:CCTV|Camera|Surveillance|Feed))\s+(?:shows|recorded|captured|observed)\s+(?:a subject resembling\s+)?([A-Z][a-z]+ [A-Z][a-z]+)/i);
+      if (cctvMatch) {
+        const [, cameraLabel, personName] = cctvMatch;
+        const camClean = cameraLabel.trim();
+        const camId = toId('ent-cam', camClean);
+        const personId = toId('ent-person', personName);
+        const eventId = `ev-sighting-${uuidv4().slice(0, 8)}`;
+
+        addNode({
+          id: camId,
+          category: 'ENTITY',
+          type: 'DEVICE',
+          label: camClean,
+          properties: { role: 'SURVEILLANCE' },
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        addNode({
+          id: personId,
+          category: 'ENTITY',
+          type: 'PERSON',
+          label: personName,
+          properties: {},
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        events.push({
+          id: eventId,
+          category: 'EVENT',
+          type: 'COMMUNICATION',
+          label: `Visual sighting of ${personName} on ${camClean}`,
+          time: { start: timestamp, precision: 'SECOND' },
+          properties: { camera: camClean, subject: personName },
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: personId,
+          target: eventId,
+          type: 'PARTICIPATED_IN',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.95 }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: eventId,
+          target: camId,
+          type: 'CONNECTED_TO',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.95 }
+        });
+        continue;
+      }
+
+      // 3. Pattern: Passive target access under credential / by user
+      // Example: "Terminal Alpha was accessed under credential rkumar-adm"
+      const passiveAccessMatch = sentence.match(/([A-Z][A-Za-z0-9_\s-]+?)\s+was\s+(accessed|logged into|queried)\s+(?:under credential|by user|by)\s+([A-Za-z0-9_.-]+)/i);
+      if (passiveAccessMatch) {
+        const [, targetLabel, action, actorLabel] = passiveAccessMatch;
+        const targetClean = targetLabel.replace(/^(?:At\s+\d{1,2}:\d{2}(?::\d{2})?,?\s*)/i, '').trim();
+        const actorClean = actorLabel.replace(/[.,]$/, '').trim();
+        const targetId = toId('ent-device', targetClean);
+        const isAccount = actorClean.includes('-') || actorClean.includes('_') || /^[a-z]+$/.test(actorClean);
+        const actorId = isAccount ? toId('ent-acc', actorClean) : toId('ent-person', actorClean);
+        const eventId = `ev-access-${uuidv4().slice(0, 8)}`;
+
+        addNode({
+          id: targetId,
+          category: 'ENTITY',
+          type: 'DEVICE',
+          label: targetClean,
+          properties: {},
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        addNode({
+          id: actorId,
+          category: 'ENTITY',
+          type: isAccount ? 'ACCOUNT' : 'PERSON',
+          label: actorClean,
+          properties: {},
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        events.push({
+          id: eventId,
+          category: 'EVENT',
+          type: 'LOGIN',
+          label: `${targetClean} accessed under ${actorClean}`,
+          time: { start: timestamp, precision: 'SECOND' },
+          properties: { action, actor: actorClean, target: targetClean },
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: actorId,
+          target: eventId,
+          type: 'PERFORMED',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.94 }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: eventId,
+          target: targetId,
+          type: 'ACCESSED',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.94 }
+        });
+        continue;
+      }
+
+      // 4. Pattern: File Creation / Transfer / Exfiltration
+      // Example: "financial_export_2026.csv was transferred to external Drive-X"
+      const fileTransferMatch = sentence.match(/([A-Za-z0-9_.-]+\.[a-zA-Z0-9]+)\s+was\s+(transferred to|copied to|exported to|created on|created)\s+(?:external\s+)?([A-Za-z0-9_.-]+)?/i);
+      if (fileTransferMatch) {
+        const [, fileName, action, destName] = fileTransferMatch;
+        const fileClean = fileName.trim();
+        const destClean = destName ? destName.replace(/[.,]$/, '').trim() : null;
+        const fileId = toId('ent-file', fileClean);
+        const eventId = `ev-file-${uuidv4().slice(0, 8)}`;
+        const isTransfer = action.includes('transferred') || action.includes('copied') || action.includes('exported');
+
+        addNode({
+          id: fileId,
+          category: 'ENTITY',
+          type: 'FILE',
+          label: fileClean,
+          properties: {},
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        let destId: string | null = null;
+        if (destClean) {
+          destId = toId('ent-dest', destClean);
+          addNode({
+            id: destId,
+            category: 'ENTITY',
+            type: 'DEVICE',
+            label: destClean,
+            properties: {},
+            metadata: { aiExtracted: true, rawSnippet: sentence }
+          });
+        }
+
+        events.push({
+          id: eventId,
+          category: 'EVENT',
+          type: isTransfer ? 'FILE_TRANSFER' : 'FILE_CREATION',
+          label: `${fileClean} ${action}${destClean ? ` ${destClean}` : ''}`,
+          time: { start: timestamp, precision: 'SECOND' },
+          properties: { action, file: fileClean, destination: destClean },
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: eventId,
+          target: fileId,
+          type: isTransfer ? 'ACCESSED' : 'CREATED',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.95 }
+        });
+
+        if (destId) {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: eventId,
+            target: destId,
+            type: 'CONNECTED_TO',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { extractionConfidence: 0.92 }
+          });
+        }
+        continue;
+      }
+
+      // 5. Pattern: Person Movement / Entered / Exited Location
+      // Example: "Rahul Kumar entered the secure corridor." or "Rahul Kumar exited via North Stairwell."
+      const movementMatch = sentence.match(/([A-Z][a-z]+ [A-Z][a-z]+)\s+(entered|exited(?: via)?|visited|moved into|was seen in)\s+(?:the\s+)?([A-Za-z0-9_\s-]+?)(?:\.|$|\s+at)/i);
+      if (movementMatch) {
+        const [, personName, action, locationName] = movementMatch;
+        const locClean = locationName.replace(/[.,]$/, '').trim();
+        const personId = toId('ent-person', personName);
+        const locId = toId('ent-loc', locClean);
+        const eventId = `ev-move-${uuidv4().slice(0, 8)}`;
+
+        addNode({
+          id: personId,
+          category: 'ENTITY',
+          type: 'PERSON',
+          label: personName,
+          properties: {},
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        addNode({
+          id: locId,
+          category: 'ENTITY',
+          type: 'LOCATION',
+          label: locClean,
+          properties: {},
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        events.push({
+          id: eventId,
+          category: 'EVENT',
+          type: 'LOCATION_CHANGE',
+          label: `${personName} ${action} ${locClean}`,
+          time: { start: timestamp, precision: 'SECOND' },
+          properties: { action, person: personName, location: locClean },
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: personId,
+          target: eventId,
+          type: 'PERFORMED',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.95 }
+        });
+
+        edges.push({
+          id: `edge-${uuidv4().slice(0, 8)}`,
+          source: eventId,
+          target: locId,
+          type: 'TARGETED',
+          status: 'OBSERVED',
+          cost: 1.0,
+          evidenceRefs: [evidenceId],
+          properties: { extractionConfidence: 0.90 }
+        });
+        continue;
+      }
+
+      // 6. Pattern: Natural Language Person action on target (Server, Database, File)
       // Example: "Rahul Kumar accessed Server-Prod-01" or "Arjun Sharma connected to Database-Core"
       const personActionMatch = sentence.match(/([A-Z][a-z]+ [A-Z][a-z]+)\s+(accessed|connected to|logged into|modified|queried|deleted|transferred)\s+(?:the\s+)?([A-Za-z0-9_.-]+)/i);
       if (personActionMatch) {
         const [, personName, action, targetName] = personActionMatch;
-        const personId = `ent-person-${personName.toLowerCase().replace(/\s+/g, '-')}`;
+        const personId = toId('ent-person', personName);
         const targetType = targetName.toLowerCase().includes('db') || targetName.toLowerCase().includes('database') || targetName.toLowerCase().includes('server')
           ? 'SERVER'
           : targetName.includes('.') ? 'FILE' : 'SERVER';
-        const targetId = `ent-target-${targetName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        const targetId = toId('ent-target', targetName);
         const eventId = `ev-action-${uuidv4().slice(0, 8)}`;
 
         addNode({
@@ -246,8 +506,8 @@ export class AiExtractionService {
       const ipConnMatch = sentence.match(/(\d+\.\d+\.\d+\.\d+)\s+connected to\s+(\d+\.\d+\.\d+\.\d+)/i);
       if (ipConnMatch) {
         const [, ip1, ip2] = ipConnMatch;
-        const ip1Id = `ent-ip-${ip1.replace(/[^0-9]/g, '-')}`;
-        const ip2Id = `ent-ip-${ip2.replace(/[^0-9]/g, '-')}`;
+        const ip1Id = toId('ent-ip', ip1);
+        const ip2Id = toId('ent-ip', ip2);
         const connEventId = `ev-net-${uuidv4().slice(0, 8)}`;
 
         addNode({
@@ -324,10 +584,21 @@ export class AiExtractionService {
     };
   }
 
-  private extractTimestamp(line: string): string | null {
-    const isoMatch = line.match(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?Z?/);
-    if (isoMatch) {
-      return new Date(isoMatch[0].replace(' ', 'T')).toISOString();
+  private extractTimestamp(line: string, fallbackDate = '2026-09-10'): string | null {
+    // 1. Matches "2026-09-10 at 14:15:00" or "2026-09-10T14:15:00" or "2026-09-10 14:15:00"
+    const fullMatch = line.match(/(\d{4}-\d{2}-\d{2})(?:\s+(?:at\s+)?|[T\s])(\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?Z?)/i);
+    if (fullMatch) {
+      let t = fullMatch[2];
+      if (t.length === 5) t += ':00';
+      return new Date(`${fullMatch[1]}T${t.replace(/Z$/, '')}Z`).toISOString();
+    }
+
+    // 2. Matches standalone time like "At 14:18:22," or "at 14:20:00"
+    const timeMatch = line.match(/\b(?:at\s+)?(\d{2}:\d{2}(?::\d{2})?)\b/i);
+    if (timeMatch) {
+      let t = timeMatch[1];
+      if (t.length === 5) t += ':00';
+      return new Date(`${fallbackDate}T${t}Z`).toISOString();
     }
     return null;
   }

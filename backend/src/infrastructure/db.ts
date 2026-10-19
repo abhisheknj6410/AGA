@@ -33,14 +33,32 @@ export function getDatabase(customPath?: string): DatabaseSync {
   return db;
 }
 
+let transactionDepth = 0;
+
 export function runInTransaction<T>(db: DatabaseSync, fn: () => T): T {
-  db.exec('BEGIN TRANSACTION;');
+  const isOuter = transactionDepth === 0;
+  if (isOuter) {
+    db.exec('BEGIN TRANSACTION;');
+  } else {
+    db.exec(`SAVEPOINT sp_${transactionDepth};`);
+  }
+  transactionDepth++;
   try {
     const result = fn();
-    db.exec('COMMIT;');
+    transactionDepth--;
+    if (isOuter) {
+      db.exec('COMMIT;');
+    } else {
+      db.exec(`RELEASE sp_${transactionDepth};`);
+    }
     return result;
   } catch (error) {
-    db.exec('ROLLBACK;');
+    transactionDepth--;
+    if (isOuter) {
+      db.exec('ROLLBACK;');
+    } else {
+      db.exec(`ROLLBACK TO sp_${transactionDepth};`);
+    }
     throw error;
   }
 }

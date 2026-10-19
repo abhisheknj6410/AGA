@@ -39,16 +39,19 @@ interface CaseIngestionViewProps {
 }
 
 interface ExtractedCandidates {
-  entities?: Array<{ id: string; label: string; category?: string; type: string }>;
-  events?: Array<{ id: string; label: string; category?: string; type: string; time?: { start: string } }>;
-  relationships?: Array<{ id?: string; source: string; target: string; type: string }>;
+  evidence?: Array<any>;
+  entities?: Array<{ id: string; label: string; category?: string; type: string; properties?: Record<string, any> }>;
+  nodes?: Array<{ id: string; label: string; category?: string; type: string; properties?: Record<string, any> }>;
+  events?: Array<{ id: string; label: string; category?: string; type: string; time?: { start: string; precision?: string }; properties?: Record<string, any> }>;
+  relationships?: Array<{ id?: string; source: string; target: string; type: string; cost?: number; evidenceRefs?: string[] }>;
+  edges?: Array<{ id?: string; source: string; target: string; type: string; cost?: number; evidenceRefs?: string[] }>;
 }
 
 const SAMPLE_NARRATIVES = {
-  narrative: `On 2026-09-10 at 14:15:00, Rahul Kumar entered the secure server vault.
-At 14:18:22, Terminal Alpha was accessed by Rahul Kumar.
-At 14:22:00, an unauthorized export file financial_export_2026.csv was created on Terminal Alpha.
-At 14:25:10, Rahul Kumar exited via North Stairwell.`,
+  narrative: `On 2026-09-10 at 14:15:00, Rahul Kumar entered the secure corridor.
+At 14:18:22, Terminal Alpha was accessed under credential rkumar-adm.
+At 14:22:00, an unauthorized export financial_export_2026.csv was transferred to external Drive-X.
+Building B Cafeteria CCTV shows a subject resembling Rahul Kumar at 14:20:00.`,
   auth: `2026-09-10T14:15:00Z AUTH_SUCCESS user="rkumar" door="VAULT_DOOR_1"
 2026-09-10T14:18:22Z USB_MOUNT serial="DRIVE_X_992" host="TERM_ALPHA"
 2026-09-10T14:22:00Z EXFIL_TRIGGER dest="DRIVE_X_992" user="rkumar"
@@ -83,9 +86,15 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
 
     try {
       const candidates = await extractCandidates(caseId, rawText, sourceName, evidenceType);
-      setExtractedData(candidates);
-      const totalNodes = (candidates.entities?.length || 0) + (candidates.events?.length || 0);
-      const totalEdges = candidates.relationships?.length || 0;
+      const normalized: ExtractedCandidates = {
+        evidence: candidates.evidence || [],
+        entities: candidates.nodes || candidates.entities || [],
+        events: candidates.events || [],
+        relationships: candidates.edges || candidates.relationships || []
+      };
+      setExtractedData(normalized);
+      const totalNodes = (normalized.entities?.length || 0) + (normalized.events?.length || 0);
+      const totalEdges = normalized.relationships?.length || 0;
       setSuccessMsg(`Eve AI Agent successfully extracted ${totalNodes} nodes and ${totalEdges} causal connections.`);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error running AI extraction.');
@@ -100,46 +109,68 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
     setErrorMsg(null);
 
     try {
-      const nodes: any[] = [
-        ...(extractedData.entities || []).map((e) => ({
-          id: e.id || `entity-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          label: e.label,
-          category: 'ENTITY',
-          type: e.type || 'PERSON',
-          status: 'OBSERVED'
-        })),
-        ...(extractedData.events || []).map((ev) => ({
-          id: ev.id || `event-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          label: ev.label,
-          category: 'EVENT',
-          type: ev.type || 'ACTION',
-          time: ev.time,
-          status: 'OBSERVED'
-        }))
-      ];
+      const sourceEvidenceId = extractedData.evidence?.[0]?.id || `ev-source-${Date.now()}`;
+      const evidenceNodes: any[] = (extractedData.evidence && extractedData.evidence.length > 0)
+        ? extractedData.evidence.map((ev: any) => ({
+            ...ev,
+            caseId
+          }))
+        : [
+            {
+              id: sourceEvidenceId,
+              caseId,
+              category: 'EVIDENCE',
+              type: evidenceType || 'DOCUMENT',
+              label: `Evidence: ${sourceName || 'Case Ingestion'}`,
+              source: { name: sourceName || 'Ingested Document', kind: 'SYSTEM' },
+              reliability: 0.90,
+              collectionTime: new Date().toISOString()
+            }
+          ];
 
-      const edges: any[] = (extractedData.relationships || []).map((r, idx) => ({
+      const entityNodes: any[] = (extractedData.entities || []).map((e: any) => ({
+        id: e.id || `entity-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        caseId,
+        label: e.label,
+        category: 'ENTITY',
+        type: e.type || 'PERSON',
+        status: 'OBSERVED',
+        properties: e.properties || {}
+      }));
+
+      const eventNodes: any[] = (extractedData.events || []).map((ev: any) => ({
+        id: ev.id || `event-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        caseId,
+        label: ev.label,
+        category: 'EVENT',
+        type: ev.type || 'DATA_ACCESS',
+        time: ev.time || { start: new Date().toISOString(), precision: 'MINUTE' },
+        status: 'OBSERVED',
+        properties: ev.properties || {}
+      }));
+
+      const edges: any[] = (extractedData.relationships || []).map((r: any, idx: number) => ({
         id: r.id || `edge-${Date.now()}-${idx}`,
+        caseId,
         source: r.source,
         target: r.target,
         type: r.type || 'INVOLVED',
-        status: 'OBSERVED'
+        status: 'OBSERVED',
+        cost: r.cost ?? 1.0,
+        evidenceRefs: r.evidenceRefs && r.evidenceRefs.length > 0 ? r.evidenceRefs : [sourceEvidenceId]
       }));
 
       const payload = {
-        nodes,
-        edges,
-        metadata: {
-          caseId,
-          sourceName,
-          evidenceType,
-          importedAt: new Date().toISOString()
-        }
+        evidence: evidenceNodes,
+        nodes: entityNodes,
+        events: eventNodes,
+        edges
       };
 
       await importJsonDataset(caseId, payload);
 
-      setSuccessMsg(`Successfully committed ${nodes.length} nodes and ${edges.length} relationships to the investigation graph.`);
+      const totalCommitted = entityNodes.length + eventNodes.length;
+      setSuccessMsg(`Successfully committed ${totalCommitted} nodes and ${edges.length} relationships to the investigation graph.`);
       setExtractedData(null);
       if (onDataIngested) onDataIngested();
       if (onNavigateToGraph) {
