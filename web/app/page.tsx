@@ -212,6 +212,7 @@ export default function Home() {
         {activeTab === 'GRAPH' && (
           <div className="relative w-full h-full">
             <CytoscapeCanvas
+              caseId={currentCase?.id}
               nodes={graph?.nodes || []}
               edges={graph?.edges || []}
               selectedElement={selectedElement}
@@ -224,50 +225,20 @@ export default function Home() {
               simulationState={simulationState}
             />
 
-            {/* Bottom Floating Control Buttons */}
-            <div className="absolute bottom-6 right-6 flex items-center gap-2.5 z-20">
-              {/* Algorithm Simulation Trigger button */}
-              {!simulationActive && (
-                <button
-                  onClick={() => {
-                    setSimulationActive(true);
-                    setTimelineActive(false);
-                  }}
-                  className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl shadow-lg shadow-teal-500/25 hover:brightness-110 active:scale-98 transition-all duration-200 text-sm font-semibold backdrop-blur"
-                >
-                  <Zap className="w-4 h-4 fill-current" />
-                  Simulate Algorithms
-                </button>
-              )}
-
-              {/* Timeline trigger button */}
-              {!timelineActive && timelineEvents.length > 0 && (
+            {/* Bottom Right Floating Timeline Button */}
+            {!timelineActive && timelineEvents.length > 0 && (
+              <div className="absolute bottom-6 right-6 z-20">
                 <button
                   onClick={() => {
                     setTimelineActive(true);
-                    setSimulationActive(false);
                     setTimelineStep(0);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/90 dark:bg-zinc-900/90 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-lg backdrop-blur text-sm font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all duration-200"
+                  className="flex items-center gap-2 px-3.5 py-2 bg-white/95 dark:bg-zinc-900/95 border border-slate-200/80 dark:border-zinc-800 rounded-xl shadow-lg backdrop-blur text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all duration-200"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  Timeline ({timelineEvents.length})
+                  <svg className="w-3.5 h-3.5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Replay Timeline ({timelineEvents.length})
                 </button>
-              )}
-            </div>
-
-            {/* Algorithm Simulation Deck Overlay */}
-            {simulationActive && currentCase && (
-              <AlgorithmSimulationDeck
-                caseId={currentCase.id}
-                nodes={graph?.nodes || []}
-                edges={graph?.edges || []}
-                onSimulationStateChange={setSimulationState}
-                onClose={() => {
-                  setSimulationActive(false);
-                  setSimulationState(null);
-                }}
-              />
+              </div>
             )}
 
             {/* Timeline overlay */}

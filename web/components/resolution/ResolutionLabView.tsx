@@ -50,6 +50,7 @@ import {
   Microscope,
   Play
 } from 'lucide-react';
+import { EntropyGauge } from './EntropyGauge';
 
 interface Props {
   currentCase: Case;
@@ -161,6 +162,56 @@ export const ResolutionLabView: React.FC<Props> = ({ currentCase }) => {
           <Button size="sm" color="primary" startContent={<RefreshCw className="w-3.5 h-3.5" />} onPress={loadData}>
             Re-evaluate
           </Button>
+        </div>
+      </div>
+
+      {/* Information Theoretical Command Banner */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Entropy Gauge Column */}
+        <div className="lg:col-span-1">
+          <EntropyGauge
+            currentEntropy={resolutionMatrix.structuralEntropy}
+            simulatedEntropy={simResult ? Math.max(0, Math.round(Math.log2(Math.max(1, simResult.afterPossibilityIds.length)) * 100) / 100) : null}
+            maxEntropy={Math.max(4.0, resolutionMatrix.structuralEntropy + 1.0)}
+          />
+        </div>
+
+        {/* Real-World Investigative Guidance Column */}
+        <div className="lg:col-span-2 flex flex-col justify-between p-5 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+                <Microscope className="w-4 h-4" />
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider">
+                Shannon Information Entropy Theory in Forensic Science
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+              Every unresolved crime presents a finite set of competing plausible corridors. The system measures remaining ambiguity as Shannon Entropy <span className="font-mono font-bold text-teal-600 dark:text-teal-400">H(P) = -∑ p_i log₂(p_i)</span>. Each bit of entropy represents a necessary binary clarification. By targeting high-utility resolution tests, investigators eliminate ambiguous branches with minimal wasted field effort.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Current Ambiguity</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-zinc-200 text-sm">
+                {resolutionMatrix.structuralEntropy} bits
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Optimal Test</span>
+              <span className="font-mono font-bold text-teal-600 dark:text-teal-400 text-sm truncate block">
+                {resolutionCandidates[0]?.id || 'None'} ({resolutionCandidates[0]?.targetLabel || 'N/A'})
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Expected Reduction</span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                -{resolutionCandidates[0]?.resolutionUtilityScore ? (resolutionCandidates[0].resolutionUtilityScore / 100 * 2).toFixed(2) : '0.00'} bits
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -346,35 +397,134 @@ export const ResolutionLabView: React.FC<Props> = ({ currentCase }) => {
         </CardBody>
       </Card>
 
-      {/* Simulation Result */}
-      {simResult && (
-        <Card className="border border-primary-200 bg-primary-50 shadow-sm">
-          <CardHeader className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">
-                Counterfactual Simulation: {selectedCandidate?.targetLabel}
-              </h3>
+      {/* Interactive Counterfactual Simulation Result Studio */}
+      {simResult && selectedCandidate && (
+        <Card className="border border-teal-200 dark:border-teal-900/60 bg-white dark:bg-zinc-900 shadow-md">
+          <CardHeader className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+                <BarChart3 className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                  Counterfactual Test Simulation: {selectedCandidate.targetLabel}
+                  <Chip size="sm" variant="flat" color={simResult.simulatedAction === 'CONFIRM_ELEMENT' ? 'success' : 'danger'} className="text-[10px] font-bold">
+                    {simResult.simulatedAction}
+                  </Chip>
+                </h3>
+                <span className="text-xs text-slate-400">
+                  Real-time possibility space partitioning based on simulated evidentiary verification
+                </span>
+              </div>
             </div>
-            <Button size="sm" variant="light" onPress={() => setSimResult(null)}>Dismiss</Button>
+
+            <div className="flex items-center gap-2">
+              <div className="flex bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/60 dark:border-zinc-700/60">
+                <Button
+                  size="sm"
+                  variant={simResult.simulatedAction === 'CONFIRM_ELEMENT' ? 'solid' : 'light'}
+                  color={simResult.simulatedAction === 'CONFIRM_ELEMENT' ? 'success' : 'default'}
+                  className="h-7 text-xs font-semibold px-2.5"
+                  onPress={() => handleSimulate(selectedCandidate, 'CONFIRM_ELEMENT')}
+                >
+                  Simulate Confirm (+)
+                </Button>
+                <Button
+                  size="sm"
+                  variant={simResult.simulatedAction === 'REFUTE_ELEMENT' ? 'solid' : 'light'}
+                  color={simResult.simulatedAction === 'REFUTE_ELEMENT' ? 'danger' : 'default'}
+                  className="h-7 text-xs font-semibold px-2.5"
+                  onPress={() => handleSimulate(selectedCandidate, 'REFUTE_ELEMENT')}
+                >
+                  Simulate Refute (-)
+                </Button>
+              </div>
+
+              <Button size="sm" variant="light" className="h-7 text-xs text-slate-500 font-semibold" onPress={() => setSimResult(null)}>
+                Dismiss
+              </Button>
+            </div>
           </CardHeader>
-          <Divider />
-          <CardBody className="p-4 space-y-4">
-            <p className="text-sm text-foreground-600">{simResult.explanation}</p>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'Before', value: simResult.beforePossibilityIds.length, color: 'default' as const, sub: 'possibilities' },
-                { label: 'After Confirm', value: simResult.afterPossibilityIds.length, color: 'success' as const, sub: 'surviving' },
-                { label: 'Pruned', value: simResult.eliminatedPossibilityIds.length, color: 'danger' as const, sub: 'eliminated' },
-              ].map(s => (
-                <Card key={s.label} shadow="none" className="bg-background border border-divider">
-                  <CardBody className="p-3 text-center">
-                    <div className="text-xs text-foreground-500 font-semibold mb-1">{s.label}</div>
-                    <div className={`text-2xl font-bold text-${s.color}`}>{s.value}</div>
-                    <div className="text-xs text-foreground-400">{s.sub}</div>
-                  </CardBody>
-                </Card>
-              ))}
+
+          <CardBody className="p-6 space-y-5">
+            {/* Plain English Deduction */}
+            <div className="p-3.5 bg-slate-50 dark:bg-zinc-800/60 rounded-xl border border-slate-100 dark:border-zinc-800 text-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 block mb-1">
+                Forensic Deductive Outcome
+              </span>
+              <p className="text-slate-700 dark:text-zinc-300 font-medium leading-relaxed">
+                {simResult.explanation}
+              </p>
+            </div>
+
+            {/* Metrics Triad */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center space-y-1">
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Before Test</div>
+                <div className="text-2xl font-black text-slate-800 dark:text-zinc-200 font-mono">
+                  {simResult.beforePossibilityIds.length}
+                </div>
+                <div className="text-[11px] text-slate-400">Total Unresolved Corridors</div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 text-center space-y-1">
+                <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Surviving Hypotheses</div>
+                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {simResult.afterPossibilityIds.length}
+                </div>
+                <div className="text-[11px] text-emerald-600/70">Remaining Plausible Explanations</div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-800/60 bg-rose-50/30 dark:bg-rose-950/20 text-center space-y-1">
+                <div className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Eliminated Hypotheses</div>
+                <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono">
+                  {simResult.eliminatedPossibilityIds.length}
+                </div>
+                <div className="text-[11px] text-rose-600/70">Refuted Corridors Pruned</div>
+              </div>
+            </div>
+
+            {/* Visual Partition Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              {/* Surviving Corridors */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    Surviving Corridors ({simResult.afterPossibilityIds.length})
+                  </span>
+                  <span className="text-[11px] font-mono text-emerald-600">Active</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {simResult.afterPossibilityIds.map(id => (
+                    <Chip key={id} size="sm" variant="flat" color="success" className="text-[10px] font-mono">
+                      #{id.slice(0, 8)}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              {/* Eliminated Corridors */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                    Eliminated Corridors ({simResult.eliminatedPossibilityIds.length})
+                  </span>
+                  <span className="text-[11px] font-mono text-rose-600">Pruned</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {simResult.eliminatedPossibilityIds.length > 0 ? (
+                    simResult.eliminatedPossibilityIds.map(id => (
+                      <Chip key={id} size="sm" variant="flat" color="danger" className="text-[10px] font-mono line-through">
+                        #{id.slice(0, 8)}
+                      </Chip>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">None pruned under this outcome</span>
+                  )}
+                </div>
+              </div>
             </div>
           </CardBody>
         </Card>
