@@ -154,10 +154,11 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
 
   // Compile frames for Dijkstra
   const compileDijkstraSteps = (rawOutput: any, srcId: string, tgtId: string): SimulationStep[] => {
+    const data = rawOutput?.output || rawOutput || {};
     const srcNode = nodes.find(n => n.id === srcId);
     const tgtNode = nodes.find(n => n.id === tgtId);
-    const pathNodeIds: string[] = rawOutput.nodeIds || [];
-    const pathEdgeIds: string[] = rawOutput.edgeIds || [];
+    const pathNodeIds: string[] = data.nodeIds || [];
+    const pathEdgeIds: string[] = data.edgeIds || [];
 
     if (pathNodeIds.length === 0) {
       return [{
@@ -218,12 +219,12 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
       stepIndex: total - 1,
       totalSteps: total,
       title: "Optimal Causal Corridor Established",
-      narrative: `Dijkstra converged! Proved shortest causal path from '${srcNode?.label}' to '${tgtNode?.label}' spanning ${pathNodeIds.length} nodes with minimal forensic weight ${rawOutput.totalCost || pathNodeIds.length - 1}.`,
-      mathDetail: `Target d(${tgtNode?.label}) = ${rawOutput.totalCost || pathNodeIds.length - 1} (Globally Optimal)`,
+      narrative: `Dijkstra converged! Proved shortest causal path from '${srcNode?.label}' to '${tgtNode?.label}' spanning ${pathNodeIds.length} nodes with minimal forensic weight ${data.totalCost || pathNodeIds.length - 1}.`,
+      mathDetail: `Target d(${tgtNode?.label}) = ${data.totalCost || pathNodeIds.length - 1} (Globally Optimal)`,
       activeNodeIds: pathNodeIds,
       visitedNodeIds: pathNodeIds,
       activeEdgeIds: pathEdgeIds,
-      metrics: { "Total Path Cost": rawOutput.totalCost || 2, "Hops": pathNodeIds.length - 1, "Status": "OPTIMAL" }
+      metrics: { "Total Path Cost": data.totalCost || 2, "Hops": pathNodeIds.length - 1, "Status": "OPTIMAL" }
     });
 
     return compiled;
@@ -231,10 +232,11 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
 
   // Compile frames for Dominators (Lengauer-Tarjan)
   const compileDominatorSteps = (rawOutput: any, rootId: string, tgtId: string): SimulationStep[] => {
+    const data = rawOutput?.output || rawOutput || {};
     const rootNode = nodes.find(n => n.id === rootId);
     const tgtNode = nodes.find(n => n.id === tgtId);
-    const chokeList: any[] = rawOutput.unavoidableNodesForTarget || [];
-    const chokeIds = chokeList.map(c => c.nodeId || c.id);
+    const chokeList: any[] = data.unavoidableNodesForTarget || [];
+    const chokeIds = chokeList.map((c: any) => c.nodeId || c.id || c);
 
     const compiled: SimulationStep[] = [];
     const total = 3;
@@ -282,12 +284,13 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
 
   // Compile frames for Min-Cut (Edmonds-Karp)
   const compileMinCutSteps = (rawOutput: any, srcId: string, tgtId: string): SimulationStep[] => {
+    const data = rawOutput?.output || rawOutput || {};
     const srcNode = nodes.find(n => n.id === srcId);
     const tgtNode = nodes.find(n => n.id === tgtId);
-    const cutEdges: any[] = rawOutput.cutEdges || [];
-    const cutEdgeIds = cutEdges.map(e => e.edgeId || e.id);
-    const srcPartIds = rawOutput.sourcePartitionNodeIds || [srcId];
-    const tgtPartIds = rawOutput.targetPartitionNodeIds || [tgtId];
+    const cutEdges: any[] = data.cutEdges || [];
+    const cutEdgeIds = cutEdges.map((e: any) => e.edgeId || e.id || e);
+    const srcPartIds = data.sourcePartitionNodeIds || [srcId];
+    const tgtPartIds = data.targetPartitionNodeIds || [tgtId];
 
     const compiled: SimulationStep[] = [];
     const total = 3;
