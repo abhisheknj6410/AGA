@@ -70,6 +70,15 @@ export default function Home() {
 
   // Initial load
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('gis_theme') as 'light' | 'dark' | null;
+      if (savedTheme) {
+        setTheme(savedTheme);
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        document.documentElement.classList.toggle('light', savedTheme === 'light');
+      }
+    }
+
     async function init() {
       try {
         const caseList = await fetchCases();
@@ -108,14 +117,10 @@ export default function Home() {
   const handleToggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
-    if (typeof document !== 'undefined') {
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-      } else {
-        document.documentElement.classList.add('light');
-        document.documentElement.classList.remove('dark');
-      }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gis_theme', next);
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      document.documentElement.classList.toggle('light', next === 'light');
     }
   };
 
