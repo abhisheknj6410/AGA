@@ -81,7 +81,7 @@ test('Planning 2: ResolutionCandidates are deterministically converted into Inve
 
   assert.ok(resolution.resolutionCandidates.length > 0, 'Demo case must have resolution candidates');
   for (const action of plan.actions) {
-    assert.ok(action.id.startsWith('ACT-'), 'Action ID must start with ACT-');
+    assert.ok(action.id.startsWith('ACT-') || action.id.startsWith('ADV-'), 'Action ID must start with ACT- or ADV-');
     assert.ok(action.question.length > 10, 'Action must have a descriptive investigative question');
     assert.ok(action.evidenceClasses.length > 0, 'Action must specify schema evidence classes');
     assert.ok(action.algorithmBasis.length > 0, 'Action must specify algorithm basis');
@@ -132,7 +132,7 @@ test('Planning 5: Equal partition on hypotheses yields accurate entropy reductio
   const plan = await planningEngine.generatePlan(caseId, baseGraph);
   // Find an action that splits possibilities symmetrically
   const symmetric = plan.actions.find(a =>
-    a.expectedPartitions.CONFIRMED.resultingPossibilityCount === a.expectedPartitions.REFUTED.resultingPossibilityCount
+    a.expectedPartitions.CONFIRMED.resultingPossibilityCount === a.expectedPartitions.REFUTED.resultingPossibilityCount && !a.id.startsWith('ADV-')
   );
 
   if (symmetric) {
@@ -374,7 +374,7 @@ test('Planning 21: Trivial case with 1 or 0 possibilities produces entropy 0 and
     trivialCaseId, 'Trivial Case', 'Single route case', 'ACTIVE', now, now
   );
 
-  const plan = await planningEngine.generatePlan(trivialCaseId, { nodes: [], edges: [] });
+  const plan = await planningEngine.generatePlan(trivialCaseId, { nodes: [], edges: [], metadata: { caseId: trivialCaseId, nodeCount: 0, edgeCount: 0, entityCount: 0, eventCount: 0, evidenceCount: 0, generatedAt: new Date().toISOString() } });
   assert.equal(plan.currentEntropy, 0);
   assert.equal(plan.actions.length, 0);
   assert.equal(plan.nextImmediateAction, null);

@@ -143,7 +143,7 @@ test('ClosedLoop 3: Unaffected algorithm results are reused from cache', async (
     category: 'EVIDENCE',
     type: 'DOCUMENT',
     label: 'Internal Audit Review Memo',
-    source: { name: 'Compliance Dept Archive', kind: 'ORGANIZATION' },
+    source: { name: 'Compliance Dept Archive', kind: 'SYSTEM' },
     reliability: 0.9
   };
 
@@ -228,7 +228,7 @@ test('ClosedLoop 5: Investigation action transitions to OBSOLETE when target pos
       }
     ],
     [],
-    { id: 'ev-test', label: 'Test Evidence', category: 'EVIDENCE', type: 'DOCUMENT', source: { name: 'Test' } },
+    { id: 'ev-test', label: 'Test Evidence', category: 'EVIDENCE', type: 'DOCUMENT', source: { name: 'Test' , kind: 'DEVICE' } },
     [],
     undefined,
     [eliminatedId]
@@ -248,7 +248,7 @@ test('ClosedLoop 6: Unexpected evidence with no connections flags UNEXPLAINED_SU
     category: 'EVIDENCE',
     type: 'MANUAL_ENTRY',
     label: 'Unattributed USB Thumbdrive found on Street',
-    source: { name: 'Officer Patrol Log', kind: 'OFFICER' },
+    source: { name: 'Officer Patrol Log', kind: 'HUMAN' },
     reliability: 0.5
   };
 
@@ -368,14 +368,14 @@ test('ClosedLoop 10: Version history maintains immutable sequence of investigati
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-step-1', label: 'Step 1 Evidence', category: 'EVIDENCE', type: 'LOG', source: { name: 'Sensor 1' } },
+    evidenceNode: { id: 'ev-step-1', label: 'Step 1 Evidence', category: 'EVIDENCE', type: 'LOG', source: { name: 'Sensor 1' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-s1', source: 'ev-step-1', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-step-1'], cost: 0.1 }],
     summary: 'Evidence step 1'
   });
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-step-2', label: 'Step 2 Evidence', category: 'EVIDENCE', type: 'LOG', source: { name: 'Sensor 2' } },
+    evidenceNode: { id: 'ev-step-2', label: 'Step 2 Evidence', category: 'EVIDENCE', type: 'LOG', source: { name: 'Sensor 2' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-s2', source: 'ev-step-2', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-step-2'], cost: 0.1 }],
     summary: 'Evidence step 2'
   });
@@ -392,7 +392,7 @@ test("ClosedLoop 11: Agent answers 'What changed after this evidence?' with EVID
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-agent-test', label: 'Guard Station Roster Sheet', category: 'EVIDENCE', type: 'DOCUMENT', source: { name: 'Physical Archive' } },
+    evidenceNode: { id: 'ev-agent-test', label: 'Guard Station Roster Sheet', category: 'EVIDENCE', type: 'DOCUMENT', source: { name: 'Physical Archive' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-agent-t', source: 'ev-agent-test', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-agent-test'], cost: 0.1 }],
     summary: 'Ingested guard roster'
   });
@@ -411,7 +411,7 @@ test("ClosedLoop 12: Agent answers 'Which possibilities were eliminated?' with P
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-agent-elim-test', label: 'Audit Log 2', category: 'EVIDENCE', type: 'LOG', source: { name: 'Audit DB' } },
+    evidenceNode: { id: 'ev-agent-elim-test', label: 'Audit Log 2', category: 'EVIDENCE', type: 'LOG', source: { name: 'Audit DB' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-agent-e', source: 'ev-agent-elim-test', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-agent-elim-test'], cost: 0.1 }],
     summary: 'Ingested audit log'
   });
@@ -428,7 +428,7 @@ test("ClosedLoop 13: Agent answers 'Which algorithms were rerun?' with ALGORITHM
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-algo-test', label: 'Badge Card Log', category: 'EVIDENCE', type: 'LOG', source: { name: 'Controller' } },
+    evidenceNode: { id: 'ev-algo-test', label: 'Badge Card Log', category: 'EVIDENCE', type: 'LOG', source: { name: 'Controller' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-algo-t', source: 'ev-algo-test', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-algo-test'], cost: 0.1 }],
     summary: 'Ingested badge card log'
   });
@@ -446,7 +446,7 @@ test("ClosedLoop 14: Agent answers 'What investigation actions are now relevant?
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-actions-test', label: 'Camera Feed 5', category: 'EVIDENCE', type: 'CCTV', source: { name: 'CCTV DVR 01' } },
+    evidenceNode: { id: 'ev-actions-test', label: 'Camera Feed 5', category: 'EVIDENCE', type: 'CCTV', source: { name: 'CCTV DVR 01' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-actions-t', source: 'ev-actions-test', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-actions-test'], cost: 0.1 }],
     summary: 'Ingested camera feed 5'
   });
@@ -464,7 +464,7 @@ test("ClosedLoop 15: Agent answers 'Why did the possibility space change?' with 
 
   await evidenceImpactEngine.ingestEvidence({
     caseId,
-    evidenceNode: { id: 'ev-reason-test', label: 'Physical Security Keycard Log', category: 'EVIDENCE', type: 'LOG', source: { name: 'Controller 02' } },
+    evidenceNode: { id: 'ev-reason-test', label: 'Physical Security Keycard Log', category: 'EVIDENCE', type: 'LOG', source: { name: 'Controller 02' , kind: 'DEVICE' } },
     attachedEdges: [{ id: 'e-reason-t', source: 'ev-reason-test', target: 'location-vault', type: 'SUPPORTS', status: 'OBSERVED', evidenceRefs: ['ev-reason-test'], cost: 0.1 }],
     summary: 'Ingested keycard log'
   });

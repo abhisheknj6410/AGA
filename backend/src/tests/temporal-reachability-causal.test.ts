@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { TemporalReachabilityAlgorithm } from '../domain/algorithms/temporal-reachability.js';
 import { CaseReasoningPipeline } from '../application/case-reasoning-pipeline.js';
 import { EvidenceFact } from '../domain/reconstruction-types.js';
-import { GraphNode, GraphEdge } from '../domain/graph-types.js';
+import { GraphNode, GraphEdge } from '../domain/types.js';
 import { getDatabase } from '../infrastructure/db.js';
 import { runMigrations } from '../infrastructure/migrations.js';
 import { PossibilityRepository } from '../infrastructure/repositories/possibility-repository.js';
@@ -57,9 +57,9 @@ test('TemporalReachabilityAlgorithm: Eliminates path with backward time flow', (
   ];
 
   const edges: GraphEdge[] = [
-    { id: 'e1', caseId: '1', source: 'source', target: 'ev1', type: 'INVOLVED_IN', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' },
-    { id: 'e2', caseId: '1', source: 'ev1', target: 'mid', type: 'OCCURRED_AT', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' },
-    { id: 'e3', caseId: '1', source: 'mid', target: 'ev2', type: 'INVOLVED_IN', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' },
+    { id: 'e1', caseId: '1', source: 'source', target: 'ev1', type: 'PARTICIPATED_IN', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' },
+    { id: 'e2', caseId: '1', source: 'ev1', target: 'mid', type: 'LOCATED_AT', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' },
+    { id: 'e3', caseId: '1', source: 'mid', target: 'ev2', type: 'PARTICIPATED_IN', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' },
     { id: 'e4', caseId: '1', source: 'ev2', target: 'target', type: 'TARGETED', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: [], properties: {}, createdAt: '', updatedAt: '' }
   ];
 

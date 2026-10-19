@@ -123,7 +123,7 @@ export function seedDemonstrationCase(db: DatabaseSync, customEngine?: Possibili
     category: 'EVIDENCE',
     type: 'DOCUMENT',
     label: 'Sworn Witness Alibi Statement (North Pier Diner)',
-    source: { name: 'statement-diner-owner.pdf', kind: 'DOCUMENT', reference: 'AFFIDAVIT-77' },
+    source: { name: 'statement-diner-owner.pdf', kind: 'HUMAN', reference: 'AFFIDAVIT-77' },
     reliability: 0.75,
     collectionTime: '2026-03-01T16:00:00Z',
     hashChecksum: 'a1b2c3d4e5f608',

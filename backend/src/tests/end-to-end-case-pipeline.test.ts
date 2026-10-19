@@ -210,7 +210,7 @@ test('Pipeline 5: Hard invariant verification confirms zero invented edges', asy
   for (const branch of report.branches) {
     for (const edge of branch.graph.edges) {
       assert.ok(
-        edge.evidenceRefs.length > 0 || edge.status === 'DERIVED' || edge.status === 'HYPOTHESIZED',
+        (edge.evidenceRefs || []).length > 0 || edge.status === 'DERIVED' || edge.status === 'HYPOTHESIZED',
         `Edge ${edge.id} must be bound to evidence or explicitly flagged as derived/hypothesized`
       );
     }
