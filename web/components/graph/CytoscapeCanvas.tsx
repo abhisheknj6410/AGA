@@ -542,7 +542,11 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     setIsModeLoading(true);
     setIsSevered(false);
     try {
-      const { sourceId, targetId } = detectCandidatePair(nodes, edges);
+      const { sourceId, targetId } = detectCandidatePair(
+        nodes,
+        edges,
+        selectedElement?.type === 'node' ? selectedElement.id : undefined
+      );
       if (!sourceId || !targetId) {
         alert("At least 2 nodes are required to trace causal corridors.");
         return;
@@ -551,13 +555,28 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       let compiledSteps: ForensicStep[] = [];
 
       if (mode === 'CAUSAL_PATH') {
-        const res = await runAlgorithm(caseId, 'DIJKSTRA', { sourceNodeId: sourceId, targetNodeId: targetId });
+        const res = await runAlgorithm(caseId, 'DIJKSTRA', {
+          sourceId,
+          targetId,
+          sourceNodeId: sourceId,
+          targetNodeId: targetId
+        });
         compiledSteps = compileDijkstraSteps(nodes, edges, res, sourceId, targetId);
       } else if (mode === 'DOMINATORS') {
-        const res = await runAlgorithm(caseId, 'DOMINATORS', { rootNodeId: sourceId, targetNodeId: targetId });
+        const res = await runAlgorithm(caseId, 'DOMINATORS', {
+          rootId: sourceId,
+          targetId,
+          rootNodeId: sourceId,
+          targetNodeId: targetId
+        });
         compiledSteps = compileDominatorSteps(nodes, edges, res, sourceId, targetId);
       } else if (mode === 'MIN_CUT') {
-        const res = await runAlgorithm(caseId, 'MIN_CUT', { sourceNodeId: sourceId, sinkNodeId: targetId });
+        const res = await runAlgorithm(caseId, 'MIN_CUT', {
+          sourceId,
+          targetId,
+          sourceNodeId: sourceId,
+          sinkNodeId: targetId
+        });
         compiledSteps = compileMinCutSteps(nodes, edges, res, sourceId, targetId);
       }
 

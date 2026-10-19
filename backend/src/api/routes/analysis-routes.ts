@@ -36,7 +36,8 @@ export function createAnalysisRouter(
       let output: unknown;
       switch (algorithm.toUpperCase()) {
         case 'DIJKSTRA': {
-          const { sourceId, targetId } = parameters || {};
+          const sourceId = parameters?.sourceId || parameters?.sourceNodeId || parameters?.source;
+          const targetId = parameters?.targetId || parameters?.targetNodeId || parameters?.target || parameters?.sinkNodeId;
           if (!sourceId || !targetId) {
             return res.status(400).json({ error: 'Dijkstra requires parameters.sourceId and parameters.targetId.' });
           }
@@ -44,7 +45,9 @@ export function createAnalysisRouter(
           break;
         }
         case 'K_SHORTEST_PATHS': {
-          const { sourceId, targetId, k } = parameters || {};
+          const sourceId = parameters?.sourceId || parameters?.sourceNodeId || parameters?.source;
+          const targetId = parameters?.targetId || parameters?.targetNodeId || parameters?.target || parameters?.sinkNodeId;
+          const { k } = parameters || {};
           if (!sourceId || !targetId) {
             return res.status(400).json({ error: 'K-Shortest Paths requires parameters.sourceId and parameters.targetId.' });
           }
@@ -56,7 +59,8 @@ export function createAnalysisRouter(
           break;
         }
         case 'DOMINATORS': {
-          const { rootId, targetId } = parameters || {};
+          const rootId = parameters?.rootId || parameters?.rootNodeId || parameters?.sourceId || parameters?.sourceNodeId;
+          const targetId = parameters?.targetId || parameters?.targetNodeId || parameters?.target || parameters?.sinkNodeId;
           if (!rootId) {
             return res.status(400).json({ error: 'Dominators requires parameters.rootId.' });
           }
@@ -64,7 +68,8 @@ export function createAnalysisRouter(
           break;
         }
         case 'MIN_CUT': {
-          const { sourceId, targetId } = parameters || {};
+          const sourceId = parameters?.sourceId || parameters?.sourceNodeId || parameters?.source;
+          const targetId = parameters?.targetId || parameters?.targetNodeId || parameters?.target || parameters?.sinkNodeId;
           if (!sourceId || !targetId) {
             return res.status(400).json({ error: 'Min-Cut requires parameters.sourceId and parameters.targetId.' });
           }
@@ -72,7 +77,9 @@ export function createAnalysisRouter(
           break;
         }
         case 'DISJOINT_PATHS': {
-          const { sourceId, targetId, mode } = parameters || {};
+          const sourceId = parameters?.sourceId || parameters?.sourceNodeId || parameters?.source;
+          const targetId = parameters?.targetId || parameters?.targetNodeId || parameters?.target || parameters?.sinkNodeId;
+          const { mode } = parameters || {};
           if (!sourceId || !targetId) {
             return res.status(400).json({ error: 'Disjoint Paths requires parameters.sourceId and parameters.targetId.' });
           }

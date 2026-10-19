@@ -33,32 +33,76 @@ export interface ForensicTelemetryState {
 }
 
 /**
- * Auto-detect the best investigative actor and target pair from topology
+ * Auto-detect the best investigative actor and target pair from topology,
+ * preferring connected paths with reachable targets.
  */
-export function detectCandidatePair(nodes: GraphNode[], edges: GraphEdge[]): { sourceId?: string; targetId?: string } {
+export function detectCandidatePair(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  preferredSourceId?: string
+): { sourceId?: string; targetId?: string } {
   if (nodes.length === 0) return {};
 
-  const inDegrees = new Map<string, number>();
-  const outDegrees = new Map<string, number>();
+  const adj = new Map<string, string[]>();
   for (const e of edges) {
-    outDegrees.set(e.source, (outDegrees.get(e.source) || 0) + 1);
-    inDegrees.set(e.target, (inDegrees.get(e.target) || 0) + 1);
+    if (!adj.has(e.source)) adj.set(e.source, []);
+    adj.get(e.source)!.push(e.target);
   }
 
-  // Priority to Persons/Actors with high out-degree
-  const actors = nodes
-    .filter(n => n.type === 'PERSON' || n.category === 'ENTITY')
-    .sort((a, b) => ((outDegrees.get(b.id) || 0) - (inDegrees.get(b.id) || 0)) - ((outDegrees.get(a.id) || 0) - (inDegrees.get(a.id) || 0)));
+  // If user selected a node, find a reachable sink from it
+  if (preferredSourceId) {
+    const queue = [preferredSourceId];
+    const visited = new Set<string>([preferredSourceId]);
+    let reachableTarget: string | undefined;
+    while (queue.length > 0) {
+      const u = queue.shift()!;
+      for (const v of (adj.get(u) || [])) {
+        if (!visited.has(v)) {
+          visited.add(v);
+          reachableTarget = v;
+          queue.push(v);
+        }
+      }
+    }
+    if (reachableTarget) {
+      return { sourceId: preferredSourceId, targetId: reachableTarget };
+    }
+    const other = nodes.find(n => n.id !== preferredSourceId)?.id;
+    return { sourceId: preferredSourceId, targetId: other };
+  }
 
-  // Priority to Targets / High-value assets / Crimes
-  const targets = nodes
-    .filter(n => ['FILE', 'DEVICE', 'LOCATION', 'ORGANIZATION'].includes(n.type) || n.category === 'EVENT')
-    .sort((a, b) => ((inDegrees.get(b.id) || 0) - (outDegrees.get(b.id) || 0)) - ((inDegrees.get(a.id) || 0) - (outDegrees.get(a.id) || 0)));
+  // If graph has edges, find the pair with the longest directed reachable distance
+  if (edges.length > 0) {
+    let bestSrc = edges[0].source;
+    let bestTgt = edges[0].target;
+    let maxDist = 0;
 
-  const sourceId = actors[0]?.id || nodes[0]?.id;
-  const targetId = targets.find(t => t.id !== sourceId)?.id || nodes.find(n => n.id !== sourceId)?.id;
+    for (const startNode of nodes) {
+      const dist = new Map<string, number>();
+      dist.set(startNode.id, 0);
+      const queue = [startNode.id];
+      while (queue.length > 0) {
+        const u = queue.shift()!;
+        const d = dist.get(u)!;
+        for (const v of (adj.get(u) || [])) {
+          if (!dist.has(v)) {
+            dist.set(v, d + 1);
+            queue.push(v);
+            if (d + 1 > maxDist) {
+              maxDist = d + 1;
+              bestSrc = startNode.id;
+              bestTgt = v;
+            }
+          }
+        }
+      }
+    }
+    if (maxDist > 0) {
+      return { sourceId: bestSrc, targetId: bestTgt };
+    }
+  }
 
-  return { sourceId, targetId };
+  return { sourceId: nodes[0]?.id, targetId: nodes[1]?.id };
 }
 
 /**

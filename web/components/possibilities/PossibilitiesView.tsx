@@ -72,6 +72,75 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
     setIsWhyModalOpen(true);
   };
 
+  const resolveCorridorNodes = (p: Possibility): Array<{ id: string; label: string; type: string; category: string }> => {
+    // 1. Check constraints.traversedNodeIds (standard for alternative paths)
+    const traversedIds: string[] = (p.constraints as any)?.traversedNodeIds || [];
+    if (traversedIds.length > 0) {
+      return traversedIds.map(id => {
+        const found = graph?.nodes?.find(n => n.id === id);
+        return {
+          id,
+          label: found?.label || id,
+          type: found?.type || 'ENTITY',
+          category: found?.category || 'ENTITY'
+        };
+      });
+    }
+
+    // 2. Check graphChanges.addedNodes
+    if (p.graphChanges?.addedNodes && p.graphChanges.addedNodes.length > 0) {
+      return p.graphChanges.addedNodes;
+    }
+
+    // 3. Check criticalDependency
+    if (p.criticalDependency && p.criticalDependency.length > 0) {
+      return p.criticalDependency.map(cd => {
+        const found = graph?.nodes?.find(n => n.id === cd.nodeId);
+        return {
+          id: cd.nodeId,
+          label: found?.label || cd.label,
+          type: found?.type || 'EVENT',
+          category: found?.category || 'EVENT'
+        };
+      });
+    }
+
+    // 4. Parse from assumptions sequence string: "Path relies on sequence: A → B → C"
+    if (p.assumptions && p.assumptions.length > 0) {
+      const seqAssumption = p.assumptions.find(a => a.toLowerCase().includes('sequence:'));
+      if (seqAssumption) {
+        const parts = seqAssumption.replace(/.*sequence:\s*/i, '').split(' → ');
+        return parts.map((name, i) => {
+          const trimmed = name.trim();
+          const found = graph?.nodes?.find(n => n.label.trim().toLowerCase() === trimmed.toLowerCase());
+          return {
+            id: found?.id || `node-${i}`,
+            label: found?.label || trimmed,
+            type: found?.type || (i === 1 ? 'EVENT' : 'ENTITY'),
+            category: found?.category || (i === 1 ? 'EVENT' : 'ENTITY')
+          };
+        });
+      }
+    }
+
+    // 5. Fallback from name: "Route Possibility #1: Source → Target"
+    if (p.name && p.name.includes('→')) {
+      const parts = p.name.replace(/.*:\s*/, '').split(' → ');
+      return parts.map((name, i) => {
+        const trimmed = name.trim();
+        const found = graph?.nodes?.find(n => n.label.trim().toLowerCase() === trimmed.toLowerCase());
+        return {
+          id: found?.id || `node-${i}`,
+          label: found?.label || trimmed,
+          type: found?.type || 'ENTITY',
+          category: found?.category || 'ENTITY'
+        };
+      });
+    }
+
+    return [];
+  };
+
   return (
     <div className="w-full h-full p-6 bg-slate-50 dark:bg-zinc-950 overflow-y-auto">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -118,7 +187,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {possibilities.map((p, idx) => {
               const isValid = p.status === 'VALID';
-              const nodesList = p.graphChanges?.addedNodes || [];
+              const nodesList = resolveCorridorNodes(p);
               const chokeCandidate = nodesList.length > 2 ? nodesList[Math.floor(nodesList.length / 2)] : null;
 
               return (
@@ -247,7 +316,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
           <ModalContent>
             {(onClose) => {
               if (!selectedPossibility) return null;
-              const nodesList = selectedPossibility.graphChanges?.addedNodes || [];
+              const nodesList = resolveCorridorNodes(selectedPossibility);
               const chokeCandidate = nodesList.length > 2 ? nodesList[Math.floor(nodesList.length / 2)] : (nodesList[0] || null);
               const isSimulatedSevered = severedNodeId !== null;
               const effectiveStatus = isSimulatedSevered ? 'ELIMINATED' : selectedPossibility.status;

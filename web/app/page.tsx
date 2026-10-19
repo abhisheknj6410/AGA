@@ -166,8 +166,21 @@ export default function Home() {
   };
 
   const handleSelectPossibilityForGraph = (p: Possibility) => {
-    if (p.graphChanges?.addedNodes) {
+    const traversedIds: string[] = (p.constraints as any)?.traversedNodeIds || [];
+    if (traversedIds.length > 0) {
+      setHighlightNodeIds(traversedIds);
+    } else if (p.graphChanges?.addedNodes?.length) {
       setHighlightNodeIds(p.graphChanges.addedNodes.map(n => n.id));
+    } else if (p.criticalDependency?.length) {
+      setHighlightNodeIds(p.criticalDependency.map(c => c.nodeId));
+    } else if (p.assumptions && p.assumptions[0] && p.assumptions[0].includes('sequence:')) {
+      const parts = p.assumptions[0].replace(/.*sequence:\s*/i, '').split(' → ');
+      const matchedIds = parts
+        .map(name => graph?.nodes?.find(n => n.label.trim().toLowerCase() === name.trim().toLowerCase())?.id)
+        .filter(Boolean) as string[];
+      if (matchedIds.length > 0) {
+        setHighlightNodeIds(matchedIds);
+      }
     }
     setActiveTab('GRAPH');
   };
