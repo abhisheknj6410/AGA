@@ -51,6 +51,7 @@ import { CaseReasoningPipeline } from '../application/case-reasoning-pipeline.js
 import { createCasePipelineRouter } from './routes/case-pipeline-routes.js';
 import { createEvaluationRouter } from './routes/evaluation-routes.js';
 import { CourtPacketService } from '../application/court-packet-service.js';
+import { createSettingsRouter } from './routes/settings-routes.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -135,6 +136,9 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   });
 
   const courtPacketService = new CourtPacketService(db);
+
+  // Settings & LLM Config Routes
+  app.use('/api/settings', createSettingsRouter());
 
   // Snapshot Routes & Root Case Routes
   app.use('/api/cases', createSnapshotRouter(db, caseService, graphService));

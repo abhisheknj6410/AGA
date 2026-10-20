@@ -33,8 +33,10 @@ import {
   Activity,
   ChevronDown,
   MessageSquare,
-  FileBadge
+  FileBadge,
+  Settings
 } from 'lucide-react';
+import { SettingsModal } from '../settings/SettingsModal';
 
 interface NavbarProps {
   cases: Case[];
@@ -68,6 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme
 }) => {
   const [isExporting, setIsExporting] = React.useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   const handleExportCourtPacket = async () => {
     if (!currentCase) return;
@@ -315,7 +318,25 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </Button>
+
+        {/* Settings Button */}
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          radius="full"
+          className="w-8 h-8 text-slate-600 dark:text-zinc-400 hover:text-slate-900"
+          onPress={() => setIsSettingsOpen(true)}
+          title="API Keys & Model Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
       </NavbarContent>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </HeroNavbar>
   );
 };

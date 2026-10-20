@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { GraphService } from '../../application/graph-service.js';
 import { InvestigationAgentService } from '../../application/investigation-agent-service.js';
 import { CaseService } from '../../application/case-service.js';
+import { getActiveLlmConfig } from '../../infrastructure/llm-config.js';
 
 export function createAgentRouter(
   graphService: GraphService,
@@ -70,9 +71,7 @@ export function createAgentRouter(
         return `- "${src}" -[${ed.type}]-> "${tgt}"`;
       }).join('\n') || 'None recorded.';
 
-      const apiKey = process.env.GEMINI_API_KEY || process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY;
-      const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
-      const model = process.env.LLM_MODEL || 'gemini-2.5-flash-lite';
+      const { apiKey, baseUrl, model } = getActiveLlmConfig();
 
       if (apiKey) {
         try {

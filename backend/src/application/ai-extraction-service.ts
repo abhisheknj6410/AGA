@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ImportPayload } from './import-service.js';
+import { getActiveLlmConfig } from '../infrastructure/llm-config.js';
 
 export interface ExtractionInput {
   rawText: string;
@@ -585,9 +586,7 @@ export class AiExtractionService {
   }
 
   async extractWithLLM(input: ExtractionInput): Promise<ImportPayload> {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY;
-    const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
-    const model = process.env.LLM_MODEL || 'gemini-2.5-flash-lite';
+    const { apiKey, baseUrl, model } = getActiveLlmConfig();
 
     if (!apiKey) {
       return this.extractStructuredCandidates(input);
