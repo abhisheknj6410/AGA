@@ -172,7 +172,12 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
       setExtractedData(normalized);
       const totalNodes = (normalized.entities?.length || 0) + (normalized.events?.length || 0);
       const totalEdges = normalized.relationships?.length || 0;
-      setSuccessMsg(`Eve AI Agent successfully extracted ${totalNodes} nodes and ${totalEdges} causal connections.`);
+      if (totalNodes === 0) {
+        setErrorMsg("No entities or events could be detected in this text. Check that the narrative includes identifiable persons, locations, timestamps, or devices, or use the CSV bulk importer tab.");
+        setSuccessMsg(null);
+      } else {
+        setSuccessMsg(`Eve AI Agent successfully extracted ${totalNodes} nodes (${normalized.entities?.length || 0} entities, ${normalized.events?.length || 0} events) and ${totalEdges} causal connections.`);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Error running AI extraction.');
     } finally {
