@@ -50,6 +50,7 @@ import { createReconstructionRouter } from './routes/reconstruction-routes.js';
 import { CaseReasoningPipeline } from '../application/case-reasoning-pipeline.js';
 import { createCasePipelineRouter } from './routes/case-pipeline-routes.js';
 import { createEvaluationRouter } from './routes/evaluation-routes.js';
+import { CourtPacketService } from '../application/court-packet-service.js';
 
 export function createApp(customDb?: DatabaseSync): express.Application {
   const db = customDb || getDatabase();
@@ -133,9 +134,11 @@ export function createApp(customDb?: DatabaseSync): express.Application {
     res.json({ status: 'ok', time: new Date().toISOString(), version: '1.0.0' });
   });
 
+  const courtPacketService = new CourtPacketService(db);
+
   // Snapshot Routes & Root Case Routes
   app.use('/api/cases', createSnapshotRouter(db, caseService, graphService));
-  app.use('/api/cases', createCaseRouter(caseService));
+  app.use('/api/cases', createCaseRouter(caseService, courtPacketService));
   app.use('/api/cases', createClosedLoopRouter(evidenceImpactEngine));
   app.use('/api/cases', createDecisionRouter(decisionEngine, graphService));
   app.use('/api/cases', createValidationRouter(validationEngine, graphService));

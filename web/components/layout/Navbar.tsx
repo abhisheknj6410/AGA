@@ -16,6 +16,7 @@ import {
   Tab
 } from '@heroui/react';
 import { Case } from '../../types/graph';
+import { fetchCourtPacket } from '../../api/client';
 import {
   Network,
   Bot,
@@ -31,7 +32,8 @@ import {
   Layers,
   Activity,
   ChevronDown,
-  MessageSquare
+  MessageSquare,
+  FileBadge
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -65,6 +67,29 @@ export const Navbar: React.FC<NavbarProps> = ({
   theme,
   onToggleTheme
 }) => {
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleExportCourtPacket = async () => {
+    if (!currentCase) return;
+    setIsExporting(true);
+    try {
+      const packet = await fetchCourtPacket(currentCase.id);
+      const blob = new Blob([JSON.stringify(packet, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `court_packet_${currentCase.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(`Export error: ${err.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <HeroNavbar
       maxWidth="full"
@@ -216,6 +241,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right: Quick Fact Addition & Controls */}
       <NavbarContent justify="end" className="gap-2">
+        <Button
+          size="sm"
+          variant="flat"
+          radius="lg"
+          color="secondary"
+          isLoading={isExporting}
+          className="font-semibold text-xs h-8 px-3 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200/60 dark:border-purple-850/60"
+          startContent={!isExporting && <FileBadge className="w-3.5 h-3.5" />}
+          onPress={handleExportCourtPacket}
+          title="Export Court-Admissible Packet (FRE 702 / SHA-256 Signed)"
+        >
+          Court Dossier
+        </Button>
+
         <Dropdown>
           <DropdownTrigger>
             <Button

@@ -16,6 +16,15 @@ import {
 
 const API_BASE = '/api';
 
+export async function fetchCourtPacket(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/export/court-packet`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to generate court admissible packet');
+  }
+  return res.json();
+}
+
 export async function fetchCases(): Promise<Case[]> {
   const res = await fetch(`${API_BASE}/cases`);
   if (!res.ok) throw new Error('Failed to fetch cases.');

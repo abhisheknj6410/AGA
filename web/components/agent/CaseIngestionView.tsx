@@ -27,9 +27,11 @@ import {
   Clock,
   Layers,
   FileCheck,
-  Bot
+  Bot,
+  Terminal,
+  UploadCloud
 } from 'lucide-react';
-import { extractCandidates, importJsonDataset } from '../../api/client';
+import { extractCandidates, importJsonDataset, importCsvDataset } from '../../api/client';
 import { GraphNode, GraphEdge } from '../../types/graph';
 
 interface CaseIngestionViewProps {
@@ -82,11 +84,26 @@ Building B Cafeteria CCTV shows a subject resembling Rahul Kumar at 14:20:00.`,
 Terminal Alpha was accessed directly before the financial export file was leaked."`
 };
 
+const SAMPLE_CSV = {
+  nodes: `category,type,label,timestamp
+ENTITY,DEVICE,Router-Gateway-Core,
+EVENT,LOGIN,Admin Auth Success,2026-09-10T14:15:00Z
+EVENT,EXFILTRATION,SFTP Bulk Transfer,2026-09-10T14:22:00Z
+ENTITY,SERVER,Prod-DB-01,`,
+  edges: `source,target,type,status,evidencerefs
+Router-Gateway-Core,Admin Auth Success,CONNECTED_TO,OBSERVED,
+Admin Auth Success,Prod-DB-01,AFFECTED,OBSERVED,
+Prod-DB-01,SFTP Bulk Transfer,USED,OBSERVED,`
+};
+
 export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
   caseId,
   onDataIngested,
   onNavigateToGraph
 }) => {
+  const [ingestMode, setIngestMode] = useState<'AI_AGENT' | 'DIRECT_CSV'>('AI_AGENT');
+  const [csvFormat, setCsvFormat] = useState<'NODES' | 'EDGES'>('NODES');
+  const [csvText, setCsvText] = useState('');
   const [sourceName, setSourceName] = useState('incident_narrative.txt');
   const [evidenceType, setEvidenceType] = useState('DOCUMENT');
   const [rawText, setRawText] = useState('');
@@ -260,6 +277,36 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
     }
   };
 
+  const handleDirectCsvImport = async () => {
+    if (!caseId || !csvText.trim()) {
+      setErrorMsg("Please provide CSV content to import.");
+      return;
+    }
+    setIsCommitting(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await importCsvDataset(caseId, csvText, csvFormat);
+      const total = (res.imported.nodes || 0) + (res.imported.events || 0) + (res.imported.edges || 0);
+      setSuccessMsg(`Deterministic Telemetry Importer committed ${total} graph elements directly without LLM token limits.`);
+      setCsvText('');
+      if (onDataIngested) onDataIngested();
+      if (onNavigateToGraph) {
+        setTimeout(onNavigateToGraph, 700);
+      }
+    } catch (err: any) {
+      if (err.result?.errors && err.result.errors.length > 0) {
+        const detail = err.result.errors.map((e: any) => `${e.type}: ${e.errors?.map((x: any) => x.message).join('; ')}`).slice(0, 3).join(' | ');
+        setErrorMsg(`CSV Import rejected: ${detail}`);
+      } else {
+        setErrorMsg(err.message || 'Failed to import CSV dataset.');
+      }
+    } finally {
+      setIsCommitting(false);
+    }
+  };
+
   const entityCount = extractedData?.entities?.length || 0;
   const eventCount = extractedData?.events?.length || 0;
   const relCount = extractedData?.relationships?.length || 0;
@@ -308,7 +355,127 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
           <Alert color="success" variant="flat" title="Operation Successful" description={successMsg} />
         )}
 
-        {/* 2-Column Split Workspace */}
+        {/* Dual Ingestion Track Switcher */}
+        <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 shadow-sm w-fit">
+          <Button
+            size="sm"
+            variant={ingestMode === 'AI_AGENT' ? 'solid' : 'light'}
+            color={ingestMode === 'AI_AGENT' ? 'primary' : 'default'}
+            className={ingestMode === 'AI_AGENT' ? 'bg-teal-600 text-white font-semibold text-xs' : 'text-slate-600 dark:text-zinc-400 font-medium text-xs'}
+            startContent={<Bot className="w-4 h-4" />}
+            onPress={() => setIngestMode('AI_AGENT')}
+          >
+            Eve AI Unstructured Extractor
+          </Button>
+          <Button
+            size="sm"
+            variant={ingestMode === 'DIRECT_CSV' ? 'solid' : 'light'}
+            color={ingestMode === 'DIRECT_CSV' ? 'primary' : 'default'}
+            className={ingestMode === 'DIRECT_CSV' ? 'bg-indigo-600 text-white font-semibold text-xs' : 'text-slate-600 dark:text-zinc-400 font-medium text-xs'}
+            startContent={<Terminal className="w-4 h-4" />}
+            onPress={() => setIngestMode('DIRECT_CSV')}
+          >
+            Deterministic Bulk Importer (CSV / Telemetry)
+          </Button>
+        </div>
+
+        {ingestMode === 'DIRECT_CSV' ? (
+          /* Deterministic Telemetry Importer Workspace */
+          <Card className="border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <CardHeader className="flex flex-col md:flex-row md:items-center justify-between px-6 pt-5 pb-3 gap-3">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <div>
+                  <span className="font-bold text-sm text-slate-800 dark:text-zinc-200 block">
+                    High-Throughput Structured Telemetry Ingestion
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Direct validation and atomic insert into graph schema without LLM inference (supports PCAP, EVTX, syslog).
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-xs text-slate-400 mr-2">
+                  <span>Sample:</span>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    className="cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px]"
+                    onClick={() => {
+                      setCsvFormat('NODES');
+                      setCsvText(SAMPLE_CSV.nodes);
+                    }}
+                  >
+                    Sample Nodes
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    className="cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px]"
+                    onClick={() => {
+                      setCsvFormat('EDGES');
+                      setCsvText(SAMPLE_CSV.edges);
+                    }}
+                  >
+                    Sample Edges
+                  </Chip>
+                </div>
+
+                <Select
+                  size="sm"
+                  className="w-36"
+                  selectedKeys={[csvFormat]}
+                  onChange={(e) => setCsvFormat(e.target.value as any)}
+                  aria-label="CSV Format"
+                >
+                  <SelectItem key="NODES">Nodes & Events</SelectItem>
+                  <SelectItem key="EDGES">Relationships</SelectItem>
+                </Select>
+              </div>
+            </CardHeader>
+            <Divider />
+            <CardBody className="p-6 space-y-4">
+              <div className="text-xs text-slate-500 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-slate-200 dark:border-zinc-700">
+                <p className="font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  {csvFormat === 'NODES' ? 'Required Headers for Nodes:' : 'Required Headers for Edges:'}
+                </p>
+                <code className="text-indigo-600 dark:text-indigo-400">
+                  {csvFormat === 'NODES'
+                    ? 'category,type,label,timestamp (category: ENTITY | EVENT)'
+                    : 'source,target,type,status,evidenceRefs (status: OBSERVED | HYPOTHETICAL)'}
+                </code>
+              </div>
+
+              <Textarea
+                minRows={10}
+                maxRows={24}
+                value={csvText}
+                onChange={(e) => setCsvText(e.target.value)}
+                placeholder={csvFormat === 'NODES' ? SAMPLE_CSV.nodes : SAMPLE_CSV.edges}
+                className="font-mono text-xs"
+              />
+            </CardBody>
+            <Divider />
+            <CardFooter className="px-6 py-4 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-800/30">
+              <span className="text-xs text-slate-500">
+                {csvText.trim().split('\n').filter(Boolean).length > 1
+                  ? `${csvText.trim().split('\n').filter(Boolean).length - 1} records detected`
+                  : 'Awaiting CSV rows'}
+              </span>
+              <Button
+                color="secondary"
+                className="bg-indigo-600 text-white font-semibold text-xs px-5 shadow-sm"
+                isLoading={isCommitting}
+                onPress={handleDirectCsvImport}
+                startContent={!isCommitting && <UploadCloud className="w-4 h-4" />}
+              >
+                Commit Directly to Investigation Graph
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+        /* 2-Column Split Workspace */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: Source Input */}
           <Card className="border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
@@ -578,6 +745,7 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
             </CardFooter>
           </Card>
         </div>
+        )}
       </div>
     </div>
   );

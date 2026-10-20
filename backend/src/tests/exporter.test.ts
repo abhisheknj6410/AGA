@@ -2,6 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { GraphExporter } from '../application/graph-exporter.js';
 import { GraphPayload } from '../domain/types.js';
+import { getDatabase } from '../infrastructure/db.js';
+import { runMigrations } from '../infrastructure/migrations.js';
+import { CourtPacketService } from '../application/court-packet-service.js';
+import { CaseRepository } from '../infrastructure/repositories/case-repository.js';
+import { NodeRepository } from '../infrastructure/repositories/node-repository.js';
+import { EdgeRepository } from '../infrastructure/repositories/edge-repository.js';
 
 test('Graph Exporter - GraphML & DOT Formats', async (t) => {
   const sampleGraph: GraphPayload = {
@@ -112,5 +118,90 @@ test('Graph Exporter - GraphML & DOT Formats', async (t) => {
     assert.ok(dot.includes('"node-entity-1" -> "node-event-1"'));
     assert.ok(dot.includes('label="PERFORMED\\n(c:1)"'));
     assert.ok(dot.endsWith('}'));
+  });
+
+  await t.test('CourtPacketService generates cryptographic court-admissible evidence packet with FRE 702 & 901 compliance', () => {
+    const db = getDatabase(':memory:');
+    runMigrations(db);
+
+    const caseRepo = new CaseRepository(db);
+    const nodeRepo = new NodeRepository(db);
+    const edgeRepo = new EdgeRepository(db);
+
+    caseRepo.create({
+      id: 'case-court-1',
+      name: 'State v. Cyber Intrusion',
+      description: 'Court verification test case',
+      status: 'ACTIVE',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    });
+
+    nodeRepo.create({
+      id: 'ev-cctv',
+      caseId: 'case-court-1',
+      category: 'EVIDENCE',
+      type: 'VIDEO',
+      label: 'Security Camera Footage Hallway 2',
+      evidenceType: 'VIDEO',
+      source: { name: 'Facility DVR', kind: 'CCTV' },
+      reliability: 0.95,
+      hashChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      properties: {},
+      metadata: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    });
+
+    nodeRepo.create({
+      id: 'suspect-1',
+      caseId: 'case-court-1',
+      category: 'ENTITY',
+      type: 'PERSON',
+      label: 'John Doe',
+      properties: {},
+      metadata: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    });
+
+    nodeRepo.create({
+      id: 'event-breach',
+      caseId: 'case-court-1',
+      category: 'EVENT',
+      type: 'BREACH',
+      label: 'Forced Entry Server Room',
+      time: { start: '2026-01-01T01:00:00Z', precision: 'SECOND' },
+      properties: {},
+      metadata: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    });
+
+    edgeRepo.create({
+      id: 'edge-1',
+      caseId: 'case-court-1',
+      source: 'suspect-1',
+      target: 'event-breach',
+      type: 'PERFORMED',
+      status: 'OBSERVED',
+      cost: 1.0,
+      evidenceRefs: ['ev-cctv'],
+      properties: {},
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z'
+    });
+
+    const packetService = new CourtPacketService(db);
+    const packet = packetService.generateCourtPacket('case-court-1', 'Special Agent Scully');
+
+    assert.equal(packet.case.name, 'State v. Cyber Intrusion');
+    assert.equal(packet.requestedBy, 'Special Agent Scully');
+    assert.equal(packet.provenanceMetrics.provenanceIntegrityRatio, 1.0);
+    assert.equal(packet.evidenceChainOfCustody.length, 1);
+    assert.equal(packet.evidenceChainOfCustody[0].sha256Checksum, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+    assert.ok(packet.masterCryptographicSeal.digest.length === 64);
+    assert.equal(packet.masterCryptographicSeal.algorithm, 'SHA-256');
+    assert.equal(packet.legalStandardCompliance[0].status, 'COMPLIANT');
   });
 });
