@@ -26,7 +26,8 @@ import {
   Scissors,
   X,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 
 import { SimulationState } from './AlgorithmSimulationDeck';
