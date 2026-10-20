@@ -242,6 +242,7 @@ export default function Home() {
           <div className="relative w-full h-full">
             <CytoscapeCanvas
               caseId={currentCase?.id}
+              currentCase={currentCase}
               nodes={graph?.nodes || []}
               edges={graph?.edges || []}
               selectedElement={selectedElement}
@@ -252,6 +253,7 @@ export default function Home() {
               theme={theme}
               highlightNodeIds={highlightNodeIds}
               simulationState={simulationState}
+              onNavigateToChat={() => setActiveTab('CHAT')}
             />
 
             {/* Bottom Right Floating Timeline Button */}

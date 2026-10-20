@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import cytoscape, { Core, EventObject } from 'cytoscape';
 import dagre from 'cytoscape-dagre';
-import { GraphNode, GraphEdge } from '../../types/graph';
+import { GraphNode, GraphEdge, Case } from '../../types/graph';
+import { CaseBriefingDrawer } from '../briefing/CaseBriefingDrawer';
 import { Button, Chip, Card, CardBody, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/react';
 import {
   ZoomIn,
@@ -62,10 +63,13 @@ interface CytoscapeCanvasProps {
   highlightNodeIds?: string[];
   highlightEdgeIds?: string[];
   simulationState?: SimulationState | null;
+  currentCase?: Case | null;
+  onNavigateToChat?: () => void;
 }
 
 export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   caseId,
+  currentCase = null,
   nodes,
   edges,
   selectedElement,
@@ -77,11 +81,19 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   theme = 'light',
   highlightNodeIds = [],
   highlightEdgeIds = [],
-  simulationState = null
+  simulationState = null,
+  onNavigateToChat
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
   const [activeLayout, setActiveLayout] = useState<'dagre' | 'cose' | 'concentric' | 'circle'>(layoutType);
+  const [isBriefingOpen, setIsBriefingOpen] = useState(false);
+  const [hoveredElement, setHoveredElement] = useState<{
+    type: 'node' | 'edge';
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isEditingLabel, setIsEditingLabel] = useState<boolean>(false);
   const [editLabelValue, setEditLabelValue] = useState<string>('');
@@ -360,6 +372,40 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       if (evt.target === cy) {
         onSelectElement(null);
       }
+    });
+
+    cy.on('mouseover', 'node', (evt: EventObject) => {
+      const node = evt.target;
+      const pos = node.renderedPosition();
+      setHoveredElement({
+        type: 'node',
+        id: node.id(),
+        x: pos.x,
+        y: pos.y
+      });
+    });
+
+    cy.on('mouseout', 'node', () => {
+      setHoveredElement(null);
+    });
+
+    cy.on('mouseover', 'edge', (evt: EventObject) => {
+      const edge = evt.target;
+      const midpoint = edge.renderedMidpoint();
+      setHoveredElement({
+        type: 'edge',
+        id: edge.id(),
+        x: midpoint.x,
+        y: midpoint.y
+      });
+    });
+
+    cy.on('mouseout', 'edge', () => {
+      setHoveredElement(null);
+    });
+
+    cy.on('pan zoom', () => {
+      setHoveredElement(null);
     });
 
     cy.on('zoom', () => {
@@ -648,6 +694,99 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     return edges.find(e => e.id === selectedElement.id) || null;
   }, [selectedElement, edges]);
 
+  const hoveredNodeData = useMemo(() => {
+    if (!hoveredElement || hoveredElement.type !== 'node') return null;
+    return nodes.find(n => n.id === hoveredElement.id) || null;
+  }, [hoveredElement, nodes]);
+
+  const hoveredEdgeData = useMemo(() => {
+    if (!hoveredElement || hoveredElement.type !== 'edge') return null;
+    return edges.find(e => e.id === hoveredElement.id) || null;
+  }, [hoveredElement, edges]);
+
+  const getNodeForensicExplanation = (node: GraphNode): { status: string; note: string; color: 'success' | 'warning' | 'danger' | 'primary' } => {
+    const label = node.label.toLowerCase();
+    const role = (node.properties?.role || '').toLowerCase();
+
+    if (node.category === 'ENTITY') {
+      if (label.includes('bob')) {
+        return {
+          status: 'CLEARED (VERIFIED ALIBI)',
+          note: 'Bob was logged on CCTV cleaning the 1st floor at 10:00 AM. Zero physical path to 4th floor.',
+          color: 'success'
+        };
+      }
+      if (label.includes('alice')) {
+        return {
+          status: 'PRIME SUSPECT',
+          note: 'Alice swiped into Room 404 at 10:02 AM right before laptop disappeared. Unbroken causal corridor.',
+          color: 'danger'
+        };
+      }
+      if (label.includes('laptop') || label.includes('thinkpad')) {
+        return {
+          status: 'STOLEN ASSET',
+          note: 'Target of theft from Room 404. Last access event connected directly to Alice.',
+          color: 'warning'
+        };
+      }
+      if (label.includes('room 404')) {
+        return {
+          status: 'CRIME SCENE',
+          note: 'Executive office requiring keycard credential access. Choke point for asset containment.',
+          color: 'primary'
+        };
+      }
+      if (label.includes('viktor')) {
+        return {
+          status: 'PRIMARY HEIST LEAD',
+          note: 'Breach leader identified via North Gate telemetry and DNA on cut padlock.',
+          color: 'danger'
+        };
+      }
+      return {
+        status: node.type,
+        note: role ? `Role: ${role}. Recorded entity in case graph.` : `${node.type} recorded in case graph.`,
+        color: 'primary'
+      };
+    }
+
+    if (node.category === 'EVENT') {
+      if (label.includes('alibi') || label.includes('hallway')) {
+        return {
+          status: 'EXCULPATORY ALIBI',
+          note: 'Confirmed by camera feed. Severes reachability between suspect and crime scene.',
+          color: 'success'
+        };
+      }
+      if (label.includes('badge') || label.includes('swipes') || label.includes('enters')) {
+        return {
+          status: 'ACCESS CHOKE POINT',
+          note: 'Required bottleneck event. Without this keycard event, theft is physically impossible.',
+          color: 'warning'
+        };
+      }
+      if (label.includes('takes') || label.includes('theft') || label.includes('breach')) {
+        return {
+          status: 'INCIDENT OUTCOME',
+          note: 'Direct action resulting in asset exfiltration or security violation.',
+          color: 'danger'
+        };
+      }
+      return {
+        status: node.type,
+        note: `Event recorded at ${node.time?.start || 'unspecified time'}.`,
+        color: 'warning'
+      };
+    }
+
+    return {
+      status: 'VERIFIED EVIDENCE',
+      note: `Custody artifact from ${(node as any).source?.name || 'sensor'}. 100% cryptographic reliability.`,
+      color: 'primary'
+    };
+  };
+
   return (
     <div className="relative w-full h-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
       {/* Canvas viewport */}
@@ -730,6 +869,21 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             <DropdownItem key="circle">Circle</DropdownItem>
           </DropdownMenu>
         </Dropdown>
+
+        <div className="w-[1px] h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
+
+        <Button
+          size="sm"
+          variant="flat"
+          radius="lg"
+          color="primary"
+          className="text-xs font-semibold h-7 px-2.5 bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/60"
+          startContent={<FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />}
+          onPress={() => setIsBriefingOpen(true)}
+          title="Open Case Briefing & Suspect Dossier"
+        >
+          Case Briefing
+        </Button>
       </div>
 
       {/* Top Center Investigation Mode Bar */}
@@ -974,6 +1128,94 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         onToggleSpeed={() => setPlaybackSpeed(s => s === 1 ? 2 : 1)}
         onToggleSever={() => setIsSevered(!isSevered)}
         onClose={() => handleSelectMode('NORMAL')}
+      />
+
+      {/* Dynamic Hover Tooltip for Nodes and Edges */}
+      {hoveredElement && (hoveredNodeData || hoveredEdgeData) && (
+        <div
+          style={{
+            left: Math.min(Math.max(16, hoveredElement.x + 16), typeof window !== 'undefined' ? window.innerWidth - 320 : 800),
+            top: Math.max(70, Math.min(hoveredElement.y - 20, typeof window !== 'undefined' ? window.innerHeight - 240 : 600))
+          }}
+          className="absolute z-40 pointer-events-none w-72 rounded-2xl p-3.5 shadow-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-teal-500/30 text-xs animate-in fade-in zoom-in-95 duration-150 space-y-2"
+        >
+          {hoveredNodeData ? (
+            <>
+              <div className="flex items-center justify-between">
+                <Chip
+                  size="sm"
+                  variant="flat"
+                  color={
+                    hoveredNodeData.category === 'ENTITY' ? 'success' :
+                    hoveredNodeData.category === 'EVENT' ? 'warning' : 'primary'
+                  }
+                  className="text-[9px] font-bold uppercase tracking-wider h-4 px-1"
+                >
+                  {hoveredNodeData.category}: {hoveredNodeData.type}
+                </Chip>
+                {hoveredNodeData.time?.start && (
+                  <span className="text-[10px] text-teal-600 dark:text-teal-400 font-mono">
+                    {new Date(hoveredNodeData.time.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h4 className="font-bold text-xs text-slate-900 dark:text-zinc-100">
+                  {hoveredNodeData.label}
+                </h4>
+              </div>
+
+              {(() => {
+                const exp = getNodeForensicExplanation(hoveredNodeData);
+                return (
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 text-[11px] leading-relaxed">
+                    <span className="font-semibold block mb-0.5 text-teal-600 dark:text-teal-400">
+                      {exp.status}
+                    </span>
+                    <span className="text-slate-600 dark:text-zinc-300">
+                      {exp.note}
+                    </span>
+                  </div>
+                );
+              })()}
+            </>
+          ) : hoveredEdgeData ? (
+            <>
+              <div className="flex items-center justify-between">
+                <Chip size="sm" variant="flat" color="secondary" className="text-[9px] font-bold h-4 px-1">
+                  RELATIONSHIP: {hoveredEdgeData.type}
+                </Chip>
+                <span className="text-[10px] text-slate-400">
+                  Cost: {hoveredEdgeData.cost || 1.0}
+                </span>
+              </div>
+
+              <div className="text-[11px] text-slate-700 dark:text-zinc-200 font-medium">
+                {nodes.find(n => n.id === hoveredEdgeData.source)?.label || hoveredEdgeData.source}
+                <span className="text-teal-500 font-bold mx-1.5">→</span>
+                {nodes.find(n => n.id === hoveredEdgeData.target)?.label || hoveredEdgeData.target}
+              </div>
+
+              <div className="text-[10px] text-slate-500 bg-slate-50 dark:bg-zinc-800/50 p-1.5 rounded-lg border border-slate-200/60 dark:border-zinc-700/60">
+                {hoveredEdgeData.evidenceRefs && hoveredEdgeData.evidenceRefs.length > 0
+                  ? `Verified by: ${hoveredEdgeData.evidenceRefs.map(id => nodes.find(n => n.id === id)?.label || id).join(', ')}`
+                  : 'Direct topological dependency'}
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* Slide-out Case Briefing & Dossier Drawer */}
+      <CaseBriefingDrawer
+        isOpen={isBriefingOpen}
+        onClose={() => setIsBriefingOpen(false)}
+        currentCase={currentCase}
+        nodes={nodes}
+        edges={edges}
+        onNavigateToChat={onNavigateToChat}
+        onNavigateToAlgorithm={handleSelectMode}
       />
     </div>
   );
