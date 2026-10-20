@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -48,6 +48,27 @@ interface ExtractedCandidates {
 }
 
 const SAMPLE_NARRATIVES = {
+  robbery: `INCIDENT REPORT - METROPOLITAN POLICE DEPARTMENT
+CASE REF: IR-2026-9042
+LOCATION: Sovereign Commercial Depository, 1400 Industrial Boulevard
+
+At 21:05:00, an armored courier van arrived at the South Cargo Gate. Driver Viktor Cole presented counterfeit security credentials to gain entry.
+
+At 21:12:00, security guard Tyler Finch disabled the sub-basement silent alarm and unlocked the vault corridor bulkhead.
+
+At 21:16:00, an armed team led by Viktor Cole and lookout Samantha Cruz entered the vault vestibule. Samantha Cruz discharged a Glock 21 pistol into the reinforced ceiling, subduing the vault staff.
+
+At 21:20:00, suspect Viktor Cole used a high-temperature thermal lance to breach the primary diamond safe door, seizing four titanium cases containing $5.4M in bearer bonds and uncut diamonds.
+
+At 21:26:00, suspect Samantha Cruz loaded the titanium cases into the rear compartment of a black Dodge Charger sedan bearing license plate NY-9X8821.
+
+At 21:31:00, the black sedan accelerated through the perimeter security checkpoint, ramming the electronic arm barrier.
+
+At 21:42:00, automated license plate camera CAM-TOLL-04 captured the black sedan crossing the North River Toll Plaza heading north at 88 MPH.
+
+At 21:54:00, Viktor Cole and Samantha Cruz executed a cargo switch at Pier 19 Wharf, moving the stolen titanium cases into a white Ford Transit van driven by black-market broker Arlo Kane.
+
+At 22:25:00, suspect Viktor Cole claims he was dining at Starlight Diner, presenting a cash receipt for $14.50. However, cell tower West-04 logged his mobile device connecting to Sector 3 near Pier 19 Wharf at 22:24:10, directly contradicting the diner alibi.`,
   narrative: `On 2026-09-10 at 14:15:00, Rahul Kumar entered the secure corridor.
 At 14:18:22, Terminal Alpha was accessed under credential rkumar-adm.
 At 14:22:00, an unauthorized export financial_export_2026.csv was transferred to external Drive-X.
@@ -68,12 +89,51 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
 }) => {
   const [sourceName, setSourceName] = useState('incident_narrative.txt');
   const [evidenceType, setEvidenceType] = useState('DOCUMENT');
-  const [rawText, setRawText] = useState(SAMPLE_NARRATIVES.narrative);
+  const [rawText, setRawText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedCandidates | null>(null);
+
+  // Restore saved text and source name from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('gis_ingest_raw_text');
+      if (saved) {
+        setRawText(saved);
+      }
+      const savedSource = localStorage.getItem('gis_ingest_source_name');
+      if (savedSource) {
+        setSourceName(savedSource);
+      }
+      const savedType = localStorage.getItem('gis_ingest_evidence_type');
+      if (savedType) {
+        setEvidenceType(savedType);
+      }
+    }
+  }, []);
+
+  const handleRawTextChange = (text: string) => {
+    setRawText(text);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gis_ingest_raw_text', text);
+    }
+  };
+
+  const handleSourceNameChange = (name: string) => {
+    setSourceName(name);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gis_ingest_source_name', name);
+    }
+  };
+
+  const handleEvidenceTypeChange = (type: string) => {
+    setEvidenceType(type);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gis_ingest_evidence_type', type);
+    }
+  };
 
   const handleExtract = async () => {
     if (!caseId || !rawText.trim()) {
@@ -180,6 +240,10 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
       const totalCommitted = entityNodes.length + eventNodes.length;
       setSuccessMsg(`Successfully committed ${totalCommitted} nodes and ${edges.length} relationships to the investigation graph.`);
       setExtractedData(null);
+      handleRawTextChange('');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('gis_ingest_raw_text');
+      }
       if (onDataIngested) onDataIngested();
       if (onNavigateToGraph) {
         setTimeout(onNavigateToGraph, 700);
@@ -261,16 +325,34 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                 <Chip
                   size="sm"
                   variant="flat"
-                  className="cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px]"
-                  onClick={() => setRawText(SAMPLE_NARRATIVES.narrative)}
+                  color="warning"
+                  className="cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/50 text-[10px] font-medium"
+                  onClick={() => {
+                    handleRawTextChange(SAMPLE_NARRATIVES.robbery);
+                    handleSourceNameChange('incident_report_ir9042.txt');
+                  }}
                 >
-                  Narrative
+                  Robbery Heist
                 </Chip>
                 <Chip
                   size="sm"
                   variant="flat"
                   className="cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px]"
-                  onClick={() => setRawText(SAMPLE_NARRATIVES.auth)}
+                  onClick={() => {
+                    handleRawTextChange(SAMPLE_NARRATIVES.narrative);
+                    handleSourceNameChange('incident_narrative.txt');
+                  }}
+                >
+                  Insider Threat
+                </Chip>
+                <Chip
+                  size="sm"
+                  variant="flat"
+                  className="cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px]"
+                  onClick={() => {
+                    handleRawTextChange(SAMPLE_NARRATIVES.auth);
+                    handleSourceNameChange('auth_audit.log');
+                  }}
                 >
                   Auth Logs
                 </Chip>
@@ -278,10 +360,23 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                   size="sm"
                   variant="flat"
                   className="cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-800 text-[10px]"
-                  onClick={() => setRawText(SAMPLE_NARRATIVES.witness)}
+                  onClick={() => {
+                    handleRawTextChange(SAMPLE_NARRATIVES.witness);
+                    handleSourceNameChange('witness_lead.txt');
+                  }}
                 >
                   Witness
                 </Chip>
+                {rawText && (
+                  <Chip
+                    size="sm"
+                    variant="light"
+                    className="cursor-pointer text-slate-400 hover:text-red-500 text-[10px]"
+                    onClick={() => handleRawTextChange('')}
+                  >
+                    Clear
+                  </Chip>
+                )}
               </div>
             </CardHeader>
             <Divider />
@@ -292,7 +387,7 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                   label="Source Artifact Label"
                   placeholder="e.g. incident_narrative.txt"
                   value={sourceName}
-                  onValueChange={setSourceName}
+                  onValueChange={handleSourceNameChange}
                   size="sm"
                   variant="bordered"
                   radius="lg"
@@ -301,7 +396,7 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                 <Select
                   label="Evidence Category"
                   selectedKeys={[evidenceType]}
-                  onSelectionChange={(keys) => setEvidenceType(Array.from(keys)[0] as string)}
+                  onSelectionChange={(keys) => handleEvidenceTypeChange(Array.from(keys)[0] as string)}
                   size="sm"
                   variant="bordered"
                   radius="lg"
@@ -325,7 +420,7 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                   radius="lg"
                   placeholder="Paste raw case notes, surveillance transcripts, or digital forensic logs..."
                   value={rawText}
-                  onValueChange={setRawText}
+                  onValueChange={handleRawTextChange}
                   className="font-mono text-xs"
                 />
               </div>
