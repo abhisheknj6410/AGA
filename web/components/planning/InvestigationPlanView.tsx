@@ -40,6 +40,7 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
   graph,
   onHighlightNodes
 }) => {
+  const [subTab, setSubTab] = useState<'plan' | 'efficiency'>('plan');
   const [loading, setLoading] = useState(false);
   const [planData, setPlanData] = useState<any>(null);
   const [simulatingActionId, setSimulatingActionId] = useState<string | null>(null);
@@ -97,46 +98,58 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
   return (
     <div className="w-full h-full flex flex-col bg-slate-50 dark:bg-zinc-950 overflow-hidden">
       {/* Inner sub-tabs: Plan | Efficiency Lab */}
-      <div className="border-b border-divider bg-background px-6 pt-3 shrink-0">
-        <Tabs variant="underlined" color="primary" size="sm" aria-label="Intelligence sub-views">
-          <Tab key="plan" title={<span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/>Strategic Plan</span>}>
-            <div className="overflow-y-auto p-6" style={{ height: 'calc(100vh - 9rem)' }}>
-              <div className="max-w-6xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
-                        <Target className="w-5 h-5" />
-                      </span>
-                      <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
-                        Strategic Intelligence & Action Planning
-                      </h2>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
-                      Graph algorithms prioritize investigative leads by maximum Shannon Entropy reduction, pinpointing operational bottlenecks and critical cut edges.
-                    </p>
-                  </div>
+      <div className="border-b border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6 pt-3 shrink-0">
+        <Tabs
+          selectedKey={subTab}
+          onSelectionChange={(k) => setSubTab(k as any)}
+          variant="underlined"
+          color="primary"
+          size="sm"
+          aria-label="Intelligence sub-views"
+        >
+          <Tab key="plan" title={<span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/>Strategic Plan</span>} />
+          <Tab key="efficiency" title={<span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5"/>Adaptive Efficiency Lab</span>} />
+        </Tabs>
+      </div>
 
-                  <Button
-                    color="primary"
-                    radius="lg"
-                    className="font-semibold text-xs h-9 px-4 bg-teal-600 text-white shadow-teal-500/20"
-                    startContent={<Sparkles className="w-4 h-4" />}
-                    isLoading={loading}
-                    onPress={fetchPlan}
-                  >
-                    Compute Optimal Leads
-                  </Button>
+      <div className="flex-1 overflow-y-auto p-6">
+        {subTab === 'plan' ? (
+          <div className="max-w-6xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-sm">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+                    <Target className="w-5 h-5" />
+                  </span>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
+                    Strategic Intelligence & Action Planning
+                  </h2>
                 </div>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
+                  Graph algorithms prioritize investigative leads by maximum Shannon Entropy reduction, pinpointing operational bottlenecks and critical cut edges.
+                </p>
+              </div>
 
-                {loading && !planData ? (
-                  <div className="flex flex-col items-center justify-center p-12 space-y-3">
-                    <Spinner size="lg" color="primary" />
-                    <span className="text-xs text-slate-500">Computing entropy reduction & dominator frontiers...</span>
-                  </div>
-                ) : (
-                  <>
+              <Button
+                color="primary"
+                radius="lg"
+                className="font-semibold text-xs h-9 px-4 bg-teal-600 text-white shadow-teal-500/20"
+                startContent={<Sparkles className="w-3.5 h-3.5" />}
+                isLoading={loading}
+                onPress={fetchPlan}
+              >
+                Compute Optimal Leads
+              </Button>
+            </div>
+
+            {loading && !planData ? (
+              <div className="flex flex-col items-center justify-center p-12 space-y-3">
+                <Spinner size="lg" color="primary" />
+                <span className="text-xs text-slate-500">Computing entropy reduction & dominator frontiers...</span>
+              </div>
+            ) : (
+              <>
                     {/* 3 Core Mathematical Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* 1. Shannon Information Gain */}
@@ -362,20 +375,17 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                   </>
                 )}
               </div>
-            </div>
-          </Tab>
-          <Tab key="efficiency" title={<span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5"/>Adaptive Efficiency Lab</span>}>
-            <div style={{ height: 'calc(100vh - 9rem)' }}>
-              {caseId ? (
-                <AlgorithmEfficiencyLabView caseId={caseId} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-sm text-foreground-400">
-                  Select a case to view adaptive reasoning analysis.
-                </div>
-              )}
-            </div>
-          </Tab>
-        </Tabs>
+            ) : (
+              <div className="max-w-6xl mx-auto">
+            {caseId ? (
+              <AlgorithmEfficiencyLabView caseId={caseId} />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-sm text-foreground-400">
+                Select a case to view adaptive reasoning analysis.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

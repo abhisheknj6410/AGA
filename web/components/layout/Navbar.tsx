@@ -30,7 +30,8 @@ import {
   Calendar,
   Layers,
   Activity,
-  ChevronDown
+  ChevronDown,
+  MessageSquare
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -38,8 +39,8 @@ interface NavbarProps {
   currentCase: Case | null;
   onSelectCase: (c: Case) => void;
   onNewCase: () => void;
-  activeTab: 'GRAPH' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION';
-  onTabChange: (tab: 'GRAPH' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION') => void;
+  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION';
+  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION') => void;
   onAddNode: (category: 'ENTITY' | 'EVENT' | 'EVIDENCE') => void;
   onAddEdge: () => void;
   possibilityCount: number;
@@ -152,11 +153,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             }
           />
           <Tab
+            key="CHAT"
+            title={
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-teal-500" />
+                <span>Investigator Copilot</span>
+              </div>
+            }
+          />
+          <Tab
             key="INGEST"
             title={
               <div className="flex items-center gap-1.5">
                 <Bot className="w-3.5 h-3.5" />
-                <span>Evidence Agent</span>
+                <span>Data Ingestion</span>
               </div>
             }
           />

@@ -163,7 +163,7 @@ export function createApp(customDb?: DatabaseSync): express.Application {
   app.use('/api/cases/:caseId/extract', createExtractionRouter(aiService));
   app.use('/api/cases/:caseId/possibilities', createPossibilityRouter(graphService, possibilityEngine, possibilityRepo, resolutionRepo, analysisEngine));
   app.use('/api/cases/:caseId/analysis', createAnalysisRouter(graphService, analysisEngine, possibilityRepo, algorithmRepo));
-  app.use('/api/cases/:caseId/agent', createAgentRouter(graphService, agentService));
+  app.use('/api/cases/:caseId/agent', createAgentRouter(graphService, agentService, caseService));
   app.use('/api/cases/:caseId/incremental', createIncrementalRouter(graphService, incrementalEngine));
 
   // Global Error Handler
