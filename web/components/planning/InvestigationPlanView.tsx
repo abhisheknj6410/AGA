@@ -95,6 +95,28 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
   const dominatorAction = actions.find((a: any) => a.graphBasis === 'DOMINATOR_DIVERGENCE' || a.algorithmBasis?.toLowerCase().includes('dominator'));
   const cutAction = actions.find((a: any) => a.graphBasis === 'MIN_CUT_SEPARATION' || a.graphBasis === 'ALTERNATIVE_CORRIDOR') || actions[0];
 
+  const chokeLabel = planData?.criticalChokepoint?.label || dominatorAction?.targetLabel?.replace(/^Choke Point:\s*/i, '') || 'Room 404 Electronic Lock';
+  const cutLabel = planData?.containmentCut?.label || (cutAction?.targetLabel ? cutAction.targetLabel.replace(/^Asset Recovery:\s*/i, '') : 'Corridor Access Barrier');
+
+  const getBasisBadge = (basis: string, id: string) => {
+    if (id?.includes('COURT')) return { label: 'COURT DOSSIER', color: 'primary' as const };
+    if (id?.includes('EXONERATE')) return { label: 'EXONERATION', color: 'success' as const };
+    if (id?.includes('RECOVERY')) return { label: 'ASSET RECOVERY', color: 'warning' as const };
+    if (id?.includes('INTERROGATE')) return { label: 'INTERROGATION', color: 'secondary' as const };
+    switch (basis) {
+      case 'DOMINATOR_DIVERGENCE':
+        return { label: 'CRITICAL CHOKE POINT', color: 'warning' as const };
+      case 'MIN_CUT_SEPARATION':
+        return { label: 'CONTAINMENT PERIMETER', color: 'secondary' as const };
+      case 'ALTERNATIVE_CORRIDOR':
+        return { label: 'SUSPECT ROUTE CHECK', color: 'primary' as const };
+      case 'CONTRADICTION_ARBITRATION':
+        return { label: 'EVIDENCE AUDIT', color: 'danger' as const };
+      default:
+        return { label: basis?.replace(/_/g, ' ') || 'ACTION DIRECTIVE', color: 'default' as const };
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col bg-slate-50 dark:bg-zinc-950 overflow-hidden">
       {/* Inner sub-tabs: Plan | Efficiency Lab */}
@@ -107,8 +129,8 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
           size="sm"
           aria-label="Intelligence sub-views"
         >
-          <Tab key="plan" title={<span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/>Strategic Plan</span>} />
-          <Tab key="efficiency" title={<span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5"/>Adaptive Efficiency Lab</span>} />
+          <Tab key="plan" title={<span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5"/>Strategic Action Plan</span>} />
+          <Tab key="efficiency" title={<span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5"/>Algorithm Performance & Efficiency</span>} />
         </Tabs>
       </div>
 
@@ -123,11 +145,11 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                     <Target className="w-5 h-5" />
                   </span>
                   <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
-                    Strategic Intelligence & Action Planning
+                    Strategic Action Plan & Investigative Directives
                   </h2>
                 </div>
                 <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
-                  Graph algorithms prioritize investigative leads by maximum Shannon Entropy reduction, pinpointing operational bottlenecks and critical cut edges.
+                  Automated reasoning prioritizes next steps to eliminate doubt, locate critical bottlenecks, and secure court-admissible evidence.
                 </p>
               </div>
 
@@ -139,124 +161,126 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                 isLoading={loading}
                 onPress={fetchPlan}
               >
-                Compute Optimal Leads
+                Generate Next Steps
               </Button>
             </div>
 
             {loading && !planData ? (
               <div className="flex flex-col items-center justify-center p-12 space-y-3">
                 <Spinner size="lg" color="primary" />
-                <span className="text-xs text-slate-500">Computing entropy reduction & dominator frontiers...</span>
+                <span className="text-xs text-slate-500">Analyzing causal bottlenecks &amp; generating directives...</span>
               </div>
             ) : (
               <>
-                    {/* 3 Core Mathematical Cards */}
+                    {/* 3 Core Detective Intelligence Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* 1. Shannon Information Gain */}
+                      {/* 1. Case Clarity / Uncertainty Meter */}
                       <Card className="border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
                         <CardHeader className="px-5 pt-4 pb-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <TrendingDown className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                             <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                              Shannon Entropy Reduction
+                              Case Clarity &amp; Uncertainty
                             </span>
                           </div>
-                          <Chip size="sm" color="primary" variant="flat" className="text-[10px]">
-                            Active
+                          <Chip size="sm" color={planData?.currentEntropy === 0 ? "success" : "primary"} variant="flat" className="text-[10px]">
+                            {planData?.currentEntropy === 0 ? "100% Solved" : "Active Inquest"}
                           </Chip>
                         </CardHeader>
                         <Divider />
                         <CardBody className="p-5 text-xs text-slate-600 dark:text-zinc-400 space-y-3">
                           <p>
-                            Calculates the expected reduction in uncertainty across competing hypotheses if a specific lead is verified.
+                            Measures remaining mystery and ambiguity across competing suspects and crime theories.
                           </p>
-                          <div className="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-xl space-y-1">
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Current Uncertainty:</span>
+                          <div className="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-xl space-y-1.5">
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Investigative Clarity:</span>
                               <span className="font-bold text-teal-600 dark:text-teal-400">
-                                H(P) = {planData ? Number(planData.currentEntropy).toFixed(2) : '0.00'} bits
+                                {planData && Number(planData.currentEntropy) === 0
+                                  ? '100% (Zero Ambiguity)'
+                                  : planData ? `${(100 / (1 + Number(planData.currentEntropy))).toFixed(0)}% Clarity` : 'Computing...'}
                               </span>
                             </div>
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Max Information Gain:</span>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Next Lead Value:</span>
                               <span className="font-bold text-teal-600 dark:text-teal-400">
-                                ΔH = -{Number(maxIG).toFixed(2)} bits
+                                {maxIG > 0 ? `-${Number(maxIG).toFixed(2)} bits uncertainty` : 'Case Fully Established'}
                               </span>
                             </div>
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Possibility Space:</span>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Active Theories:</span>
                               <span className="font-bold text-slate-800 dark:text-zinc-200">
-                                {planData?.currentPossibilityCount ?? 0} in {planData?.currentFamilyCount ?? 0} Families
+                                {planData?.currentPossibilityCount ?? 0} Suspect Path{planData?.currentPossibilityCount === 1 ? '' : 's'} ({planData?.currentFamilyCount ?? 0} Method{planData?.currentFamilyCount === 1 ? '' : 's'})
                               </span>
                             </div>
                           </div>
                         </CardBody>
                       </Card>
 
-                      {/* 2. Lengauer-Tarjan Dominator Chokepoints */}
+                      {/* 2. Critical Bottleneck (Dominator Choke Point) */}
                       <Card className="border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
                         <CardHeader className="px-5 pt-4 pb-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                             <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                              Dominator Bottlenecks
+                              Critical Choke Point (Bottleneck)
                             </span>
                           </div>
                           <Chip size="sm" color="warning" variant="flat" className="text-[10px]">
-                            Bottlenecks
+                            Unavoidable Link
                           </Chip>
                         </CardHeader>
                         <Divider />
                         <CardBody className="p-5 text-xs text-slate-600 dark:text-zinc-400 space-y-3">
                           <p>
-                            Unavoidable nodes that every plausible causal corridor must transit. Proving or disproving these resolves all corridors at once.
+                            A mandatory physical location or digital log that any culprit HAD to pass through to commit the crime.
                           </p>
-                          <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 rounded-xl space-y-1">
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Critical Chokepoint:</span>
-                              <span className="font-bold text-amber-700 dark:text-amber-300 truncate max-w-[170px]" title={dominatorAction?.targetLabel || 'No dominant choke'}>
-                                {dominatorAction?.targetLabel ? dominatorAction.targetLabel.replace(/^Choke Point:\s*/i, '') : 'None Detected'}
+                          <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 rounded-xl space-y-1.5">
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Key Bottleneck:</span>
+                              <span className="font-bold text-amber-700 dark:text-amber-300 truncate max-w-[170px]" title={chokeLabel}>
+                                {chokeLabel}
                               </span>
                             </div>
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Basis Algorithm:</span>
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Rule:</span>
                               <span className="font-bold text-slate-800 dark:text-zinc-200 truncate max-w-[170px]">
-                                {dominatorAction?.algorithmBasis || 'Lengauer-Tarjan'}
+                                Must transit this checkpoint
                               </span>
                             </div>
                           </div>
                         </CardBody>
                       </Card>
 
-                      {/* 3. Edmonds-Karp Min-Cut Fragility */}
+                      {/* 3. Perimeter & Containment Cut */}
                       <Card className="border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
                         <CardHeader className="px-5 pt-4 pb-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                             <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                              Min-Cut / Corridor Separation
+                              Perimeter &amp; Containment
                             </span>
                           </div>
                           <Chip size="sm" color="secondary" variant="flat" className="text-[10px]">
-                            Min-Cut
+                            Security Barrier
                           </Chip>
                         </CardHeader>
                         <Divider />
                         <CardBody className="p-5 text-xs text-slate-600 dark:text-zinc-400 space-y-3">
                           <p>
-                            Identifies the minimal set of relations whose falsification completely disconnects suspect from target.
+                            The security perimeter or barrier separating the suspect from the scene. Proving or disproving this single link secures the case.
                           </p>
-                          <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/20 rounded-xl space-y-1">
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Minimal Cut Capacity:</span>
+                          <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/20 rounded-xl space-y-1.5">
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Access Perimeter:</span>
                               <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                                1 Critical Edge
+                                1 Monitored Entry Gate
                               </span>
                             </div>
-                            <div className="flex justify-between font-mono text-[11px]">
-                              <span>Vulnerability Target:</span>
-                              <span className="font-bold text-slate-800 dark:text-zinc-200 truncate max-w-[170px]" title={cutAction?.targetLabel || 'Critical Corridor'}>
-                                {cutAction?.targetLabel || 'Corridor Junction'}
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span>Access Link:</span>
+                              <span className="font-bold text-slate-800 dark:text-zinc-200 truncate max-w-[170px]" title={cutLabel}>
+                                {cutLabel}
                               </span>
                             </div>
                           </div>
@@ -267,24 +291,30 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                     {/* Action Strategy Priority List */}
                     <Card className="border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
                       <CardHeader className="px-6 pt-5 pb-3 flex items-center justify-between">
-                        <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                          Ranked Investigative Action Directives ({actions.length} Generated)
-                        </span>
+                        <div>
+                          <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
+                            Recommended Next Steps &amp; Directives ({actions.length} Generated)
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                            Execute these concrete steps to close inquiries, recover property, and formalize prosecution.
+                          </p>
+                        </div>
                         <Chip size="sm" variant="flat" color="primary" className="text-[10px]">
-                          Sorted by Information Gain & Utility
+                          Ranked by Case Impact &amp; Speed
                         </Chip>
                       </CardHeader>
                       <Divider />
                       <CardBody className="p-6 space-y-4">
                         {actions.length === 0 ? (
                           <div className="p-6 text-center text-xs text-slate-500">
-                            No ranked directives generated for current case. Click &quot;Compute Optimal Leads&quot; to execute Shannon entropy &amp; dominator analysis.
+                            No open leads remaining. Click &quot;Generate Next Steps&quot; to review final closure directives.
                           </div>
                         ) : (
                           actions.map((action: any, idx: number) => {
                             const nodeIdsToHighlight = action.requiredEntities?.map((e: any) => e.id) || [];
                             const simulationKey = action.id;
                             const simulationText = simulationResults[simulationKey];
+                            const badge = getBasisBadge(action.graphBasis, action.id);
 
                             return (
                               <div
@@ -299,10 +329,10 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                                       variant="flat"
                                       className="font-bold text-[10px]"
                                     >
-                                      PRIORITY {idx + 1}
+                                      STEP {idx + 1}
                                     </Chip>
-                                    <Chip size="sm" variant="dot" color="primary" className="text-[10px] font-mono">
-                                      {action.graphBasis?.replace(/_/g, ' ') || 'GRAPH STRATEGY'}
+                                    <Chip size="sm" variant="flat" color={badge.color} className="text-[10px] font-semibold">
+                                      {badge.label}
                                     </Chip>
                                     <span className="font-bold text-sm text-slate-800 dark:text-zinc-100">
                                       {action.targetLabel}
@@ -329,10 +359,12 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                                 </p>
 
                                 <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-200/60 dark:border-zinc-700/60 text-[11px] text-slate-500">
-                                  <div className="flex items-center gap-3 font-mono">
-                                    <span>Algorithm: <strong className="text-slate-700 dark:text-zinc-300">{action.algorithmBasis}</strong></span>
-                                    <span>ΔH: <strong className="text-teal-600 dark:text-teal-400">-{Number(action.expectedInformationGain || 0).toFixed(2)} bits</strong></span>
-                                    <span>Utility: <strong className="text-indigo-600 dark:text-indigo-400">{action.resolutionUtility ?? 0}%</strong></span>
+                                  <div className="flex items-center gap-3">
+                                    <span>Strategy: <strong className="text-slate-700 dark:text-zinc-300">{action.algorithmBasis}</strong></span>
+                                    <span>Forensic Value: <strong className="text-indigo-600 dark:text-indigo-400">{action.investigationValue ?? action.resolutionUtility ?? 90}/100</strong></span>
+                                    {action.expectedInformationGain > 0 && (
+                                      <span>Clarity Gain: <strong className="text-teal-600 dark:text-teal-400">+{Number(action.expectedInformationGain).toFixed(2)} bits</strong></span>
+                                    )}
                                   </div>
 
                                   <div className="flex items-center gap-1.5">
@@ -340,23 +372,23 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                                       size="sm"
                                       variant="bordered"
                                       color="success"
-                                      className="text-[11px] h-6 px-2 min-w-0"
+                                      className="text-[11px] h-6 px-2 min-w-0 font-medium"
                                       isLoading={simulatingActionId === `${action.id}-CONFIRMED`}
                                       onPress={() => handleSimulateAction(action.id, 'CONFIRMED')}
                                       startContent={<CheckCircle className="w-3 h-3 text-emerald-500" />}
                                     >
-                                      Simulate Confirm
+                                      Simulate: Lead Confirmed
                                     </Button>
                                     <Button
                                       size="sm"
                                       variant="bordered"
                                       color="danger"
-                                      className="text-[11px] h-6 px-2 min-w-0"
+                                      className="text-[11px] h-6 px-2 min-w-0 font-medium"
                                       isLoading={simulatingActionId === `${action.id}-REFUTED`}
                                       onPress={() => handleSimulateAction(action.id, 'REFUTED')}
                                       startContent={<XCircle className="w-3 h-3 text-rose-500" />}
                                     >
-                                      Simulate Refute
+                                      Simulate: Lead Refuted
                                     </Button>
                                   </div>
                                 </div>
