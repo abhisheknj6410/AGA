@@ -5,7 +5,7 @@ export function createExtractionRouter(aiService: AiExtractionService): Router {
   const router = Router({ mergeParams: true });
 
   // POST /cases/:caseId/extract - Extract candidate structured objects from raw evidence text
-  router.post('/', (req: Request, res: Response, next: NextFunction) => {
+  router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { rawText, sourceName, evidenceType } = req.body;
 
@@ -14,7 +14,7 @@ export function createExtractionRouter(aiService: AiExtractionService): Router {
         return;
       }
 
-      const candidates = aiService.extractStructuredCandidates({
+      const candidates = await aiService.extractWithLLM({
         rawText,
         sourceName: sourceName || 'Raw Text Excerpt',
         evidenceType: evidenceType || 'LOG'

@@ -95,6 +95,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [isSevered, setIsSevered] = useState<boolean>(false);
   const [isModeLoading, setIsModeLoading] = useState<boolean>(false);
+  const [loadingMode, setLoadingMode] = useState<ForensicMode | null>(null);
   const [isLegendOpen, setIsLegendOpen] = useState<boolean>(false);
 
   const isLight = theme === 'light';
@@ -549,6 +550,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     }
 
     setIsModeLoading(true);
+    setLoadingMode(mode);
     setIsSevered(false);
     try {
       const { sourceId, targetId } = detectCandidatePair(
@@ -570,7 +572,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           sourceNodeId: sourceId,
           targetNodeId: targetId
         });
-        compiledSteps = compileDijkstraSteps(nodes, edges, res, sourceId, targetId);
+        compiledSteps = compileDijkstraSteps(nodes, edges, res?.output || res, sourceId, targetId);
       } else if (mode === 'DOMINATORS') {
         const res = await runAlgorithm(caseId, 'DOMINATORS', {
           rootId: sourceId,
@@ -578,7 +580,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           rootNodeId: sourceId,
           targetNodeId: targetId
         });
-        compiledSteps = compileDominatorSteps(nodes, edges, res, sourceId, targetId);
+        compiledSteps = compileDominatorSteps(nodes, edges, res?.output || res, sourceId, targetId);
       } else if (mode === 'MIN_CUT') {
         const res = await runAlgorithm(caseId, 'MIN_CUT', {
           sourceId,
@@ -586,17 +588,18 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           sourceNodeId: sourceId,
           sinkNodeId: targetId
         });
-        compiledSteps = compileMinCutSteps(nodes, edges, res, sourceId, targetId);
+        compiledSteps = compileMinCutSteps(nodes, edges, res?.output || res, sourceId, targetId);
       }
 
       setForensicSteps(compiledSteps);
       setCurrentStepIndex(0);
       setForensicMode(mode);
-      setIsPlaying(false);
+      setIsPlaying(compiledSteps.length > 1);
     } catch (e: any) {
       alert(`Simulation error: ${e.message}`);
     } finally {
       setIsModeLoading(false);
+      setLoadingMode(null);
     }
   };
 
@@ -748,7 +751,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           color={forensicMode === 'CAUSAL_PATH' ? 'success' : 'default'}
           radius="full"
           className="text-xs font-semibold h-7 px-3"
-          isLoading={isModeLoading && forensicMode === 'CAUSAL_PATH'}
+          isLoading={isModeLoading && loadingMode === 'CAUSAL_PATH'}
           startContent={<Zap className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('CAUSAL_PATH')}
         >
@@ -761,7 +764,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           color={forensicMode === 'DOMINATORS' ? 'danger' : 'default'}
           radius="full"
           className="text-xs font-semibold h-7 px-3"
-          isLoading={isModeLoading && forensicMode === 'DOMINATORS'}
+          isLoading={isModeLoading && loadingMode === 'DOMINATORS'}
           startContent={<Target className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('DOMINATORS')}
         >
@@ -774,7 +777,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           color={forensicMode === 'MIN_CUT' ? 'warning' : 'default'}
           radius="full"
           className="text-xs font-semibold h-7 px-3"
-          isLoading={isModeLoading && forensicMode === 'MIN_CUT'}
+          isLoading={isModeLoading && loadingMode === 'MIN_CUT'}
           startContent={<Scissors className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('MIN_CUT')}
         >

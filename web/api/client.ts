@@ -199,6 +199,23 @@ export async function extractCandidates(
   return data.untrustedCandidates;
 }
 
+export async function askInvestigatorChat(
+  caseId: string,
+  message: string,
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<{ reply: string; caseId: string; caseName: string; model: string }> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/agent/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Investigator Agent request failed.');
+  }
+  return data;
+}
+
 export function getExportSnapshotUrl(caseId: string): string {
   return `${API_BASE}/cases/${caseId}/export`;
 }

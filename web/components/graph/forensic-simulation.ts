@@ -115,10 +115,11 @@ export function compileDijkstraSteps(
   srcId: string,
   tgtId: string
 ): ForensicStep[] {
+  const data = rawOutput?.output || rawOutput || {};
   const srcNode = nodes.find(n => n.id === srcId);
   const tgtNode = nodes.find(n => n.id === tgtId);
-  const pathNodeIds: string[] = rawOutput?.nodeIds || [];
-  const pathEdgeIds: string[] = rawOutput?.edgeIds || [];
+  const pathNodeIds: string[] = data.nodeIds || [];
+  const pathEdgeIds: string[] = data.edgeIds || [];
 
   if (pathNodeIds.length === 0) {
     return [{
@@ -179,12 +180,12 @@ export function compileDijkstraSteps(
     stepIndex: total - 1,
     totalSteps: total,
     title: "Causal Crime Corridor Established",
-    narrative: `Dijkstra confirmed: Proved shortest causal corridor from '${srcNode?.label}' to '${tgtNode?.label}' spanning ${pathNodeIds.length} nodes with minimal forensic weight ${rawOutput.totalCost || pathNodeIds.length - 1}.`,
-    mathDetail: `Target d(${tgtNode?.label}) = ${rawOutput.totalCost || pathNodeIds.length - 1} (Globally Optimal)`,
+    narrative: `Dijkstra confirmed: Proved shortest causal corridor from '${srcNode?.label}' to '${tgtNode?.label}' spanning ${pathNodeIds.length} nodes with minimal forensic weight ${data.totalCost ?? (pathNodeIds.length - 1)}.`,
+    mathDetail: `Target d(${tgtNode?.label}) = ${data.totalCost ?? (pathNodeIds.length - 1)} (Globally Optimal)`,
     activeNodeIds: pathNodeIds,
     visitedNodeIds: pathNodeIds,
     activeEdgeIds: pathEdgeIds,
-    metrics: { "Corridor Length": pathNodeIds.length, "Total Cost": rawOutput.totalCost || pathNodeIds.length - 1, "Status": "CONFIRMED" }
+    metrics: { "Corridor Length": pathNodeIds.length, "Total Cost": data.totalCost ?? (pathNodeIds.length - 1), "Status": "CONFIRMED" }
   });
 
   return compiled;
@@ -200,10 +201,11 @@ export function compileDominatorSteps(
   rootId: string,
   tgtId: string
 ): ForensicStep[] {
+  const data = rawOutput?.output || rawOutput || {};
   const rootNode = nodes.find(n => n.id === rootId);
   const tgtNode = nodes.find(n => n.id === tgtId);
-  const chokeList: any[] = rawOutput.unavoidableNodesForTarget || [];
-  const chokeIds = chokeList.map(c => c.nodeId || c.id);
+  const chokeList: any[] = data.unavoidableNodesForTarget || [];
+  const chokeIds = chokeList.map((c: any) => c.nodeId || c.id || c);
 
   const compiled: ForensicStep[] = [];
   const total = 3;
@@ -261,12 +263,13 @@ export function compileMinCutSteps(
   srcId: string,
   tgtId: string
 ): ForensicStep[] {
+  const data = rawOutput?.output || rawOutput || {};
   const srcNode = nodes.find(n => n.id === srcId);
   const tgtNode = nodes.find(n => n.id === tgtId);
-  const cutEdges: any[] = rawOutput.cutEdges || [];
-  const cutEdgeIds = cutEdges.map(e => e.edgeId || e.id);
-  const srcPartIds = rawOutput.sourcePartitionNodeIds || [srcId];
-  const tgtPartIds = rawOutput.targetPartitionNodeIds || [tgtId];
+  const cutEdges: any[] = data.cutEdges || [];
+  const cutEdgeIds = cutEdges.map((e: any) => e.edgeId || e.id || e);
+  const srcPartIds = data.sourcePartitionNodeIds || [srcId];
+  const tgtPartIds = data.targetPartitionNodeIds || [tgtId];
 
   const compiled: ForensicStep[] = [];
   const total = 3;
@@ -288,7 +291,7 @@ export function compileMinCutSteps(
     totalSteps: total,
     title: "Phase 1 · Minimal Containment Cut Identified",
     narrative: `Discovered minimal cut of ${cutEdgeIds.length} edge(s). Severing these specific edges partitions the graph and prevents any further compromise.`,
-    mathDetail: `Cut Capacity = ${rawOutput.cutCapacity || cutEdgeIds.length} edge(s)`,
+    mathDetail: `Cut Capacity = ${data.cutCapacity ?? cutEdgeIds.length} edge(s)`,
     activeNodeIds: [srcId, tgtId],
     cutEdgeIds,
     sourcePartitionIds: srcPartIds,

@@ -9,7 +9,8 @@ export function getDatabase(customPath?: string): DatabaseSync {
     return instance;
   }
 
-  const dbPath = customPath || process.env.DATABASE_PATH || path.join(process.cwd(), 'evidence_graph.db');
+  const defaultDbPath = new URL('../../evidence_graph.db', import.meta.url).pathname;
+  const dbPath = customPath || process.env.DATABASE_PATH || defaultDbPath;
 
   if (dbPath !== ':memory:') {
     const dir = path.dirname(dbPath);

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { CytoscapeCanvas } from '../components/graph/CytoscapeCanvas';
 import { CaseIngestionView } from '../components/agent/CaseIngestionView';
+import { InvestigatorChatView } from '../components/agent/InvestigatorChatView';
 import { PossibilitiesView } from '../components/possibilities/PossibilitiesView';
 import { InvestigationPlanView } from '../components/planning/InvestigationPlanView';
 import { EvaluationLabView } from '../components/evaluation/EvaluationLabView';
@@ -39,7 +40,7 @@ export default function Home() {
   const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION'>('GRAPH');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
 
@@ -70,6 +71,15 @@ export default function Home() {
 
   // Initial load
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('gis_theme') as 'light' | 'dark' | null;
+      if (savedTheme) {
+        setTheme(savedTheme);
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        document.documentElement.classList.toggle('light', savedTheme === 'light');
+      }
+    }
+
     async function init() {
       try {
         const caseList = await fetchCases();
@@ -95,7 +105,17 @@ export default function Home() {
         fetchPossibilities(currentCase.id)
       ]);
       setGraph(g);
-      setPossibilities(pList);
+      if (pList && pList.length > 0) {
+        setPossibilities(pList);
+      } else {
+        // Auto-generate possibilities in the background so Hypotheses tab is never empty
+        try {
+          const genResult = await generatePossibilities(currentCase.id);
+          setPossibilities(genResult.possibilities || []);
+        } catch {
+          setPossibilities([]);
+        }
+      }
     } catch (e) {
       console.warn("Error loading case data", e);
     }
@@ -108,14 +128,10 @@ export default function Home() {
   const handleToggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
-    if (typeof document !== 'undefined') {
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-      } else {
-        document.documentElement.classList.add('light');
-        document.documentElement.classList.remove('dark');
-      }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gis_theme', next);
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      document.documentElement.classList.toggle('light', next === 'light');
     }
   };
 
@@ -275,6 +291,14 @@ export default function Home() {
               />
             )}
           </div>
+        )}
+
+        {activeTab === 'CHAT' && (
+          <InvestigatorChatView
+            currentCase={currentCase}
+            graph={graph}
+            onNavigateToGraph={() => setActiveTab('GRAPH')}
+          />
         )}
 
         {activeTab === 'INGEST' && (

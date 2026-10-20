@@ -1,0 +1,24 @@
+INCIDENT REPORT - METROPOLITAN POLICE DEPARTMENT
+INVESTIGATION DIVISION - MAJOR CRIMES BUREAU
+CASE FILE REF: MPD-2026-GM001 (OPERATION GRAND MERIDIAN)
+CLASSIFICATION: ARMED ROBBERY / COMMERCIAL SAFE BREACH / DISPUTED TIMELINE
+DATE: SEPTEMBER 18, 2026
+
+1. SUMMARY OF OCCURRENCE
+On the evening of September 18, 2026, an armed assault and targeted vault extraction occurred at the Grand Meridian Diamond Exchange and Secure Transit Depot, located at 440 Industrial Parkway. At approximately 21:05 EST, Armored Courier Truck #402 arrived at the North Security Gate for an unscheduled transit intake.
+
+2. CHRONOLOGICAL EVIDENCE & TELEMETRY
+- 21:05 EST [CAM-VAULT-SUB01]: Armored Courier Truck #402 checks in at North Security Gate. Surveillance captures driver Viktor Cole presenting forged credentials.
+- 21:12 EST [ACCESS CONTROL LOG]: Compromised security guard Tyler Finch enters administrative override codes into Console B, disabling the sub-basement silent alarm and panic beacon.
+- 21:16 EST [BALLISTICS EVIDENCE]: Incursion team led by Viktor Cole and lookout Samantha Cruz enters the sub-basement vault corridor. During the encounter, Samantha Cruz discharges a Glock 21 .45 ACP pistol into the security bulkhead. Expended shell casing #B-12 recovered on scene matches striations of firearm GK-4491.
+- 21:20 EST [PHYSICAL EVIDENCE]: High-temperature thermal lance applied to the secondary reinforced door of the titanium gem depository. Forensic buccal swabs taken from the severed padlock yield a 99.8% STR DNA match to Viktor Cole.
+- 21:26 EST [CCTV]: A black Dodge Charger sedan (NY Plate 9X-8821) pulls into the loading subterranean bay. The titanium container carrying $4.2M in uncut industrial diamonds is loaded into the rear trunk.
+- 21:31 EST: The sedan accelerates at high speed through the perimeter barriers, ramming the North Gate arm.
+- 21:42 EST [DOT-CAM-NORTH-04]: Automated Number Plate Recognition (ANPR) captures Dodge Charger NY Plate 9X-8821 crossing the North River Toll Plaza Gantry #4 heading northbound at 84 MPH.
+- 21:54 EST: Vehicle switch executed at Pier 19 Industrial Canal Wharf. Cargo is transferred from the black sedan into a white utility van (MA Plate 4B-1102).
+- 22:12 EST: White utility van arrives at an underground safehouse warehouse on the Westside. Cargo delivered to black-market broker Arlo Kane.
+
+3. CONTESTED ALIBI CORRIDOR
+- At 23:15 EST, suspect Viktor Cole was apprehended during a routine traffic stop. Cole claims complete absence from the crime scene, asserting he was dining continuously at Starlight 24/7 Diner from 21:30 to 22:45 EST.
+- Defense submitted a carbon register slip from Starlight Diner timestamped 22:25 EST, corroborated by a sworn witness statement from bystander Maya Lin.
+- Telecommunications subpoena yields Carrier Tower West-04 ping records: Cole's personal mobile terminal registered a directional cellular handshake in Sector 4 (Westside Safehouse perimeter) at 22:24:10 EST, contradicting the diner receipt and witness statement.
