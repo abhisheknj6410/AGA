@@ -585,9 +585,9 @@ export class AiExtractionService {
   }
 
   async extractWithLLM(input: ExtractionInput): Promise<ImportPayload> {
-    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY;
-    const baseUrl = process.env.LLM_BASE_URL || 'https://api.deepseek.com';
-    const model = process.env.LLM_MODEL || 'deepseek-chat';
+    const apiKey = process.env.GEMINI_API_KEY || process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY;
+    const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
+    const model = process.env.LLM_MODEL || 'gemini-2.5-flash-lite';
 
     if (!apiKey) {
       return this.extractStructuredCandidates(input);
