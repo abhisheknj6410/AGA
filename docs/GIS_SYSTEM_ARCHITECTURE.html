@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIS System Architecture — Archify Specification</title>
+  <style>
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+      
+      /* Light Theme (Apex Warm-Light) */
+      --bg-base: #fbfbfa;
+      --bg-card: #ffffff;
+      --bg-surface: #f4f4f1;
+      --border-subtle: #e5e5df;
+      --border-strong: #d2d2ca;
+      --text-main: #18181b;
+      --text-muted: #64645e;
+      --text-accent: #0f766e;
+      
+      --color-primary: #0284c7;
+      --color-primary-bg: #e0f2fe;
+      --color-success: #059669;
+      --color-success-bg: #d1fae5;
+      --color-warning: #d97706;
+      --color-warning-bg: #fef3c7;
+      --color-danger: #dc2626;
+      --color-danger-bg: #fee2e2;
+      --color-purple: #7c3aed;
+      --color-purple-bg: #ede9fe;
+      
+      --edge-stroke: #94a3b8;
+      --edge-active: #0284c7;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg-base: #0c0d0e;
+      --bg-card: #151719;
+      --bg-surface: #1d2024;
+      --border-subtle: #272a30;
+      --border-strong: #383c44;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-accent: #2dd4bf;
+      
+      --color-primary: #38bdf8;
+      --color-primary-bg: #0c2b44;
+      --color-success: #34d399;
+      --color-success-bg: #064e3b;
+      --color-warning: #fbbf24;
+      --color-warning-bg: #451a03;
+      --color-danger: #f87171;
+      --color-danger-bg: #450a0a;
+      --color-purple: #a78bfa;
+      --color-purple-bg: #2e1065;
+      
+      --edge-stroke: #475569;
+      --edge-active: #38bdf8;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ambient Pattern Layer */
+    .ambient-grid {
+      position: fixed;
+      inset: 0;
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, var(--border-subtle) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Top Navigation & Controls */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--color-primary-bg);
+      color: var(--color-primary);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .controls-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: var(--shadow-sm);
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: var(--bg-card);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+    .btn-primary:hover {
+      opacity: 0.92;
+      color: #ffffff;
+    }
+
+    .btn-active {
+      background: var(--color-primary-bg);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    /* Main Workspace */
+    .workspace {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      height: calc(100vh - 65px);
+    }
+
+    .canvas-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px;
+    }
+
+    /* SVG Diagram Styling */
+    svg.archify-diagram {
+      width: 100%;
+      max-width: 1360px;
+      height: auto;
+      display: block;
+      user-select: none;
+    }
+
+    .cluster-box {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5px;
+      rx: 12px;
+      ry: 12px;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.03));
+    }
+
+    .cluster-box.boundary-untrusted {
+      stroke: var(--color-warning);
+      stroke-dasharray: 6 4;
+      fill: var(--bg-surface);
+    }
+
+    .cluster-box.boundary-kernel {
+      stroke: var(--color-primary);
+      stroke-width: 2px;
+      fill: var(--bg-card);
+    }
+
+    .cluster-label {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      fill: var(--text-muted);
+    }
+
+    /* Node Components */
+    .arch-node {
+      cursor: pointer;
+    }
+
+    .arch-node-rect {
+      fill: var(--bg-surface);
+      stroke: var(--border-strong);
+      stroke-width: 1.5px;
+      rx: 8px;
+      ry: 8px;
+      transition: transform 0.15s ease, stroke 0.15s ease, filter 0.15s ease;
+    }
+
+    .arch-node:hover .arch-node-rect {
+      stroke: var(--color-primary);
+      stroke-width: 2px;
+      filter: drop-shadow(0 4px 12px rgba(2, 132, 199, 0.2));
+    }
+
+    .arch-node.selected .arch-node-rect {
+      stroke: var(--color-primary);
+      stroke-width: 2.5px;
+      fill: var(--color-primary-bg);
+    }
+
+    .node-title {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 700;
+      fill: var(--text-main);
+    }
+
+    .node-subtitle {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      fill: var(--text-muted);
+    }
+
+    .node-badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
+
+    /* Relationship Edges */
+    .edge-path {
+      fill: none;
+      stroke: var(--edge-stroke);
+      stroke-width: 1.5px;
+      transition: stroke 0.2s ease, stroke-width 0.2s ease;
+    }
+
+    .edge-path.active-trace {
+      stroke: var(--color-primary);
+      stroke-width: 2.5px;
+      stroke-dasharray: 6 4;
+      animation: dashFlow 1.2s linear infinite;
+    }
+
+    @keyframes dashFlow {
+      to {
+        stroke-dashoffset: -20;
+      }
+    }
+
+    .edge-label-bg {
+      fill: var(--bg-card);
+      rx: 4px;
+      ry: 4px;
+      stroke: var(--border-subtle);
+      stroke-width: 1px;
+    }
+
+    .edge-label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      fill: var(--text-muted);
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+
+    /* Side Inspector Drawer */
+    .inspector-panel {
+      width: 380px;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      z-index: 20;
+      overflow-y: auto;
+    }
+
+    .inspector-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inspector-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .inspector-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .info-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .info-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .info-value {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-main);
+    }
+
+    .code-chip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      padding: 3px 6px;
+      border-radius: 4px;
+      word-break: break-all;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* Print Stylesheet for 1-Click PDF */
+    @media print {
+      header, .inspector-panel, .ambient-grid {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .workspace {
+        height: auto !important;
+      }
+      .canvas-container {
+        padding: 0 !important;
+      }
+      svg.archify-diagram {
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-grid"></div>
+
+  <!-- Top Control Bar -->
+  <header>
+    <div class="brand-wrap">
+      <span class="brand-badge">Archify v2.17</span>
+      <div>
+        <h1 class="brand-title">Graphical Investigation System (GIS) — System Architecture</h1>
+        <p class="brand-subtitle">Strict Epistemic Isolation: Untrusted AI Extraction vs. Deterministic Graph Math Kernel</p>
+      </div>
+    </div>
+
+    <div class="controls-wrap">
+      <button class="btn" id="btnTrace" onclick="toggleTrace()">
+        <span>⚡ Trace Motion: <strong id="traceState">ON</strong></span>
+      </button>
+      <button class="btn" id="btnTheme" onclick="toggleTheme()">
+        <span id="themeIcon">🌙 Dark Mode</span>
+      </button>
+      <button class="btn" onclick="exportSvg()">
+        <span>📥 Export SVG</span>
+      </button>
+      <button class="btn btn-primary" onclick="window.print()">
+        <span>🖨️ Print / Save PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Canvas & Inspector Area -->
+  <div class="workspace">
+    <div class="canvas-container">
+      <svg class="archify-diagram" viewBox="0 0 1340 880" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Arrow Markers -->
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--edge-stroke)" />
+          </marker>
+          <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--color-primary)" />
+          </marker>
+          <marker id="arrow-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--color-warning)" />
+          </marker>
+          <marker id="arrow-success" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--color-success)" />
+          </marker>
+        </defs>
+
+        <!-- ========================================== -->
+        <!-- BOUNDARY CLUSTER 1: UNTRUSTED INGESTION    -->
+        <!-- ========================================== -->
+        <rect class="cluster-box boundary-untrusted" x="30" y="40" width="260" height="800" />
+        <text class="cluster-label" x="45" y="65">⚠️ Untrusted Ingestion Boundary</text>
+
+        <!-- Node: Raw Evidence -->
+        <g class="arch-node" id="node-raw" onclick="inspectNode('raw')">
+          <rect class="arch-node-rect" x="50" y="85" width="220" height="95" />
+          <text class="node-title" x="65" y="112">Raw Incident Inputs</text>
+          <text class="node-subtitle" x="65" y="130">• CCTV, ANPR, Access Logs</text>
+          <text class="node-subtitle" x="65" y="145">• Syslogs, Packet Captures</text>
+          <text class="node-subtitle" x="65" y="160">• Contradictory Witness Statements</text>
+        </g>
+
+        <!-- Node: AI Extraction Clerk -->
+        <g class="arch-node" id="node-llm" onclick="inspectNode('llm')">
+          <rect class="arch-node-rect" x="50" y="240" width="220" height="105" />
+          <text class="node-title" x="65" y="267">AI Extraction Clerk</text>
+          <text class="node-subtitle" x="65" y="285">Google Gemini / LLM Intake</text>
+          <text class="node-subtitle" x="65" y="302">• Natural language text parser</text>
+          <text class="node-subtitle" x="65" y="318">• Drafts candidate JSON objects</text>
+          <text class="node-subtitle" x="65" y="333">• Enforces: aiExtracted: true</text>
+        </g>
+
+        <!-- Node: Schema & Epistemic Gate -->
+        <g class="arch-node" id="node-gate" onclick="inspectNode('gate')">
+          <rect class="arch-node-rect" x="50" y="415" width="220" height="105" />
+          <text class="node-title" x="65" y="442">Epistemic Validation Gate</text>
+          <text class="node-subtitle" x="65" y="460">domain/validation.ts</text>
+          <text class="node-subtitle" x="65" y="478">• 14 Controlled Entity Types</text>
+          <text class="node-subtitle" x="65" y="493">• Directional Edge Integrity</text>
+          <text class="node-subtitle" x="65" y="508">• Rejects untrusted anomalies</text>
+        </g>
+
+        <!-- Node: Structured JSON / CSV Direct -->
+        <g class="arch-node" id="node-direct" onclick="inspectNode('direct')">
+          <rect class="arch-node-rect" x="50" y="590" width="220" height="90" />
+          <text class="node-title" x="65" y="617">Direct Structured Ingestion</text>
+          <text class="node-subtitle" x="65" y="635">import-service.ts</text>
+          <text class="node-subtitle" x="65" y="652">• Validated JSON Payloads</text>
+          <text class="node-subtitle" x="65" y="667">• Automated CSV Node/Edge Importer</text>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- BOUNDARY CLUSTER 2: WORKBENCH (FRONTEND)   -->
+        <!-- ========================================== -->
+        <rect class="cluster-box" x="320" y="40" width="670" height="210" />
+        <text class="cluster-label" x="335" y="65">Tier 1: Investigation Workbench (Next.js 16 + React 19)</text>
+
+        <!-- Node: Cytoscape Canvas -->
+        <g class="arch-node" id="node-cytoscape" onclick="inspectNode('cytoscape')">
+          <rect class="arch-node-rect" x="340" y="85" width="200" height="75" />
+          <text class="node-title" x="355" y="112">Cytoscape Graph Canvas</text>
+          <text class="node-subtitle" x="355" y="130">Temporal DAG Layout</text>
+          <text class="node-subtitle" x="355" y="145">Choke Point & Dominator Glow</text>
+        </g>
+
+        <!-- Node: Timeline Scrubber -->
+        <g class="arch-node" id="node-timeline" onclick="inspectNode('timeline')">
+          <rect class="arch-node-rect" x="555" y="85" width="205" height="75" />
+          <text class="node-title" x="570" y="112">Timeline Scrubber</text>
+          <text class="node-subtitle" x="570" y="130">Monotonic Playback t0 → tN</text>
+          <text class="node-subtitle" x="570" y="145">Cumulative & Step-by-Step</text>
+        </g>
+
+        <!-- Node: Possibilities & Hypotheses -->
+        <g class="arch-node" id="node-poss-ui" onclick="inspectNode('poss-ui')">
+          <rect class="arch-node-rect" x="775" y="85" width="195" height="75" />
+          <text class="node-title" x="790" y="112">Hypotheses Workbench</text>
+          <text class="node-subtitle" x="790" y="130">Parallel "What If?" Branches</text>
+          <text class="node-subtitle" x="790" y="145">Why? Severing Inspector</text>
+        </g>
+
+        <!-- Node: Investigator Eve Chat -->
+        <g class="arch-node" id="node-chat" onclick="inspectNode('chat')">
+          <rect class="arch-node-rect" x="340" y="170" width="630" height="65" />
+          <text class="node-title" x="355" y="197">Senior Investigator Eve (Conversational Copilot)</text>
+          <text class="node-subtitle" x="355" y="215">Synthesizes graph algorithm findings into authoritative lead detective intelligence & next actions</text>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- BOUNDARY CLUSTER 3: REASONING & PIPELINE   -->
+        <!-- ========================================== -->
+        <rect class="cluster-box" x="320" y="275" width="670" height="235" />
+        <text class="cluster-label" x="335" y="300">Tier 2: Reasoning Pipeline & Application Orchestration</text>
+
+        <!-- Node: Case Reasoning Pipeline -->
+        <g class="arch-node" id="node-pipeline" onclick="inspectNode('pipeline')">
+          <rect class="arch-node-rect" x="340" y="320" width="305" height="85" />
+          <text class="node-title" x="355" y="347">CaseReasoningPipeline</text>
+          <text class="node-subtitle" x="355" y="365">case-reasoning-pipeline.ts</text>
+          <text class="node-subtitle" x="355" y="380">• Coordinates Multi-Stage Epistemic Loop</text>
+          <text class="node-subtitle" x="355" y="395">• Validates Monotonic Consistency</text>
+        </g>
+
+        <!-- Node: Possibility Engine -->
+        <g class="arch-node" id="node-poss-engine" onclick="inspectNode('poss-engine')">
+          <rect class="arch-node-rect" x="660" y="320" width="310" height="85" />
+          <text class="node-title" x="675" y="347">PossibilityEngine</text>
+          <text class="node-subtitle" x="675" y="365">possibility-engine.ts</text>
+          <text class="node-subtitle" x="675" y="380">• Non-Destructive Delta Graphs</text>
+          <text class="node-subtitle" x="675" y="395">• Contradiction Branch Generator</text>
+        </g>
+
+        <!-- Node: Resolution Reasoning -->
+        <g class="arch-node" id="node-res-engine" onclick="inspectNode('res-engine')">
+          <rect class="arch-node-rect" x="340" y="420" width="305" height="75" />
+          <text class="node-title" x="355" y="447">ResolutionReasoningEngine</text>
+          <text class="node-subtitle" x="355" y="465">entity-resolution-service.ts</text>
+          <text class="node-subtitle" x="355" y="480">Deduplicates Aliases, Merkle Hashes</text>
+        </g>
+
+        <!-- Node: Decision & Planning Engine -->
+        <g class="arch-node" id="node-plan-engine" onclick="inspectNode('plan-engine')">
+          <rect class="arch-node-rect" x="660" y="420" width="310" height="75" />
+          <text class="node-title" x="675" y="447">InvestigationPlanningEngine</text>
+          <text class="node-subtitle" x="675" y="465">investigation-planning-engine.ts</text>
+          <text class="node-subtitle" x="675" y="480">Shannon Information Gain Ranking</text>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- BOUNDARY CLUSTER 4: GRAPH MATH KERNEL      -->
+        <!-- ========================================== -->
+        <rect class="cluster-box boundary-kernel" x="320" y="535" width="670" height="305" />
+        <text class="cluster-label" x="335" y="560">Tier 3: Graph Algorithmic Kernel (100% Deterministic Discrete Mathematics)</text>
+
+        <!-- Node: Lengauer-Tarjan Dominators -->
+        <g class="arch-node" id="node-dominators" onclick="inspectNode('dominators')">
+          <rect class="arch-node-rect" x="340" y="580" width="305" height="75" />
+          <text class="node-title" x="355" y="607">Lengauer-Tarjan Dominators</text>
+          <text class="node-subtitle" x="355" y="625">O(E · α(V)) Complexity</text>
+          <text class="node-subtitle" x="355" y="640">Unavoidable Choke Points & Key Influencers</text>
+        </g>
+
+        <!-- Node: Suurballe Disjoint Paths -->
+        <g class="arch-node" id="node-disjoint" onclick="inspectNode('disjoint')">
+          <rect class="arch-node-rect" x="660" y="580" width="310" height="75" />
+          <text class="node-title" x="675" y="607">Suurballe Disjoint Paths</text>
+          <text class="node-subtitle" x="675" y="625">Vertex-Disjoint Independent Corridors</text>
+          <text class="node-subtitle" x="675" y="640">Proves Non-Circular Corroboration</text>
+        </g>
+
+        <!-- Node: Temporal Reachability & Kahn -->
+        <g class="arch-node" id="node-temporal" onclick="inspectNode('temporal')">
+          <rect class="arch-node-rect" x="340" y="670" width="305" height="75" />
+          <text class="node-title" x="355" y="697">Temporal Reachability (Kahn DAG)</text>
+          <text class="node-subtitle" x="355" y="715">Enforces Time-Arrow Arrow Monotonicity</text>
+          <text class="node-subtitle" x="355" y="730">Prunes Impossible Retrocausal Paths</text>
+        </g>
+
+        <!-- Node: Edmonds-Karp Min-Cut -->
+        <g class="arch-node" id="node-mincut" onclick="inspectNode('mincut')">
+          <rect class="arch-node-rect" x="660" y="670" width="310" height="75" />
+          <text class="node-title" x="675" y="697">Edmonds-Karp Min-Cut</text>
+          <text class="node-subtitle" x="675" y="715">Max-Flow / Min-Cut Containment</text>
+          <text class="node-subtitle" x="675" y="730">Minimal Evidence Needed to Sever Crime Chain</text>
+        </g>
+
+        <!-- Node: Dijkstra K-Shortest Paths & Articulation Points -->
+        <g class="arch-node" id="node-dijkstra" onclick="inspectNode('dijkstra')">
+          <rect class="arch-node-rect" x="340" y="755" width="630" height="70" />
+          <text class="node-title" x="355" y="780">Dijkstra K-Shortest Paths & Tarjan Articulation Points</text>
+          <text class="node-subtitle" x="355" y="798">Ranks most probable causal corridors weighted by evidence reliability & finds single-point-of-failure bridge nodes</text>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- BOUNDARY CLUSTER 5: FORENSIC STORAGE       -->
+        <!-- ========================================== -->
+        <rect class="cluster-box" x="1020" y="40" width="290" height="800" />
+        <text class="cluster-label" x="1035" y="65">Tier 4: Storage & Audit Trail</text>
+
+        <!-- Node: SQLite Engine -->
+        <g class="arch-node" id="node-db" onclick="inspectNode('db')">
+          <rect class="arch-node-rect" x="1040" y="85" width="250" height="110" />
+          <text class="node-title" x="1055" y="112">Node.js SQLite Core</text>
+          <text class="node-subtitle" x="1055" y="130">infrastructure/db.ts</text>
+          <text class="node-subtitle" x="1055" y="148">• Foreign Key Cascading</text>
+          <text class="node-subtitle" x="1055" y="163">• Atomic Transaction Isolation</text>
+          <text class="node-subtitle" x="1055" y="178">• In-Memory & File Persistence</text>
+        </g>
+
+        <!-- Node: Audit Ledger -->
+        <g class="arch-node" id="node-audit" onclick="inspectNode('audit')">
+          <rect class="arch-node-rect" x="1040" y="240" width="250" height="110" />
+          <text class="node-title" x="1055" y="267">Forensic Audit Ledger</text>
+          <text class="node-subtitle" x="1055" y="285">audit-repository.ts</text>
+          <text class="node-subtitle" x="1055" y="303">• Append-Only Tamper Log</text>
+          <text class="node-subtitle" x="1055" y="318">• SHA-256 Merkle Checksums</text>
+          <text class="node-subtitle" x="1055" y="333">• Complete Investigator Lineage</text>
+        </g>
+
+        <!-- Node: Snapshot & Cache -->
+        <g class="arch-node" id="node-cache" onclick="inspectNode('cache')">
+          <rect class="arch-node-rect" x="1040" y="415" width="250" height="110" />
+          <text class="node-title" x="1055" y="442">Snapshot & Algorithm Cache</text>
+          <text class="node-subtitle" x="1055" y="460">algorithm-result-cache.ts</text>
+          <text class="node-subtitle" x="1055" y="478">• Graph Version Snapshots</text>
+          <text class="node-subtitle" x="1055" y="493">• Fingerprint Change Detection</text>
+          <text class="node-subtitle" x="1055" y="508">• Sub-5ms Cached Lookups</text>
+        </g>
+
+        <!-- Node: Court Packet Discovery -->
+        <g class="arch-node" id="node-court" onclick="inspectNode('court')">
+          <rect class="arch-node-rect" x="1040" y="590" width="250" height="110" />
+          <text class="node-title" x="1055" y="617">Court Packet Discovery Export</text>
+          <text class="node-subtitle" x="1055" y="635">court-packet-service.ts</text>
+          <text class="node-subtitle" x="1055" y="653">• Court-Admissible JSON/PDF</text>
+          <text class="node-subtitle" x="1055" y="668">• Mathematical Proof Artifacts</text>
+          <text class="node-subtitle" x="1055" y="683">• Cryptographic Chain-of-Custody</text>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- CONNECTING DATA-FLOW EDGES                 -->
+        <!-- ========================================== -->
+        <!-- Raw -> LLM -->
+        <path class="edge-path active-trace" d="M 160 180 L 160 235" marker-end="url(#arrow-active)" />
+        <!-- LLM -> Gate -->
+        <path class="edge-path active-trace" d="M 160 345 L 160 410" marker-end="url(#arrow-active)" />
+        <!-- Gate -> Direct -->
+        <path class="edge-path active-trace" d="M 160 520 L 160 585" marker-end="url(#arrow-active)" />
+        
+        <!-- Gate/Direct -> Pipeline (Ingestion to Application) -->
+        <path class="edge-path active-trace" d="M 270 470 L 335 365" marker-end="url(#arrow-active)" />
+        <rect class="edge-label-bg" x="255" y="395" width="80" height="18" />
+        <text class="edge-label" x="295" y="404">Validated Facts</text>
+
+        <!-- Pipeline -> Graph Kernel -->
+        <path class="edge-path active-trace" d="M 490 405 L 490 575" marker-end="url(#arrow-active)" />
+        <rect class="edge-label-bg" x="430" y="480" width="120" height="18" />
+        <text class="edge-label" x="490" y="489">Graph Reason Call</text>
+
+        <!-- Graph Kernel -> Possibility Engine -->
+        <path class="edge-path active-trace" d="M 815 575 L 815 405" marker-end="url(#arrow-active)" />
+        <rect class="edge-label-bg" x="750" y="480" width="130" height="18" />
+        <text class="edge-label" x="815" y="489">Choke & Cuts Output</text>
+
+        <!-- Pipeline -> Frontend UI -->
+        <path class="edge-path active-trace" d="M 440 320 L 440 165" marker-end="url(#arrow-active)" />
+        <!-- Possibility Engine -> Hypotheses UI -->
+        <path class="edge-path active-trace" d="M 870 320 L 870 165" marker-end="url(#arrow-active)" />
+
+        <!-- Application -> DB -->
+        <path class="edge-path" d="M 970 365 L 1035 140" marker-end="url(#arrow)" />
+        <!-- Kernel -> Cache -->
+        <path class="edge-path" d="M 970 620 L 1035 470" marker-end="url(#arrow)" />
+        <!-- Pipeline -> Audit Repo -->
+        <path class="edge-path" d="M 970 455 L 1035 300" marker-end="url(#arrow)" />
+        <!-- Application -> Court Packet -->
+        <path class="edge-path" d="M 970 790 L 1035 645" marker-end="url(#arrow)" />
+
+      </svg>
+    </div>
+
+    <!-- Right Side Inspector Panel -->
+    <aside class="inspector-panel" id="inspectorPanel">
+      <div class="inspector-header">
+        <h2 class="inspector-title" id="inspTitle">Select an Architecture Node</h2>
+        <span class="brand-badge" id="inspType">GIS COMPONENT</span>
+      </div>
+      <div class="inspector-body" id="inspBody">
+        <div class="info-card">
+          <div class="info-label">Description</div>
+          <div class="info-value" id="inspDesc">Click on any component in the architecture canvas to inspect its role, epistemic boundary, file implementation, and algorithmic complexity.</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-label">Implementation File</div>
+          <div class="info-value">
+            <span class="code-chip" id="inspFile">backend/src/index.ts</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-label">Epistemic Trust Boundary</div>
+          <div class="info-value" id="inspTrust"><strong>Guaranteed Deterministic</strong> — Never hallucinates or accepts unverified AI text.</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-label">Key Algorithms / Mechanisms</div>
+          <div class="info-value" id="inspAlgo">Lengauer-Tarjan Immediate Dominators, Suurballe Vertex-Disjoint Paths, Edmonds-Karp Min-Cut, Kahn DAG Sort.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // Node details database
+    const NODE_DETAILS = {
+      raw: {
+        title: "Raw Incident Inputs",
+        type: "EXTERNAL EVIDENCE",
+        desc: "Unstructured crime inputs from heterogenous sources including video surveillance, building access card swipes, network firewall logs, hotel transaction slips, and conflicting eyewitness testimonies.",
+        file: "docs/SAMPLE_PHYSICAL_HEIST_NARRATIVE.txt",
+        trust: "UNTRUSTED — Subject to spoofing, errors, and human memory bias.",
+        algo: "Multi-modal input intake, raw byte hashing."
+      },
+      llm: {
+        title: "AI Extraction Clerk",
+        type: "AI BOUNDARY",
+        desc: "Uses Google Gemini LLM strictly as an intake typist to convert messy text into candidate entities and events. Explicitly tags all outputs with aiExtracted: true. The AI has ZERO authority to decide guilt.",
+        file: "backend/src/application/ai-extraction-service.ts",
+        trust: "PROBATIONARY — Output cannot bypass schema and direction validation.",
+        algo: "Regex & few-shot LLM structured extraction, JSON schema validation."
+      },
+      gate: {
+        title: "Epistemic Validation Gate",
+        type: "SECURITY GATEWAY",
+        desc: "Pre-persistence barrier that validates incoming entities and relationships against strict directional rules. Prevents impossible connections (e.g., an Event owning a Person).",
+        file: "backend/src/domain/validation.ts",
+        trust: "GATEKEEPER — Enforces controlled vocabulary and direction constraints.",
+        algo: "Schema validation, Node & Edge Category Matrix, Time-interval validity."
+      },
+      direct: {
+        title: "Direct Structured Ingestion",
+        type: "DATA INGESTION",
+        desc: "Direct API endpoint for importing verified JSON datasets and CSV node/edge tables. Used for automated testing, test suites, and enterprise telemetry feeds.",
+        file: "backend/src/application/import-service.ts",
+        trust: "TRUSTED FORMAT — Pre-validated before batch SQLite transaction.",
+        algo: "Batch transactional insert with atomic rollback on failure."
+      },
+      cytoscape: {
+        title: "Cytoscape Graph Canvas",
+        type: "INTERACTIVE UI",
+        desc: "High-performance WebGL/Canvas visual graph workbench. Renders entity nodes, event timelines, and causal edges with dynamic dominator choke point highlighting and path traces.",
+        file: "web/components/graph/CytoscapeCanvas.tsx",
+        trust: "CLIENT PRESENTATION — Driven purely by verified backend graph state.",
+        algo: "Dagre DAG Layout, CoSE force-directed layout, cytoscape-svg export."
+      },
+      timeline: {
+        title: "Timeline Scrubber",
+        type: "TEMPORAL PLAYBACK",
+        desc: "Allows investigators to step forward and backward in time (t0 to tN), observing the exact causal evolution of the crime and verifying alibi chronology.",
+        file: "web/components/timeline/TimelinePlayback.tsx",
+        trust: "TIME VERIFICATION — Enforces strict chronological causality.",
+        algo: "Chronological event sorting, step-by-step state slicing."
+      },
+      "poss-ui": {
+        title: "Hypotheses Workbench",
+        type: "EXPLORATION UI",
+        desc: "Displays parallel 'What If?' branches (e.g., Suspect A alone vs. Accomplice vs. Proxy). Shows which hypotheses survive and which are severed by contradictions.",
+        file: "web/components/possibilities/PossibilitiesView.tsx",
+        trust: "HYPOTHESIS MANAGEMENT — Evaluates competing theories simultaneously.",
+        algo: "Possibility card ranking, Why? modal inspector, critical cut badges."
+      },
+      chat: {
+        title: "Investigator Eve Copilot",
+        type: "AI AGENT INTERFACE",
+        desc: "Authoritative lead detective conversational agent. Synthesizes graph algorithm findings into actionable investigative briefings and recommended next steps.",
+        file: "web/components/agent/InvestigatorChatView.tsx",
+        trust: "SYNTHESIS ONLY — Backed by underlying graph query engine.",
+        algo: "Context-grounded prompt engineering, deterministic graph fallback."
+      },
+      pipeline: {
+        title: "CaseReasoningPipeline",
+        type: "APPLICATION CORE",
+        desc: "Master orchestration engine coordinating end-to-end epistemic validation, hypothesis generation, contradiction resolution, and court packet generation.",
+        file: "backend/src/application/case-reasoning-pipeline.ts",
+        trust: "CORE ORCHESTRATOR — Ensures zero contradictions enter active state.",
+        algo: "Multi-stage causal inference, monotonic timeline verification."
+      },
+      "poss-engine": {
+        title: "PossibilityEngine",
+        type: "HYPOTHESIS KERNEL",
+        desc: "Manages branching hypothesis graphs using non-destructive delta overlays. Tests alternative scenarios without polluting the primary case evidence database.",
+        file: "backend/src/application/possibility-engine.ts",
+        trust: "MATHEMATICAL SIMULATION — Delta mutation without write-locks.",
+        algo: "Contradiction branching, hypothesis signature hashing, delta application."
+      },
+      "res-engine": {
+        title: "ResolutionReasoningEngine",
+        type: "ENTITY RESOLUTION",
+        desc: "Disambiguates aliases, duplicate suspects, and shared device IDs. Links fragmented identities based on corroborating telemetry and cryptographic hashes.",
+        file: "backend/src/application/resolution-reasoning-engine.ts",
+        trust: "DEDUPLICATION — Verifies entity uniqueness.",
+        algo: "Jaro-Winkler string similarity, temporal coincidence matching."
+      },
+      "plan-engine": {
+        title: "InvestigationPlanningEngine",
+        type: "DECISION PLANNING",
+        desc: "Calculates the maximum information-gain next investigative steps. Recommends the specific warrant, subpoena, or camera check that will refute the most possibilities.",
+        file: "backend/src/application/investigation-planning-engine.ts",
+        trust: "OPTIMAL INVESTIGATION — Minimizes investigative entropy.",
+        algo: "Shannon Information Gain (H = -Σ p log2 p), utility scoring."
+      },
+      dominators: {
+        title: "Lengauer-Tarjan Dominators",
+        type: "GRAPH ALGORITHM",
+        desc: "Finds the immediate dominators in the directed causal graph. Identifies the single unavoidable choke points that the perpetrator HAD to pass through to commit the crime.",
+        file: "backend/src/domain/algorithms/dominators.ts",
+        trust: "100% MATHEMATICAL PROOF — Court-admissible discrete theorem.",
+        algo: "Lengauer-Tarjan Immediate Dominator Algorithm, O(E · α(V))."
+      },
+      disjoint: {
+        title: "Suurballe Disjoint Paths",
+        type: "GRAPH ALGORITHM",
+        desc: "Finds multiple vertex-disjoint causal paths between origin and crime scene. Proves that evidence is independent and not derived from a single circular source.",
+        file: "backend/src/domain/algorithms/disjoint-paths.ts",
+        trust: "100% MATHEMATICAL PROOF — Zero risk of circular reasoning.",
+        algo: "Suurballe Vertex-Disjoint Shortest Paths, O(E + V log V)."
+      },
+      temporal: {
+        title: "Temporal Reachability & Kahn",
+        type: "GRAPH ALGORITHM",
+        desc: "Enforces strict time-arrow monotonicity. Eliminates retrocausal loops and prunes impossible suspect routes where arrival time precedes departure time.",
+        file: "backend/src/domain/algorithms/temporal-reachability.ts",
+        trust: "100% MATHEMATICAL PROOF — Physical impossibility pruning.",
+        algo: "Kahn's Topological Sort, Temporal Forward Causal Reachability, O(V + E)."
+      },
+      mincut: {
+        title: "Edmonds-Karp Min-Cut",
+        type: "GRAPH ALGORITHM",
+        desc: "Calculates the minimum cut set of events or evidence required to completely sever a crime corridor. Identifies the critical evidence needed to break an alibi.",
+        file: "backend/src/domain/algorithms/min-cut.ts",
+        trust: "100% MATHEMATICAL PROOF — Max-Flow Min-Cut Theorem.",
+        algo: "Edmonds-Karp Breadth-First Flow Augmentation, O(V · E^2)."
+      },
+      dijkstra: {
+        title: "Dijkstra K-Shortest Paths & Articulation Points",
+        type: "GRAPH ALGORITHM",
+        desc: "Ranks the top-k most likely causal corridors weighted by evidence reliability, and identifies bridge nodes whose removal disconnects the investigation graph.",
+        file: "backend/src/domain/algorithms/k-shortest-paths.ts",
+        trust: "100% MATHEMATICAL PROOF — Optimal weighted path discovery.",
+        algo: "Yen's K-Shortest Paths + Tarjan DFS Articulation Points, O(K · V · (E + V log V))."
+      },
+      db: {
+        title: "Node.js SQLite Core",
+        type: "DATABASE",
+        desc: "Embedded relational database providing foreign key constraints, cascading deletes, and ACID transactions. Stores all confirmed nodes, events, edges, and evidence.",
+        file: "backend/src/infrastructure/db.ts",
+        trust: "CANONICAL PERSISTENCE — Source of truth for active case graphs.",
+        algo: "SQLite DatabaseSync, WAL Mode, Foreign Key Cascading."
+      },
+      audit: {
+        title: "Forensic Audit Ledger",
+        type: "TAMPER-EVIDENT LOG",
+        desc: "Append-only cryptographic record of every action taken in the investigation. Computes Merkle hash checksums to guarantee evidence has not been altered or doctored.",
+        file: "backend/src/infrastructure/repositories/audit-repository.ts",
+        trust: "LEGAL EVIDENCE — Cryptographically tamper-evident.",
+        algo: "SHA-256 Merkle chain, append-only immutable event log."
+      },
+      cache: {
+        title: "Snapshot & Algorithm Cache",
+        type: "IN-MEMORY REPOSITORY",
+        desc: "Caches expensive graph algorithmic results (dominators, paths) indexed by graph version fingerprints. Provides sub-5ms lookups for interactive UI scrubbers.",
+        file: "backend/src/infrastructure/algorithm-result-cache.ts",
+        trust: "HIGH PERFORMANCE CACHE — Invalidated automatically on graph mutation.",
+        algo: "Graph topology fingerprinting, LRU eviction."
+      },
+      court: {
+        title: "Court Packet Discovery Export",
+        type: "LEGAL EXPORT",
+        desc: "Exports a complete, court-admissible discovery package containing the full causal graph, mathematical proof certificates, chain of custody, and evidence citations.",
+        file: "backend/src/application/court-packet-service.ts",
+        trust: "JUDICIAL STANDARD — Ready for submission to prosecution & defense.",
+        algo: "Deterministic JSON serialisation, PDF generation with cryptographic signatures."
+      }
+    };
+
+    function inspectNode(id) {
+      const data = NODE_DETAILS[id];
+      if (!data) return;
+
+      // Update selection styling
+      document.querySelectorAll('.arch-node').forEach(el => el.classList.remove('selected'));
+      const target = document.getElementById('node-' + id);
+      if (target) target.classList.add('selected');
+
+      // Update Inspector Panel
+      document.getElementById('inspTitle').textContent = data.title;
+      document.getElementById('inspType').textContent = data.type;
+      document.getElementById('inspDesc').textContent = data.desc;
+      document.getElementById('inspFile').textContent = data.file;
+      document.getElementById('inspTrust').textContent = data.trust;
+      document.getElementById('inspAlgo').textContent = data.algo;
+    }
+
+    // Trace Motion Toggle
+    let traceActive = true;
+    function toggleTrace() {
+      traceActive = !traceActive;
+      const paths = document.querySelectorAll('.edge-path');
+      paths.forEach(p => {
+        if (traceActive) {
+          p.classList.add('active-trace');
+        } else {
+          p.classList.remove('active-trace');
+        }
+      });
+      document.getElementById('traceState').textContent = traceActive ? 'ON' : 'OFF';
+      document.getElementById('btnTrace').classList.toggle('btn-active', traceActive);
+    }
+
+    // Theme Toggle
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      document.getElementById('themeIcon').textContent = next === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+    }
+
+    // SVG Export
+    function exportSvg() {
+      const svg = document.querySelector('svg.archify-diagram');
+      const serializer = new XMLSerializer();
+      const source = serializer.serializeToString(svg);
+      const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'GIS_System_Architecture.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Default select Dominators on load
+    window.addEventListener('DOMContentLoaded', () => {
+      inspectNode('dominators');
+    });
+  </script>
+</body>
+</html>
