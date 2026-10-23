@@ -897,7 +897,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           className="text-xs font-semibold h-7 px-3"
           onPress={() => handleSelectMode('NORMAL')}
         >
-          Normal
+          Overview
         </Button>
 
         <Button
@@ -910,7 +910,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           startContent={<Zap className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('CAUSAL_PATH')}
         >
-          Causal Corridor
+          Most Likely Route
         </Button>
 
         <Button
@@ -923,7 +923,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           startContent={<Target className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('DOMINATORS')}
         >
-          Choke Points
+          Bottlenecks
         </Button>
 
         <Button
@@ -936,7 +936,7 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
           startContent={<Scissors className="w-3.5 h-3.5" />}
           onPress={() => handleSelectMode('MIN_CUT')}
         >
-          Containment Cut
+          Perimeter Barriers
         </Button>
       </div>
 

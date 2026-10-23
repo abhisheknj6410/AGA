@@ -175,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Network className="w-3.5 h-3.5" />
-                <span>Graph Canvas</span>
+                <span>Crime Graph</span>
                 <span className="text-[10px] opacity-75 font-mono">({nodeCount})</span>
               </div>
             }
@@ -185,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-teal-500" />
-                <span>Investigator Copilot</span>
+                <span>Detective Chat</span>
               </div>
             }
           />
@@ -194,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Bot className="w-3.5 h-3.5" />
-                <span>Data Ingestion</span>
+                <span>Add Evidence</span>
               </div>
             }
           />
@@ -203,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <GitBranch className="w-3.5 h-3.5" />
-                <span>Hypotheses</span>
+                <span>Theories</span>
                 {possibilityCount > 0 && (
                   <Chip size="sm" variant="flat" color="warning" className="h-4 px-1 text-[9px]">
                     {possibilityCount}
@@ -217,7 +217,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" />
-                <span>Strategic Planning</span>
+                <span>Next Steps</span>
               </div>
             }
           />
@@ -226,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Evaluation Lab</span>
+                <span>Accuracy Tests</span>
               </div>
             }
           />
@@ -235,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5" />
-                <span>Resolution Lab</span>
+                <span>Case Clarity</span>
               </div>
             }
           />
@@ -278,31 +278,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               description="Person, Organization, Location, Asset"
               onPress={() => onAddNode('ENTITY')}
             >
-              Add Entity Node
+              Add Person / Place
             </DropdownItem>
             <DropdownItem
               key="event"
               startContent={<span className="w-2.5 h-2.5 rounded-full bg-amber-500" />}
-              description="Timestamped Action, Occurrence, Breach"
+              description="Timestamped Action, Swipe, Occurrence"
               onPress={() => onAddNode('EVENT')}
             >
-              Add Event Node
+              Add Event / Action
             </DropdownItem>
             <DropdownItem
               key="evidence"
               startContent={<span className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
-              description="Document, Forensic Log, Sensor, Audio"
+              description="CCTV, Forensic Log, Sensor, Audio"
               onPress={() => onAddNode('EVIDENCE')}
             >
-              Add Evidence Item
+              Add Evidence File / Log
             </DropdownItem>
             <DropdownItem
               key="edge"
               startContent={<Link2 className="w-3.5 h-3.5 text-slate-500" />}
-              description="Connect two nodes with verified relationship"
+              description="Connect two facts with a cause or link"
               onPress={onAddEdge}
             >
-              Connect Relationship
+              Connect Facts
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>

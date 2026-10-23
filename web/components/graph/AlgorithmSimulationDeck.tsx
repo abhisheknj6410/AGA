@@ -493,14 +493,14 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                Algorithm Simulation Engine
+                Investigation &amp; What-If Lab
               </span>
               <Chip size="sm" variant="flat" color="primary" className="h-5 text-[10px] font-semibold text-teal-600 dark:text-teal-400">
-                Interactive Lab
+                Interactive
               </Chip>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-              Deterministic step-by-step mathematical traversal & counterfactual stress-testing
+              Step-by-step mathematical verification &amp; alibi testing
             </p>
           </div>
         </div>
@@ -508,11 +508,11 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
         {/* Algorithm Type Pills */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900/80 p-1 rounded-xl">
           {[
-            { id: 'DIJKSTRA', label: 'Dijkstra', icon: Compass },
-            { id: 'K_SHORTEST_PATHS', label: "Yen's K-Paths", icon: GitBranch },
-            { id: 'DOMINATORS', label: 'Dominators', icon: ShieldAlert },
-            { id: 'MIN_CUT', label: 'Min-Cut', icon: Scissors },
-            { id: 'TEMPORAL', label: 'Temporal', icon: Clock }
+            { id: 'DIJKSTRA', label: 'Direct Route', icon: Compass },
+            { id: 'K_SHORTEST_PATHS', label: "Top Alternatives", icon: GitBranch },
+            { id: 'DOMINATORS', label: 'Bottlenecks', icon: ShieldAlert },
+            { id: 'MIN_CUT', label: 'Perimeter Barriers', icon: Scissors },
+            { id: 'TEMPORAL', label: 'Timeline Order', icon: Clock }
           ].map(algo => {
             const Icon = algo.icon;
             const isSelected = selectedAlgo === algo.id;

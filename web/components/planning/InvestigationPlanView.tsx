@@ -145,11 +145,11 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                     <Target className="w-5 h-5" />
                   </span>
                   <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
-                    Strategic Action Plan & Investigative Directives
+                    Action Plan &amp; Next Steps
                   </h2>
                 </div>
                 <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
-                  Automated reasoning prioritizes next steps to eliminate doubt, locate critical bottlenecks, and secure court-admissible evidence.
+                  Automatically prioritizes which witness, warrant, or log to check next to solve the case with the least wasted effort.
                 </p>
               </div>
 
@@ -223,17 +223,17 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                             <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                              Critical Choke Point (Bottleneck)
+                              Single Bottleneck (Must-Pass Step)
                             </span>
                           </div>
                           <Chip size="sm" color="warning" variant="flat" className="text-[10px]">
-                            Unavoidable Link
+                            Unavoidable Step
                           </Chip>
                         </CardHeader>
                         <Divider />
                         <CardBody className="p-5 text-xs text-slate-600 dark:text-zinc-400 space-y-3">
                           <p>
-                            A mandatory physical location or digital log that any culprit HAD to pass through to commit the crime.
+                            A mandatory step or physical door that any culprit was forced to pass through to commit the crime.
                           </p>
                           <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 rounded-xl space-y-1.5">
                             <div className="flex justify-between items-center text-[11px]">
@@ -258,7 +258,7 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                           <div className="flex items-center gap-2">
                             <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                             <span className="font-bold text-sm text-slate-800 dark:text-zinc-200">
-                              Perimeter &amp; Containment
+                              Perimeter Barriers (Sealed Exits)
                             </span>
                           </div>
                           <Chip size="sm" color="secondary" variant="flat" className="text-[10px]">
@@ -268,7 +268,7 @@ export const InvestigationPlanView: React.FC<InvestigationPlanViewProps> = ({
                         <Divider />
                         <CardBody className="p-5 text-xs text-slate-600 dark:text-zinc-400 space-y-3">
                           <p>
-                            The security perimeter or barrier separating the suspect from the scene. Proving or disproving this single link secures the case.
+                            The minimum set of checkpoints needed to seal all escape routes or block data theft.
                           </p>
                           <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/20 rounded-xl space-y-1.5">
                             <div className="flex justify-between items-center text-[11px]">

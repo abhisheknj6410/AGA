@@ -327,14 +327,14 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                 <Bot className="w-5 h-5" />
               </span>
               <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                Eve AI Data Ingestion Agent
+                Add Evidence to Graph
                 <Chip size="sm" color="primary" variant="flat" className="text-[10px] font-mono">
-                  Agent Mode Active
+                  Intake Console
                 </Chip>
               </h2>
             </div>
             <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
-              Input case notes, evidence narratives, and forensic logs to extract graph facts with verified provenance.
+              Paste police reports, witness statements, or upload spreadsheet logs to automatically extract facts into the crime graph.
             </p>
           </div>
 
@@ -347,17 +347,17 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
               endContent={<ArrowRight className="w-4 h-4" />}
               onPress={onNavigateToGraph}
             >
-              View Graph Canvas
+              View Crime Graph
             </Button>
           )}
         </div>
 
         {/* Alerts / Feedback */}
         {errorMsg && (
-          <Alert color="danger" variant="flat" title="Validation / Extraction Notice" description={errorMsg} />
+          <Alert color="danger" variant="flat" title="Notice" description={errorMsg} />
         )}
         {successMsg && (
-          <Alert color="success" variant="flat" title="Operation Successful" description={successMsg} />
+          <Alert color="success" variant="flat" title="Success" description={successMsg} />
         )}
 
         {/* Dual Ingestion Track Switcher */}
@@ -370,7 +370,7 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
             startContent={<Bot className="w-4 h-4" />}
             onPress={() => setIngestMode('AI_AGENT')}
           >
-            Eve AI Unstructured Extractor
+            Paste Report Text (AI Assistant)
           </Button>
           <Button
             size="sm"
@@ -380,7 +380,7 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
             startContent={<Terminal className="w-4 h-4" />}
             onPress={() => setIngestMode('DIRECT_CSV')}
           >
-            Deterministic Bulk Importer (CSV / Telemetry)
+            Upload Spreadsheet / CSV
           </Button>
         </div>
 
