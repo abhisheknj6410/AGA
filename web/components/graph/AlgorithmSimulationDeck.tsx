@@ -511,7 +511,6 @@ export const AlgorithmSimulationDeck: React.FC<AlgorithmSimulationDeckProps> = (
             { id: 'DIJKSTRA', label: 'Direct Route', icon: Compass },
             { id: 'K_SHORTEST_PATHS', label: "Top Alternatives", icon: GitBranch },
             { id: 'DOMINATORS', label: 'Bottlenecks', icon: ShieldAlert },
-            { id: 'MIN_CUT', label: 'Perimeter Barriers', icon: Scissors },
             { id: 'TEMPORAL', label: 'Timeline Order', icon: Clock }
           ].map(algo => {
             const Icon = algo.icon;

@@ -43,8 +43,8 @@ interface NavbarProps {
   currentCase: Case | null;
   onSelectCase: (c: Case) => void;
   onNewCase: () => void;
-  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE';
-  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE') => void;
+  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES';
+  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES') => void;
   onAddNode: (category: 'ENTITY' | 'EVENT' | 'EVIDENCE') => void;
   onAddEdge: () => void;
   possibilityCount: number;
@@ -209,15 +209,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {possibilityCount}
                   </Chip>
                 )}
-              </div>
-            }
-          />
-          <Tab
-            key="INTELLIGENCE"
-            title={
-              <div className="flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5" />
-                <span>Next Steps</span>
               </div>
             }
           />

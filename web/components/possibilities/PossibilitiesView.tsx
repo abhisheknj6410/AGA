@@ -244,7 +244,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                     {nodesList.length > 0 && (
                       <div className="pt-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                          Causal Progression Pipeline ({nodesList.length} Nodes)
+                          Sequence of Events ({nodesList.length} Steps)
                         </span>
                         <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
                           {nodesList.slice(0, 3).map((n, i) => (
@@ -284,7 +284,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                       startContent={<Sparkles className="w-3.5 h-3.5" />}
                       onPress={() => inspectWhy(p)}
                     >
-                      Proof &amp; Alibi Studio
+                      Inspect Proof
                     </Button>
 
                     {onSelectPossibilityForGraph && (
@@ -296,7 +296,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                         endContent={<ChevronRight className="w-3.5 h-3.5" />}
                         onPress={() => onSelectPossibilityForGraph(p)}
                       >
-                        Canvas
+                        View on Graph
                       </Button>
                     )}
                   </CardFooter>
@@ -410,7 +410,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                                     </span>
                                     {isChoke && (
                                       <Chip size="sm" color="warning" variant="flat" className="h-5 text-[9px] font-bold">
-                                        DOMINATOR CHOKE POINT
+                                        KEY BOTTLENECK
                                       </Chip>
                                     )}
                                   </div>
@@ -426,7 +426,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                                 className="h-6 text-[10px] text-slate-500 font-semibold"
                                 onPress={() => setSeveredNodeId(isSeveredThis ? null : n.id)}
                               >
-                                {isSeveredThis ? "Re-attach" : "Sever (Alibi)"}
+                                {isSeveredThis ? "Restore Link" : "Test Alibi (Cut)"}
                               </Button>
                             </div>
                           );

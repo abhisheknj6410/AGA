@@ -178,16 +178,6 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
             'color': isLight ? '#1e3a8a' : '#dbeafe'
           }
         },
-        // Distinct Alibi Node Accent
-        {
-          selector: 'node[isAlibi = "true"]',
-          style: {
-            'border-color': '#059669',
-            'border-width': 3,
-            'background-color': isLight ? '#ecfdf5' : '#064e3b',
-            'color': isLight ? '#065f46' : '#a7f3d0'
-          }
-        },
         // Edge Styles - Directional Sleek Curves
         {
           selector: 'edge',
@@ -441,19 +431,14 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
       const elements: cytoscape.ElementDefinition[] = [];
 
       nodes.forEach(n => {
-        const isAlibi = n.label.toLowerCase().includes('alibi') ||
-                        n.id.toLowerCase().includes('alibi') ||
-                        Boolean(n.properties?.alibi) ||
-                        Boolean(n.properties?.verifiedBy);
         elements.push({
           group: 'nodes',
           data: {
             id: n.id,
-            label: isAlibi && !n.label.includes('ALIBI') ? `🛡️ [ALIBI] ${n.label}` : n.label,
+            label: n.label,
             category: n.category,
             type: n.type,
-            time: n.time,
-            isAlibi: isAlibi ? 'true' : 'false'
+            time: n.time
           }
         });
       });
@@ -803,30 +788,6 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
     };
   };
 
-  const handleFindAlibi = () => {
-    const alibiNodes = nodes.filter(n =>
-      n.label.toLowerCase().includes('alibi') ||
-      n.id.toLowerCase().includes('alibi') ||
-      Boolean(n.properties?.alibi) ||
-      Boolean(n.properties?.verifiedBy)
-    );
-    if (alibiNodes.length === 0) {
-      alert("No alibi recorded in this active case.\n\nPlease select 'The Stolen CEO Laptop' (Bob's Alibi) or 'Operation Grand Meridian' (Diner Alibi) from the top-left case dropdown.");
-      return;
-    }
-    const target = alibiNodes[0];
-    onSelectElement({ type: 'node', id: target.id });
-    if (cyRef.current) {
-      const cyEle = cyRef.current.$id(target.id);
-      if (cyEle.length > 0) {
-        cyRef.current.animate({
-          center: { eles: cyEle },
-          zoom: 1.25
-        }, { duration: 400 });
-      }
-    }
-  };
-
   return (
     <div className="relative w-full h-full overflow-hidden bg-slate-50 dark:bg-zinc-950">
       {/* Canvas viewport */}
@@ -964,51 +925,12 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
         >
           Bottlenecks
         </Button>
-
-        <Button
-          size="sm"
-          variant={forensicMode === 'MIN_CUT' ? 'solid' : 'light'}
-          color={forensicMode === 'MIN_CUT' ? 'warning' : 'default'}
-          radius="full"
-          className="text-xs font-semibold h-7 px-3"
-          isLoading={isModeLoading && loadingMode === 'MIN_CUT'}
-          startContent={<Scissors className="w-3.5 h-3.5" />}
-          onPress={() => handleSelectMode('MIN_CUT')}
-        >
-          Perimeter Barriers
-        </Button>
-
-        <div className="w-[1px] h-4 bg-slate-200 dark:bg-zinc-800 mx-0.5" />
-
-        <Button
-          size="sm"
-          variant="flat"
-          color="success"
-          radius="full"
-          className="text-xs font-semibold h-7 px-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60"
-          startContent={<ShieldAlert className="w-3.5 h-3.5 text-emerald-600" />}
-          onPress={handleFindAlibi}
-          title="Zoom directly to the suspect alibi in this case"
-        >
-          🛡️ Find Alibi
-        </Button>
       </div>
 
       {/* Floating Mini Inspector Slide-over (Top Right) */}
       {(selectedNodeData || selectedEdgeData) && (
         <Card className="absolute top-4 right-4 z-30 w-80 shadow-xl border border-slate-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md animate-in fade-in slide-in-from-right-4">
           <CardBody className="p-4 space-y-3">
-            {selectedNodeData && (selectedNodeData.label?.toLowerCase().includes('alibi') || selectedNodeData.id?.toLowerCase().includes('alibi') || selectedNodeData.properties?.verifiedBy) && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                  <ShieldAlert className="w-4 h-4 text-emerald-600" />
-                  <span>SUSPECT ALIBI RECORD</span>
-                </div>
-                <p className="text-[11px] text-emerald-800 dark:text-emerald-200 leading-snug">
-                  {selectedNodeData.properties?.verifiedBy ? `Verified by ${selectedNodeData.properties.verifiedBy}. Isolates suspect from crime location.` : 'Claimed alibi timeline event recorded for case evaluation.'}
-                </p>
-              </div>
-            )}
             <div className="flex items-start justify-between">
               <div>
                 <Chip
@@ -1025,6 +947,11 @@ export const CytoscapeCanvas: React.FC<CytoscapeCanvasProps> = ({
                 <h4 className="font-bold text-sm text-slate-900 dark:text-zinc-100">
                   {selectedNodeData?.label || selectedEdgeData?.type}
                 </h4>
+                {selectedNodeData?.label?.toLowerCase().includes('alibi') && (
+                  <div className="mt-1.5 p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-850 text-emerald-800 dark:text-emerald-300 font-semibold text-[11px] flex items-center gap-1.5">
+                    <span>🛡️ Verified Alibi (Excludes Suspect)</span>
+                  </div>
+                )}
               </div>
               <Button
                 isIconOnly

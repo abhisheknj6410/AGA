@@ -392,10 +392,10 @@ export const CaseIngestionView: React.FC<CaseIngestionViewProps> = ({
                 <Terminal className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <div>
                   <span className="font-bold text-sm text-slate-800 dark:text-zinc-200 block">
-                    High-Throughput Structured Telemetry Ingestion
+                    Fast Spreadsheet &amp; CSV Importer
                   </span>
                   <span className="text-xs text-slate-500">
-                    Direct validation and atomic insert into graph schema without LLM inference (supports PCAP, EVTX, syslog).
+                    Directly imports tables of facts and links without AI processing.
                   </span>
                 </div>
               </div>
