@@ -85,7 +85,8 @@ export default function Home() {
         const caseList = await fetchCases();
         setCases(caseList);
         if (caseList.length > 0) {
-          setCurrentCase(caseList[0]);
+          const preferredCase = caseList.find(c => c.id === 'case-simple-laptop-theft') || caseList[0];
+          setCurrentCase(preferredCase);
         }
       } catch (err) {
         console.warn("Failed to fetch initial cases", err);
