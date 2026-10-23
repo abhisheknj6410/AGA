@@ -1,8 +1,12 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.env');
+dotenv.config({ path: envPath, override: true });
+
 import { createApp } from './api/server.js';
 import { seedDatabase } from './infrastructure/seed.js';
-
-dotenv.config();
 
 const port = process.env.PORT || 4000;
 const app = createApp();

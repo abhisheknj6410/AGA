@@ -118,4 +118,15 @@ export interface InvestigationPlan {
     basisMap: Record<string, string>;
   };
   nextImmediateAction: InvestigationAction | null;
+  criticalChokepoint?: {
+    nodeId: string;
+    label: string;
+    impactExplanation?: string;
+  };
+  containmentCut?: {
+    edgeId?: string;
+    label: string;
+    capacity: number;
+    description?: string;
+  };
 }

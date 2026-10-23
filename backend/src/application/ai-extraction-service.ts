@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ImportPayload } from './import-service.js';
+import { getActiveLlmConfig } from '../infrastructure/llm-config.js';
 
 export interface ExtractionInput {
   rawText: string;
@@ -574,6 +575,144 @@ export class AiExtractionService {
           metadata: { aiExtracted: true, rawSnippet: sentence }
         });
       }
+
+      // 6. Pattern: General Investigative Narrative Fallback (Persons, Locations, Vehicles, Telemetry & Actions)
+      const people = Array.from(sentence.matchAll(/\b([A-Z][a-z]+ [A-Z][a-z]+)\b/g))
+        .map(m => m[1])
+        .filter(p => !['Incident Report', 'Police Department', 'Metropolitan Police', 'Case Ref', 'Pier Wharf', 'Starlight Diner', 'Ford Transit', 'Dodge Charger', 'West Wharf'].includes(p));
+
+      const locMatch = sentence.match(/\b(?:at|in|near|to|from)\s+(?:the\s+)?([A-Z0-9][A-Za-z0-9_\s-]*?(?:Wharf|Diner|Gate|Depository|Corridor|Vault|Room(?:\s+\d+)?|Floor|Boulevard|Street|Avenue|Plaza|Sector(?:\s+\d+)?|Building|Dock|Office|Depot))\b/i);
+      const locName = locMatch ? locMatch[1].trim() : null;
+
+      const vehicleMatch = sentence.match(/\b((?:[a-z0-9-]+\s+){0,3}(?:van|sedan|truck|courier|car|vehicle))\b/i);
+      const vehicleName = vehicleMatch ? vehicleMatch[1].replace(/^(?:into|by|in|from|a|an|the)\s+/i, '').trim() : null;
+
+      const devMatch = sentence.match(/\b((?:[A-Za-z0-9-]+\s+){0,2}(?:cell tower|mobile device|camera|CCTV|terminal|server|reader))\b/i);
+      const deviceName = devMatch ? devMatch[1].trim() : null;
+
+      const hasAction = /\b(executed|arrived|disabled|unlocked|entered|discharged|breached|seized|loaded|accelerated|captured|switched|moved|claims|logged|connecting to|contradicting|swiped|took|stole|drove)\b/i.test(sentence);
+
+      if (people.length > 0 || locName || vehicleName || deviceName || hasAction) {
+        const eventId = `ev-gen-${uuidv4().slice(0, 8)}`;
+        const cleanSummary = sentence.length > 65 ? sentence.slice(0, 62) + '...' : sentence;
+
+        const personIds: string[] = [];
+        for (const p of people) {
+          const pid = toId('ent-person', p);
+          addNode({
+            id: pid,
+            category: 'ENTITY',
+            type: 'PERSON',
+            label: p,
+            properties: { role: 'SUBJECT' },
+            metadata: { aiExtracted: true, rawSnippet: sentence }
+          });
+          personIds.push(pid);
+        }
+
+        let locId: string | null = null;
+        if (locName) {
+          locId = toId('ent-loc', locName);
+          addNode({
+            id: locId,
+            category: 'ENTITY',
+            type: 'LOCATION',
+            label: locName,
+            properties: {},
+            metadata: { aiExtracted: true, rawSnippet: sentence }
+          });
+        }
+
+        let vehId: string | null = null;
+        if (vehicleName) {
+          vehId = toId('ent-veh', vehicleName);
+          addNode({
+            id: vehId,
+            category: 'ENTITY',
+            type: 'VEHICLE',
+            label: vehicleName,
+            properties: {},
+            metadata: { aiExtracted: true, rawSnippet: sentence }
+          });
+        }
+
+        let devId: string | null = null;
+        if (deviceName) {
+          devId = toId('ent-dev', deviceName);
+          addNode({
+            id: devId,
+            category: 'ENTITY',
+            type: 'DEVICE',
+            label: deviceName,
+            properties: {},
+            metadata: { aiExtracted: true, rawSnippet: sentence }
+          });
+        }
+
+        events.push({
+          id: eventId,
+          category: 'EVENT',
+          type: locName && !personIds.length ? 'LOCATION_CHANGE' : 'DATA_ACCESS',
+          label: cleanSummary,
+          time: { start: timestamp, precision: 'SECOND' },
+          properties: { narrativeSnippet: sentence },
+          metadata: { aiExtracted: true, rawSnippet: sentence }
+        });
+
+        // Connect person(s) -> PERFORMED -> event
+        for (const pid of personIds) {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: pid,
+            target: eventId,
+            type: 'PERFORMED',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { extractionConfidence: 0.90 }
+          });
+        }
+
+        // Connect event -> TARGETED/LOCATED_AT/CONNECTED_TO
+        if (locId) {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: eventId,
+            target: locId,
+            type: 'TARGETED',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { extractionConfidence: 0.88 }
+          });
+        }
+
+        if (vehId) {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: eventId,
+            target: vehId,
+            type: 'CONNECTED_TO',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { extractionConfidence: 0.85 }
+          });
+        }
+
+        if (devId) {
+          edges.push({
+            id: `edge-${uuidv4().slice(0, 8)}`,
+            source: eventId,
+            target: devId,
+            type: 'CONNECTED_TO',
+            status: 'OBSERVED',
+            cost: 1.0,
+            evidenceRefs: [evidenceId],
+            properties: { extractionConfidence: 0.85 }
+          });
+        }
+      }
     }
 
     return {
@@ -585,9 +724,7 @@ export class AiExtractionService {
   }
 
   async extractWithLLM(input: ExtractionInput): Promise<ImportPayload> {
-    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY;
-    const baseUrl = process.env.LLM_BASE_URL || 'https://api.deepseek.com';
-    const model = process.env.LLM_MODEL || 'deepseek-chat';
+    const { apiKey, baseUrl, model } = getActiveLlmConfig();
 
     if (!apiKey) {
       return this.extractStructuredCandidates(input);
@@ -630,27 +767,43 @@ Investigative Text:
 ${input.rawText}
 """`;
 
-      const response = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: 'You are an advanced forensic intelligence extraction model. Respond with complete, valid JSON only.' },
-            { role: 'user', content: prompt }
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.1,
-          max_tokens: 4096
-        }),
-        signal: AbortSignal.timeout(30000)
-      });
+      let response: Response | null = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          response = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: 'You are an advanced forensic intelligence extraction model. Respond with complete, valid JSON only.' },
+                { role: 'user', content: prompt }
+              ],
+              response_format: { type: 'json_object' },
+              temperature: 0.1,
+              max_tokens: 4096
+            }),
+            signal: AbortSignal.timeout(18000)
+          });
 
-      if (!response.ok) {
-        console.warn(`[AI Extraction] LLM returned ${response.status}, falling back to deterministic extraction.`);
+          if (response.ok) break;
+          if (response.status === 503 || response.status === 429) {
+            console.warn(`[AI Extraction] LLM returned ${response.status}, retrying in 1s (attempt ${attempt + 1})...`);
+            await new Promise(r => setTimeout(r, 1000));
+            continue;
+          }
+          break;
+        } catch (fetchErr) {
+          if (attempt === 1) throw fetchErr;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+
+      if (!response || !response.ok) {
+        console.warn(`[AI Extraction] LLM call failed (${response?.status}), falling back to deterministic extraction.`);
         return this.extractStructuredCandidates(input);
       }
 

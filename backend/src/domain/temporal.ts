@@ -14,6 +14,54 @@ export function isValidISODateString(dateStr: string): boolean {
   return isoRegex.test(dateStr);
 }
 
+export const DEFAULT_CLOCK_JITTER_SECONDS = 30;
+
+export interface ClockDriftEvaluation {
+  isConsistent: boolean;
+  isWithinDriftTolerance: boolean;
+  driftMs: number;
+  message?: string;
+}
+
+/**
+ * Evaluates whether tNext can causally follow tPrev given a clock jitter tolerance in seconds.
+ * In live investigations, sensors (CCTV, badge readers, syslog) often have small clock skews.
+ */
+export function evaluateCausalTemporalOrder(
+  prevTimestampIso: string,
+  nextTimestampIso: string,
+  jitterSeconds: number = DEFAULT_CLOCK_JITTER_SECONDS
+): ClockDriftEvaluation {
+  const tPrev = new Date(prevTimestampIso).getTime();
+  const tNext = new Date(nextTimestampIso).getTime();
+  const deltaMs = tNext - tPrev;
+
+  if (deltaMs >= 0) {
+    return {
+      isConsistent: true,
+      isWithinDriftTolerance: false,
+      driftMs: 0
+    };
+  }
+
+  const jitterMs = jitterSeconds * 1000;
+  if (Math.abs(deltaMs) <= jitterMs) {
+    return {
+      isConsistent: true,
+      isWithinDriftTolerance: true,
+      driftMs: Math.abs(deltaMs),
+      message: `Clock drift anomaly: Target precedes source by ${(Math.abs(deltaMs) / 1000).toFixed(1)}s (within ${jitterSeconds}s tolerance).`
+    };
+  }
+
+  return {
+    isConsistent: false,
+    isWithinDriftTolerance: false,
+    driftMs: Math.abs(deltaMs),
+    message: `Temporal Inversion: Target occurs ${(Math.abs(deltaMs) / 1000).toFixed(1)}s before source (exceeds ${jitterSeconds}s jitter tolerance).`
+  };
+}
+
 export function validateTemporalInfo(time?: unknown): { valid: boolean; error?: string } {
   if (time === undefined || time === null) {
     return { valid: true };

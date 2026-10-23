@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { GraphService } from '../../application/graph-service.js';
 import { InvestigationAgentService } from '../../application/investigation-agent-service.js';
 import { CaseService } from '../../application/case-service.js';
+import { getActiveLlmConfig } from '../../infrastructure/llm-config.js';
 
 export function createAgentRouter(
   graphService: GraphService,
@@ -70,15 +71,11 @@ export function createAgentRouter(
         return `- "${src}" -[${ed.type}]-> "${tgt}"`;
       }).join('\n') || 'None recorded.';
 
-      const isDeepSeekUrl = !process.env.LLM_BASE_URL || process.env.LLM_BASE_URL.includes('deepseek');
-      const apiKey = isDeepSeekUrl
-        ? (process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY)
-        : (process.env.OPENCODE_ZEN_API_KEY || process.env.DEEPSEEK_API_KEY);
-      const baseUrl = process.env.LLM_BASE_URL || 'https://api.deepseek.com';
-      const model = process.env.LLM_MODEL || 'deepseek-chat';
+      const { apiKey, baseUrl, model } = getActiveLlmConfig();
 
       if (apiKey) {
         try {
+          console.log('[Investigator Chat] Calling LLM model:', model, 'apiKey prefix:', apiKey.slice(0, 8), 'at:', baseUrl);
           const systemPrompt = `You are Senior Lead Forensic Investigator "Eve", a world-class investigative intelligence copilot and criminal profiling partner.
 You are communicating directly with a detective who is actively investigating this case.
 
@@ -147,6 +144,9 @@ Communication & Investigation Rules:
                 model
               });
             }
+          } else {
+            const errBody = await response.text();
+            console.warn(`[Investigator Chat] LLM returned status ${response.status}:`, errBody);
           }
         } catch (llmErr) {
           console.warn('[Investigator Chat] LLM call failed, falling back to rule-based engine:', llmErr);

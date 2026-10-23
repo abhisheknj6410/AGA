@@ -144,23 +144,23 @@ export const ResolutionLabView: React.FC<Props> = ({ currentCase }) => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Chip size="sm" variant="flat" color="primary" className="font-mono font-bold uppercase tracking-wider">
-              Phase 4 · Deterministic Layer
+              Information Theory
             </Chip>
             <span className="text-xs text-foreground-500 font-mono">
-              H(P) = {resolutionMatrix.structuralEntropy} bits
+              Uncertainty = {resolutionMatrix.structuralEntropy} bits
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Graph Resolution Lab</h1>
+          <h1 className="text-2xl font-bold text-foreground">Case Clarity &amp; Next Steps</h1>
           <p className="text-sm text-foreground-500 mt-0.5">
-            Observable graph distinctions that most effectively partition the surviving possibility space.
+            Key evidence checks that eliminate remaining suspect theories fastest.
           </p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="flat" startContent={<Cpu className="w-3.5 h-3.5" />} onPress={onAuditOpen}>
-            Algorithm Audit ({audit.length})
+            Algorithm Log ({audit.length})
           </Button>
           <Button size="sm" color="primary" startContent={<RefreshCw className="w-3.5 h-3.5" />} onPress={loadData}>
-            Re-evaluate
+            Recalculate
           </Button>
         </div>
       </div>
@@ -184,17 +184,17 @@ export const ResolutionLabView: React.FC<Props> = ({ currentCase }) => {
                 <Microscope className="w-4 h-4" />
               </span>
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider">
-                Shannon Information Entropy Theory in Forensic Science
+                How We Measure Case Mystery (Shannon Entropy)
               </h3>
             </div>
             <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Every unresolved crime presents a finite set of competing plausible corridors. The system measures remaining ambiguity as Shannon Entropy <span className="font-mono font-bold text-teal-600 dark:text-teal-400">H(P) = -∑ p_i log₂(p_i)</span>. Each bit of entropy represents a necessary binary clarification. By targeting high-utility resolution tests, investigators eliminate ambiguous branches with minimal wasted field effort.
+              Every unresolved crime has competing theories. The system measures remaining doubt as Shannon Entropy <span className="font-mono font-bold text-teal-600 dark:text-teal-400">H(P)</span>. Each bit represents an unanswered question. By checking the highest-value evidence first, detectives solve cases with the fewest wasted hours.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Current Ambiguity</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Remaining Mystery</span>
               <span className="font-mono font-bold text-slate-800 dark:text-zinc-200 text-sm">
                 {resolutionMatrix.structuralEntropy} bits
               </span>

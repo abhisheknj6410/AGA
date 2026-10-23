@@ -16,6 +16,7 @@ import {
   Tab
 } from '@heroui/react';
 import { Case } from '../../types/graph';
+import { fetchCourtPacket } from '../../api/client';
 import {
   Network,
   Bot,
@@ -31,16 +32,19 @@ import {
   Layers,
   Activity,
   ChevronDown,
-  MessageSquare
+  MessageSquare,
+  FileBadge,
+  Settings
 } from 'lucide-react';
+import { SettingsModal } from '../settings/SettingsModal';
 
 interface NavbarProps {
   cases: Case[];
   currentCase: Case | null;
   onSelectCase: (c: Case) => void;
   onNewCase: () => void;
-  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION';
-  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION') => void;
+  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE';
+  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE') => void;
   onAddNode: (category: 'ENTITY' | 'EVENT' | 'EVIDENCE') => void;
   onAddEdge: () => void;
   possibilityCount: number;
@@ -65,6 +69,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   theme,
   onToggleTheme
 }) => {
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+
+  const handleExportCourtPacket = async () => {
+    if (!currentCase) return;
+    setIsExporting(true);
+    try {
+      const packet = await fetchCourtPacket(currentCase.id);
+      const blob = new Blob([JSON.stringify(packet, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `court_packet_${currentCase.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(`Export error: ${err.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <HeroNavbar
       maxWidth="full"
@@ -147,7 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Network className="w-3.5 h-3.5" />
-                <span>Graph Canvas</span>
+                <span>Crime Graph</span>
                 <span className="text-[10px] opacity-75 font-mono">({nodeCount})</span>
               </div>
             }
@@ -157,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-teal-500" />
-                <span>Investigator Copilot</span>
+                <span>Detective Chat</span>
               </div>
             }
           />
@@ -166,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Bot className="w-3.5 h-3.5" />
-                <span>Data Ingestion</span>
+                <span>Add Evidence</span>
               </div>
             }
           />
@@ -175,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <GitBranch className="w-3.5 h-3.5" />
-                <span>Hypotheses</span>
+                <span>Theories</span>
                 {possibilityCount > 0 && (
                   <Chip size="sm" variant="flat" color="warning" className="h-4 px-1 text-[9px]">
                     {possibilityCount}
@@ -189,25 +217,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={
               <div className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" />
-                <span>Strategic Planning</span>
-              </div>
-            }
-          />
-          <Tab
-            key="EVALUATION"
-            title={
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Evaluation Lab</span>
-              </div>
-            }
-          />
-          <Tab
-            key="RESOLUTION"
-            title={
-              <div className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>Resolution Lab</span>
+                <span>Next Steps</span>
               </div>
             }
           />
@@ -216,6 +226,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right: Quick Fact Addition & Controls */}
       <NavbarContent justify="end" className="gap-2">
+        <Button
+          size="sm"
+          variant="flat"
+          radius="lg"
+          color="secondary"
+          isLoading={isExporting}
+          className="font-semibold text-xs h-8 px-3 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200/60 dark:border-purple-850/60"
+          startContent={!isExporting && <FileBadge className="w-3.5 h-3.5" />}
+          onPress={handleExportCourtPacket}
+          title="Export Court-Admissible Packet (FRE 702 / SHA-256 Signed)"
+        >
+          Court Dossier
+        </Button>
+
         <Dropdown>
           <DropdownTrigger>
             <Button
@@ -236,31 +260,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               description="Person, Organization, Location, Asset"
               onPress={() => onAddNode('ENTITY')}
             >
-              Add Entity Node
+              Add Person / Place
             </DropdownItem>
             <DropdownItem
               key="event"
               startContent={<span className="w-2.5 h-2.5 rounded-full bg-amber-500" />}
-              description="Timestamped Action, Occurrence, Breach"
+              description="Timestamped Action, Swipe, Occurrence"
               onPress={() => onAddNode('EVENT')}
             >
-              Add Event Node
+              Add Event / Action
             </DropdownItem>
             <DropdownItem
               key="evidence"
               startContent={<span className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
-              description="Document, Forensic Log, Sensor, Audio"
+              description="CCTV, Forensic Log, Sensor, Audio"
               onPress={() => onAddNode('EVIDENCE')}
             >
-              Add Evidence Item
+              Add Evidence File / Log
             </DropdownItem>
             <DropdownItem
               key="edge"
               startContent={<Link2 className="w-3.5 h-3.5 text-slate-500" />}
-              description="Connect two nodes with verified relationship"
+              description="Connect two facts with a cause or link"
               onPress={onAddEdge}
             >
-              Connect Relationship
+              Connect Facts
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
@@ -276,7 +300,25 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </Button>
+
+        {/* Settings Button */}
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          radius="full"
+          className="w-8 h-8 text-slate-600 dark:text-zinc-400 hover:text-slate-900"
+          onPress={() => setIsSettingsOpen(true)}
+          title="API Keys & Model Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
       </NavbarContent>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </HeroNavbar>
   );
 };

@@ -54,10 +54,10 @@ export const ForensicTelemetryBar: React.FC<ForensicTelemetryBarProps> = ({
   if (mode === 'NORMAL' || !currentStep) return null;
 
   const modeBadge = {
-    CAUSAL_PATH: { label: 'Causal Path (Dijkstra)', color: 'success' as const, icon: Zap },
-    DOMINATORS: { label: 'Choke Points (Lengauer-Tarjan)', color: 'danger' as const, icon: ShieldAlert },
-    MIN_CUT: { label: 'Containment Cut (Edmonds-Karp)', color: 'warning' as const, icon: Scissors },
-    NORMAL: { label: 'Normal', color: 'default' as const, icon: Sparkles }
+    CAUSAL_PATH: { label: 'Most Likely Route (Dijkstra)', color: 'success' as const, icon: Zap },
+    DOMINATORS: { label: 'Key Bottlenecks (Dominator Tree)', color: 'danger' as const, icon: ShieldAlert },
+    MIN_CUT: { label: 'Perimeter Barriers (Min-Cut)', color: 'warning' as const, icon: Scissors },
+    NORMAL: { label: 'Overview', color: 'default' as const, icon: Sparkles }
   }[mode];
 
   const BadgeIcon = modeBadge.icon;

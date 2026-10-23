@@ -152,11 +152,11 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                 <GitBranch className="w-5 h-5" />
               </span>
               <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
-                Causal Hypotheses & Possibility Space
+                Crime Theories &amp; Possibilities
               </h2>
             </div>
             <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
-              Deterministic crime corridors discovered via Yen&apos;s K-Shortest Loopless Paths, chronologically verified by Kahn&apos;s Temporal Algorithm, and evaluated for single-point-of-failure dominators.
+              Alternative ways the crime could have occurred, verified in chronological order and evaluated for key bottlenecks.
             </p>
           </div>
 
@@ -168,7 +168,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
             isLoading={isGenerating}
             onPress={handleGenerate}
           >
-            Regenerate Hypotheses
+            Generate Theories
           </Button>
         </div>
 
@@ -211,11 +211,11 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                           {p.status}
                         </Chip>
                         <span className="text-[11px] font-mono text-slate-400">
-                          Corridor #{idx + 1}
+                          Theory #{idx + 1}
                         </span>
                       </div>
                       <h4 className="font-bold text-sm text-slate-800 dark:text-zinc-100 line-clamp-1">
-                        {p.name || `Hypothesis Corridor ${idx + 1}`}
+                        {p.name || `Hypothesis Theory ${idx + 1}`}
                       </h4>
                     </div>
                   </CardHeader>
@@ -228,14 +228,14 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                     {/* Algorithmic Certification Pills */}
                     <div className="flex flex-wrap items-center gap-1.5 py-1">
                       <span className="text-[10px] font-mono bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800/40">
-                        Yen&apos;s Rank #{idx + 1}
+                        Rank #{idx + 1}
                       </span>
                       <span className="text-[10px] font-mono bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
-                        Kahn Monotonic
+                        Timeline Verified
                       </span>
                       {chokeCandidate && (
                         <span className="text-[10px] font-mono bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/40">
-                          Choke: {chokeCandidate.label.slice(0, 12)}
+                          Bottleneck: {chokeCandidate.label.slice(0, 16)}
                         </span>
                       )}
                     </div>
@@ -244,7 +244,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                     {nodesList.length > 0 && (
                       <div className="pt-1.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                          Causal Progression Pipeline ({nodesList.length} Nodes)
+                          Sequence of Events ({nodesList.length} Steps)
                         </span>
                         <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
                           {nodesList.slice(0, 3).map((n, i) => (
@@ -284,7 +284,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                       startContent={<Sparkles className="w-3.5 h-3.5" />}
                       onPress={() => inspectWhy(p)}
                     >
-                      Proof &amp; Alibi Studio
+                      Inspect Proof
                     </Button>
 
                     {onSelectPossibilityForGraph && (
@@ -296,7 +296,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                         endContent={<ChevronRight className="w-3.5 h-3.5" />}
                         onPress={() => onSelectPossibilityForGraph(p)}
                       >
-                        Canvas
+                        View on Graph
                       </Button>
                     )}
                   </CardFooter>
@@ -410,7 +410,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                                     </span>
                                     {isChoke && (
                                       <Chip size="sm" color="warning" variant="flat" className="h-5 text-[9px] font-bold">
-                                        DOMINATOR CHOKE POINT
+                                        KEY BOTTLENECK
                                       </Chip>
                                     )}
                                   </div>
@@ -426,7 +426,7 @@ export const PossibilitiesView: React.FC<PossibilitiesViewProps> = ({
                                 className="h-6 text-[10px] text-slate-500 font-semibold"
                                 onPress={() => setSeveredNodeId(isSeveredThis ? null : n.id)}
                               >
-                                {isSeveredThis ? "Re-attach" : "Sever (Alibi)"}
+                                {isSeveredThis ? "Restore Link" : "Test Alibi (Cut)"}
                               </Button>
                             </div>
                           );

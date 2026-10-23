@@ -168,5 +168,33 @@ export function seedSimpleCase(db: DatabaseSync): string {
     evidenceRefs: ['ev-cctv-door-404', 'ev-badge-logs']
   });
 
+  // Evidence -> Event Provenance Corroboration Edges
+  graphService.addEdge(caseId, {
+    id: 'edge-cctv-supports-bob-alibi',
+    source: 'ev-cctv-door-404',
+    target: 'event-bob-hallway',
+    type: 'SUPPORTS',
+    cost: 0.5,
+    evidenceRefs: ['ev-cctv-door-404']
+  });
+
+  graphService.addEdge(caseId, {
+    id: 'edge-badge-supports-alice-entry',
+    source: 'ev-badge-logs',
+    target: 'event-alice-unlocks',
+    type: 'SUPPORTS',
+    cost: 0.5,
+    evidenceRefs: ['ev-badge-logs']
+  });
+
+  graphService.addEdge(caseId, {
+    id: 'edge-cctv-supports-alice-theft',
+    source: 'ev-cctv-door-404',
+    target: 'event-alice-takes-laptop',
+    type: 'SUPPORTS',
+    cost: 0.5,
+    evidenceRefs: ['ev-cctv-door-404']
+  });
+
   return caseId;
 }

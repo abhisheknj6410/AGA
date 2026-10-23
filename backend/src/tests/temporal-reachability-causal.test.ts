@@ -105,3 +105,36 @@ test('CaseReasoningPipeline: Causal elimination alters cross-branch comparison',
   const whyEliminated = report.whyInspectorCatalog.find(c => c.queryType === 'POSSIBILITY_ELIMINATED' && c.algorithmicBasis === 'TEMPORAL_REACHABILITY');
   assert.ok(whyEliminated, 'Catalog must explain why the branch was mathematically eliminated');
 });
+
+test('TemporalReachabilityAlgorithm: Tolerates sensor clock drift within jitter window and flags anomaly', () => {
+  const nodes: GraphNode[] = [
+    { id: 'source', caseId: '1', category: 'ENTITY', type: 'PERSON', label: 'Suspect', properties: {}, metadata: {}, createdAt: '', updatedAt: '' },
+    // Badge swipe at 12:00:00Z
+    { id: 'ev1', caseId: '1', category: 'EVENT', type: 'ACTION', label: 'Badge Swipe', properties: {}, metadata: {}, createdAt: '', updatedAt: '', time: { start: '2025-01-01T12:00:00Z', end: '2025-01-01T12:00:00Z', precision: 'SECOND' } },
+    { id: 'loc1', caseId: '1', category: 'ENTITY', type: 'LOCATION', label: 'Server Room', properties: {}, metadata: {}, createdAt: '', updatedAt: '' },
+    // CCTV motion 15 seconds earlier due to unsynchronized NTP clock: 11:59:45Z (15s skew)
+    { id: 'ev2', caseId: '1', category: 'EVENT', type: 'ACTION', label: 'CCTV Camera Capture', properties: {}, metadata: {}, createdAt: '', updatedAt: '', time: { start: '2025-01-01T11:59:45Z', end: '2025-01-01T11:59:45Z', precision: 'SECOND' } },
+    { id: 'target', caseId: '1', category: 'ENTITY', type: 'DEVICE', label: 'Compromised Console', properties: {}, metadata: {}, createdAt: '', updatedAt: '' }
+  ];
+
+  const edges: GraphEdge[] = [
+    { id: 'e1', caseId: '1', source: 'source', target: 'ev1', type: 'PARTICIPATED_IN', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-badge'], properties: {}, createdAt: '', updatedAt: '' },
+    { id: 'e2', caseId: '1', source: 'ev1', target: 'loc1', type: 'LOCATED_AT', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-badge'], properties: {}, createdAt: '', updatedAt: '' },
+    { id: 'e3', caseId: '1', source: 'loc1', target: 'ev2', type: 'CONNECTED_TO', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-cctv'], properties: {}, createdAt: '', updatedAt: '' },
+    { id: 'e4', caseId: '1', source: 'ev2', target: 'target', type: 'TARGETED', status: 'OBSERVED', cost: 1, confidence: 1, evidenceRefs: ['ev-cctv'], properties: {}, createdAt: '', updatedAt: '' }
+  ];
+
+  // 1. With default 30s jitter tolerance: path MUST be reachable, but flag a drift anomaly
+  const resultWithTolerance = TemporalReachabilityAlgorithm.evaluateReachability(nodes, edges, 'source', 'target', { jitterToleranceSeconds: 30 });
+  assert.equal(resultWithTolerance.reachable, true, 'Path must be preserved because 15s skew is within 30s jitter tolerance');
+  assert.equal(resultWithTolerance.violations.length, 0, 'No fatal temporal violations should be recorded');
+  assert.equal(resultWithTolerance.driftAnomalies.length, 1, 'Must record the 15s clock drift anomaly');
+  assert.equal(resultWithTolerance.driftAnomalies[0].driftMs, 15000);
+  assert.ok(resultWithTolerance.driftAnomalies[0].description.includes('within 30s tolerance'));
+
+  // 2. With 0s strict jitter tolerance: path MUST be eliminated as retrograde
+  const resultStrict = TemporalReachabilityAlgorithm.evaluateReachability(nodes, edges, 'source', 'target', { jitterToleranceSeconds: 0 });
+  assert.equal(resultStrict.reachable, false, 'Path must be eliminated when jitter tolerance is 0');
+  assert.equal(resultStrict.temporalFailure, true);
+  assert.equal(resultStrict.violations.length, 1);
+});

@@ -16,6 +16,58 @@ import {
 
 const API_BASE = '/api';
 
+export async function fetchSettings(): Promise<{
+  provider: 'gemini' | 'nvidia' | 'openai' | 'deepseek' | 'custom';
+  baseUrl: string;
+  model: string;
+  apiKeyMasked: string;
+  hasApiKey: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/settings`);
+  if (!res.ok) throw new Error('Failed to fetch settings');
+  return res.json();
+}
+
+export async function updateSettings(config: {
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+  provider?: string;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update settings');
+  }
+  return res.json();
+}
+
+export async function testSettingsConnection(config: {
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+}): Promise<{ success: boolean; message: string; reply?: string }> {
+  const res = await fetch(`${API_BASE}/settings/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  return res.json();
+}
+
+export async function fetchCourtPacket(caseId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/cases/${caseId}/export/court-packet`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to generate court admissible packet');
+  }
+  return res.json();
+}
+
 export async function fetchCases(): Promise<Case[]> {
   const res = await fetch(`${API_BASE}/cases`);
   if (!res.ok) throw new Error('Failed to fetch cases.');

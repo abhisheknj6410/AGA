@@ -40,7 +40,7 @@ export default function Home() {
   const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE'>('GRAPH');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
 
@@ -242,6 +242,7 @@ export default function Home() {
           <div className="relative w-full h-full">
             <CytoscapeCanvas
               caseId={currentCase?.id}
+              currentCase={currentCase}
               nodes={graph?.nodes || []}
               edges={graph?.edges || []}
               selectedElement={selectedElement}
@@ -252,6 +253,7 @@ export default function Home() {
               theme={theme}
               highlightNodeIds={highlightNodeIds}
               simulationState={simulationState}
+              onNavigateToChat={() => setActiveTab('CHAT')}
             />
 
             {/* Bottom Right Floating Timeline Button */}
@@ -330,14 +332,6 @@ export default function Home() {
               setActiveTab('GRAPH');
             }}
           />
-        )}
-
-        {activeTab === 'EVALUATION' && (
-          <EvaluationLabView />
-        )}
-
-        {activeTab === 'RESOLUTION' && currentCase && (
-          <ResolutionLabView currentCase={currentCase} />
         )}
       </main>
 

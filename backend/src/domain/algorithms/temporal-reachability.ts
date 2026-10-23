@@ -12,6 +12,18 @@ export interface TemporalViolation {
   description: string;
 }
 
+export interface TemporalDriftAnomaly {
+  previousEventId: string;
+  previousEventLabel: string;
+  previousTimestamp: string;
+  nextEventId: string;
+  nextEventLabel: string;
+  nextTimestamp: string;
+  driftMs: number;
+  edgeId: string;
+  description: string;
+}
+
 export interface TemporalPathResult {
   nodeIds: string[];
   edgeIds: string[];
@@ -20,6 +32,7 @@ export interface TemporalPathResult {
   startTimestamp?: string;
   endTimestamp?: string;
   durationMs?: number;
+  driftAnomalies?: TemporalDriftAnomaly[];
 }
 
 export interface TemporalReachabilityResult {
@@ -31,6 +44,7 @@ export interface TemporalReachabilityResult {
   validPathsCount: number;
   shortestTemporalPath: TemporalPathResult | null;
   violations: TemporalViolation[];
+  driftAnomalies: TemporalDriftAnomaly[];
   evidenceRefs: string[];
   topologicalPathCount: number;
   temporalFailure: boolean;
@@ -52,10 +66,12 @@ export class TemporalReachabilityAlgorithm {
     edges: GraphEdge[],
     sourceId: string,
     targetId: string,
-    options: { maxPaths?: number; maxDepth?: number } = {}
+    options: { maxPaths?: number; maxDepth?: number; jitterToleranceSeconds?: number } = {}
   ): TemporalReachabilityResult {
     const maxPaths = options.maxPaths ?? 20;
     const maxDepth = options.maxDepth ?? 15;
+    const jitterToleranceSeconds = options.jitterToleranceSeconds ?? 30;
+    const jitterMs = jitterToleranceSeconds * 1000;
 
     const nodeMap = new Map<string, GraphNode>(nodes.map(n => [n.id, n]));
     const edgeMap = new Map<string, GraphEdge>(edges.map(e => [e.id, e]));
@@ -76,6 +92,7 @@ export class TemporalReachabilityAlgorithm {
         validPathsCount: 0,
         shortestTemporalPath: null,
         violations: [],
+        driftAnomalies: [],
         evidenceRefs: [],
         topologicalPathCount: 0,
         temporalFailure: false,
@@ -95,9 +112,11 @@ export class TemporalReachabilityAlgorithm {
           nodeIds: [sourceId],
           edgeIds: [],
           nodes: [sourceNode],
-          edges: []
+          edges: [],
+          driftAnomalies: []
         },
         violations: [],
+        driftAnomalies: [],
         evidenceRefs: [],
         topologicalPathCount: 1,
         temporalFailure: false,
@@ -118,6 +137,7 @@ export class TemporalReachabilityAlgorithm {
 
     const validPaths: TemporalPathResult[] = [];
     const recordedViolations: TemporalViolation[] = [];
+    const allDriftAnomalies: TemporalDriftAnomaly[] = [];
     const evaluatedEvidenceRefs = new Set<string>();
     let topologicalPathsFound = 0;
 
@@ -127,6 +147,7 @@ export class TemporalReachabilityAlgorithm {
       lastEventNode: GraphNode | null;
       pathNodeIds: string[];
       pathEdgeIds: string[];
+      pathDriftAnomalies: TemporalDriftAnomaly[];
     }
 
     const initialTimestampMs = sourceNode.category === 'EVENT' && sourceNode.time?.start
@@ -139,7 +160,8 @@ export class TemporalReachabilityAlgorithm {
         lastTimestampMs: initialTimestampMs,
         lastEventNode: sourceNode.category === 'EVENT' ? sourceNode : null,
         pathNodeIds: [sourceId],
-        pathEdgeIds: []
+        pathEdgeIds: [],
+        pathDriftAnomalies: []
       }
     ];
 
@@ -169,7 +191,8 @@ export class TemporalReachabilityAlgorithm {
           edges: pEdges,
           startTimestamp,
           endTimestamp,
-          durationMs
+          durationMs,
+          driftAnomalies: state.pathDriftAnomalies
         });
         continue;
       }
@@ -194,29 +217,48 @@ export class TemporalReachabilityAlgorithm {
 
         let nextTimestampMs = state.lastTimestampMs;
         let nextEventNode = state.lastEventNode;
+        let nextPathDriftAnomalies = [...state.pathDriftAnomalies];
 
         if (nextNode.category === 'EVENT' && nextNode.time?.start) {
           const tNext = new Date(nextNode.time.start).getTime();
 
-          // Check for temporal inversion
+          // Check for temporal inversion / clock skew
           if (state.lastTimestampMs !== null && tNext < state.lastTimestampMs) {
-            // Topological path exists, but is temporally retrograde
-            topologicalPathsFound++;
-            const deltaMs = tNext - state.lastTimestampMs;
-            const violation: TemporalViolation = {
-              previousEventId: state.lastEventNode?.id || state.currentId,
-              previousEventLabel: state.lastEventNode?.label || state.currentId,
-              previousTimestamp: state.lastEventNode?.time?.start || new Date(state.lastTimestampMs).toISOString(),
-              nextEventId: nextNode.id,
-              nextEventLabel: nextNode.label,
-              nextTimestamp: nextNode.time.start,
-              deltaMs,
-              edgeId: edge.id,
-              description: `Temporal Inversion: Event '${state.lastEventNode?.label || state.currentId}' occurs at ${state.lastEventNode?.time?.start || state.lastTimestampMs}, but subsequent causal step '${nextNode.label}' occurs earlier at ${nextNode.time.start} (delta: ${deltaMs}ms).`
-            };
-            recordedViolations.push(violation);
-            // Prune this path branch: cause cannot travel backward in time
-            continue;
+            const deltaMs = state.lastTimestampMs - tNext;
+
+            if (deltaMs <= jitterMs) {
+              // Within clock drift tolerance (sensor clock skew)
+              const anomaly: TemporalDriftAnomaly = {
+                previousEventId: state.lastEventNode?.id || state.currentId,
+                previousEventLabel: state.lastEventNode?.label || state.currentId,
+                previousTimestamp: state.lastEventNode?.time?.start || new Date(state.lastTimestampMs).toISOString(),
+                nextEventId: nextNode.id,
+                nextEventLabel: nextNode.label,
+                nextTimestamp: nextNode.time.start,
+                driftMs: deltaMs,
+                edgeId: edge.id,
+                description: `Clock drift anomaly: Target precedes source by ${(deltaMs / 1000).toFixed(1)}s (within ${jitterToleranceSeconds}s tolerance).`
+              };
+              nextPathDriftAnomalies.push(anomaly);
+              allDriftAnomalies.push(anomaly);
+            } else {
+              // True retrograde inversion exceeding tolerance
+              topologicalPathsFound++;
+              const violation: TemporalViolation = {
+                previousEventId: state.lastEventNode?.id || state.currentId,
+                previousEventLabel: state.lastEventNode?.label || state.currentId,
+                previousTimestamp: state.lastEventNode?.time?.start || new Date(state.lastTimestampMs).toISOString(),
+                nextEventId: nextNode.id,
+                nextEventLabel: nextNode.label,
+                nextTimestamp: nextNode.time.start,
+                deltaMs: -deltaMs,
+                edgeId: edge.id,
+                description: `Temporal Inversion: Event '${state.lastEventNode?.label || state.currentId}' occurs at ${state.lastEventNode?.time?.start || state.lastTimestampMs}, but subsequent causal step '${nextNode.label}' occurs earlier at ${nextNode.time.start} (delta: -${deltaMs}ms, exceeds ${jitterToleranceSeconds}s tolerance).`
+              };
+              recordedViolations.push(violation);
+              // Prune this path branch: cause cannot travel backward in time beyond sensor drift
+              continue;
+            }
           }
 
           nextTimestampMs = tNext;
@@ -228,7 +270,8 @@ export class TemporalReachabilityAlgorithm {
           lastTimestampMs: nextTimestampMs,
           lastEventNode: nextEventNode,
           pathNodeIds: [...state.pathNodeIds, nextId],
-          pathEdgeIds: [...state.pathEdgeIds, edge.id]
+          pathEdgeIds: [...state.pathEdgeIds, edge.id],
+          pathDriftAnomalies: nextPathDriftAnomalies
         });
       }
     }
@@ -238,9 +281,12 @@ export class TemporalReachabilityAlgorithm {
 
     let summary = '';
     if (reachable) {
-      summary = `Target '${targetLabel}' is temporally reachable from '${sourceLabel}' via ${validPaths.length} time-consistent causal corridor(s).`;
+      const anomalyNote = allDriftAnomalies.length > 0
+        ? ` (${allDriftAnomalies.length} clock drift anomalies within ${jitterToleranceSeconds}s tolerance)`
+        : '';
+      summary = `Target '${targetLabel}' is temporally reachable from '${sourceLabel}' via ${validPaths.length} time-consistent causal corridor(s)${anomalyNote}.`;
     } else if (temporalFailure) {
-      summary = `Target '${targetLabel}' is temporally UNREACHABLE from '${sourceLabel}': All topological paths violate temporal sequence (cause occurs after effect).`;
+      summary = `Target '${targetLabel}' is temporally UNREACHABLE from '${sourceLabel}': All topological paths violate temporal sequence (cause occurs after effect beyond ${jitterToleranceSeconds}s tolerance).`;
     } else {
       summary = `Target '${targetLabel}' is UNREACHABLE from '${sourceLabel}': No directed structural path exists in the evidence graph.`;
     }
@@ -254,6 +300,7 @@ export class TemporalReachabilityAlgorithm {
       validPathsCount: validPaths.length,
       shortestTemporalPath: validPaths[0] || null,
       violations: recordedViolations,
+      driftAnomalies: allDriftAnomalies,
       evidenceRefs: Array.from(evaluatedEvidenceRefs),
       topologicalPathCount: topologicalPathsFound,
       temporalFailure,

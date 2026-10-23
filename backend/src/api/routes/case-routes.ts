@@ -1,8 +1,25 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { CaseService } from '../../application/case-service.js';
+import { CourtPacketService } from '../../application/court-packet-service.js';
 
-export function createCaseRouter(caseService: CaseService): Router {
+export function createCaseRouter(caseService: CaseService, courtPacketService?: CourtPacketService): Router {
   const router = Router();
+
+  // GET /cases/:id/export/court-packet - Export Cryptographic Court Admissible Packet
+  router.get('/:id/export/court-packet', (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!courtPacketService) {
+        res.status(501).json({ error: 'Court Packet Service not configured on server.' });
+        return;
+      }
+      const who = (req.query.who as string) || 'court_officer';
+      const packet = courtPacketService.generateCourtPacket(req.params.id, who);
+      res.setHeader('Content-Disposition', `attachment; filename="court_packet_${req.params.id}.json"`);
+      res.json(packet);
+    } catch (err) {
+      next(err);
+    }
+  });
 
   // POST /cases - Create Case
   router.post('/', (req: Request, res: Response, next: NextFunction) => {
