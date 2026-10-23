@@ -40,7 +40,7 @@ export default function Home() {
   const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE'>('GRAPH');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
 
@@ -320,6 +320,17 @@ export default function Home() {
             graph={graph}
             onGeneratePossibilities={handleGeneratePossibilities}
             onSelectPossibilityForGraph={handleSelectPossibilityForGraph}
+          />
+        )}
+
+        {activeTab === 'INTELLIGENCE' && (
+          <InvestigationPlanView
+            caseId={currentCase?.id}
+            graph={graph}
+            onHighlightNodes={(ids) => {
+              setHighlightNodeIds(ids);
+              setActiveTab('GRAPH');
+            }}
           />
         )}
       </main>
