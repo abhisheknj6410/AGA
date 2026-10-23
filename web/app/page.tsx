@@ -40,7 +40,7 @@ export default function Home() {
   const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [possibilities, setPossibilities] = useState<Possibility[]>([]);
   const [selectedElement, setSelectedElement] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION'>('GRAPH');
+  const [activeTab, setActiveTab] = useState<'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE'>('GRAPH');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
 
@@ -85,8 +85,7 @@ export default function Home() {
         const caseList = await fetchCases();
         setCases(caseList);
         if (caseList.length > 0) {
-          const preferredCase = caseList.find(c => c.id === 'case-simple-laptop-theft') || caseList[0];
-          setCurrentCase(preferredCase);
+          setCurrentCase(caseList[0]);
         }
       } catch (err) {
         console.warn("Failed to fetch initial cases", err);
@@ -333,14 +332,6 @@ export default function Home() {
               setActiveTab('GRAPH');
             }}
           />
-        )}
-
-        {activeTab === 'EVALUATION' && (
-          <EvaluationLabView />
-        )}
-
-        {activeTab === 'RESOLUTION' && currentCase && (
-          <ResolutionLabView currentCase={currentCase} />
         )}
       </main>
 

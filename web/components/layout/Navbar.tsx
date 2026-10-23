@@ -43,8 +43,8 @@ interface NavbarProps {
   currentCase: Case | null;
   onSelectCase: (c: Case) => void;
   onNewCase: () => void;
-  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION';
-  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE' | 'EVALUATION' | 'RESOLUTION') => void;
+  activeTab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE';
+  onTabChange: (tab: 'GRAPH' | 'CHAT' | 'INGEST' | 'POSSIBILITIES' | 'INTELLIGENCE') => void;
   onAddNode: (category: 'ENTITY' | 'EVENT' | 'EVIDENCE') => void;
   onAddEdge: () => void;
   possibilityCount: number;
@@ -117,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="h-6 px-1.5 text-xs text-slate-600 dark:text-zinc-400 font-medium hover:text-slate-900"
                   endContent={<ChevronDown className="w-3 h-3 text-slate-400 opacity-60" />}
                 >
-                  <span className="truncate max-w-[260px] font-semibold text-slate-800 dark:text-zinc-200">
+                  <span className="truncate max-w-[120px]">
                     {currentCase?.name || 'Select Case'}
                   </span>
                 </Button>
@@ -132,24 +132,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   if (found) onSelectCase(found);
                 }}
               >
-                {[...cases].sort((a, b) => {
-                  const aHasAlibi = a.id.includes('laptop') || a.id.includes('meridian');
-                  const bHasAlibi = b.id.includes('laptop') || b.id.includes('meridian');
-                  if (aHasAlibi && !bHasAlibi) return -1;
-                  if (!aHasAlibi && bHasAlibi) return 1;
-                  return 0;
-                }).map((c) => {
-                  const hasAlibi = c.id.includes('laptop') || c.id.includes('meridian') || c.description?.toLowerCase().includes('alibi');
-                  return (
-                    <DropdownItem
-                      key={c.id}
-                      description={c.description || 'Forensic investigation'}
-                      startContent={hasAlibi ? <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-bold">ALIBI</span> : null}
-                    >
-                      {c.name}
-                    </DropdownItem>
-                  );
-                })}
+                {cases.map((c) => (
+                  <DropdownItem key={c.id} description={c.description || 'Forensic investigation'}>
+                    {c.name}
+                  </DropdownItem>
+                ))}
               </DropdownMenu>
             </Dropdown>
 
@@ -231,24 +218,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" />
                 <span>Next Steps</span>
-              </div>
-            }
-          />
-          <Tab
-            key="EVALUATION"
-            title={
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Accuracy Tests</span>
-              </div>
-            }
-          />
-          <Tab
-            key="RESOLUTION"
-            title={
-              <div className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>Case Clarity</span>
               </div>
             }
           />
