@@ -26,7 +26,7 @@ export interface ActionJustification {
   isJustified: boolean;
   epistemicStatus: EpistemicStatus;
   unresolvedGap: string;
-  falsePositiveRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+  falsePositiveRisk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   justificationReason: string;
   graphBasis: string;
   expectedInformationGain: number;

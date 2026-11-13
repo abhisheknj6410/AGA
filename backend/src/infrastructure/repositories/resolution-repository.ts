@@ -11,14 +11,14 @@ export class ResolutionRepository {
     `);
     stmt.run(
       candidate.id,
-      candidate.caseId,
+      candidate.caseId || null,
       candidate.sourceNodeId,
       candidate.targetNodeId,
       candidate.matchType,
       candidate.similarityScore,
       candidate.reason,
-      candidate.status,
-      candidate.createdAt
+      candidate.status || 'PENDING',
+      candidate.createdAt || new Date().toISOString()
     );
   }
 

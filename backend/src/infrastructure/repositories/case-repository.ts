@@ -14,8 +14,8 @@ export class CaseRepository {
       caseData.name,
       caseData.description || '',
       caseData.status,
-      caseData.createdAt,
-      caseData.updatedAt
+      caseData.createdAt || new Date().toISOString(),
+      caseData.updatedAt || caseData.createdAt || new Date().toISOString()
     );
   }
 

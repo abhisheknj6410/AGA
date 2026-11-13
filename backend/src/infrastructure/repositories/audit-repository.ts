@@ -11,7 +11,7 @@ export class AuditRepository {
     `);
     stmt.run(
       entry.id,
-      entry.caseId,
+      entry.caseId || null,
       entry.who,
       entry.action,
       entry.objectType,

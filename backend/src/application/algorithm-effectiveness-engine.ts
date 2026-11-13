@@ -72,8 +72,8 @@ export class AlgorithmEffectivenessEngine {
       downstreamExplanation = "Bypassing Yen's K-Shortest Paths eliminates all alternative corridor hypotheses. The possibility space collapses, pruning downstream structural families, resolution candidates, and investigation actions.";
 
     } else if (normalizedAlg.includes('temporal') || normalizedAlg.includes('kahn') || normalizedAlg.includes('chronology')) {
-      const defaultSourceId = normalPossibilities[0]?.nodes?.[0]?.id;
-      const defaultTargetId = normalPossibilities[0]?.nodes?.[normalPossibilities[0].nodes.length - 1]?.id;
+      const defaultSourceId = baseGraph.nodes[0]?.id;
+      const defaultTargetId = baseGraph.nodes[baseGraph.nodes.length - 1]?.id;
 
       // Ablate Temporal Validation: allow temporally inverted paths to be accepted as VALID
       const ablatedResult = this.possibilityEngine.generatePossibilities(caseId, baseGraph, [], {
@@ -441,8 +441,9 @@ export class AlgorithmEffectivenessEngine {
         caseId: 'synth-bench',
         source: `synth-node-${i}`,
         target: `synth-node-${i + 1}`,
-        type: 'TRANSIT',
-        status: 'VERIFIED',
+        type: 'CONNECTED_TO',
+        status: 'OBSERVED',
+        cost: 1.0,
         createdAt: now,
         updatedAt: now
       });
@@ -454,8 +455,9 @@ export class AlgorithmEffectivenessEngine {
           caseId: 'synth-bench',
           source: `synth-node-${i}`,
           target: `synth-node-${i + 2}`,
-          type: 'BYPASS',
-          status: 'ASSUMED',
+          type: 'CONNECTED_TO',
+          status: 'HYPOTHESIZED',
+          cost: 1.5,
           createdAt: now,
           updatedAt: now
         });

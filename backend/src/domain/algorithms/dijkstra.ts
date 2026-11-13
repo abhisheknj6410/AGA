@@ -1,4 +1,4 @@
-import { GraphNode, GraphEdge } from '../types.js';
+import { GraphNode, GraphEdge, NodeCategory } from '../types.js';
 
 export interface PathResult {
   sourceId: string;
@@ -6,7 +6,7 @@ export interface PathResult {
   totalCost: number;
   nodeIds: string[];
   edgeIds: string[];
-  nodes: Array<{ id: string; label: string; category: string; type: string; time?: any }>;
+  nodes: Array<{ id: string; label: string; category: NodeCategory; type: string; time?: any }>;
   edges: Array<{ id: string; type: string; cost: number; status: string }>;
 }
 

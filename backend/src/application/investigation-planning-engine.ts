@@ -19,7 +19,7 @@ import {
   InvestigationPlanGraph,
   InvestigationPlan
 } from '../domain/planning-types.js';
-import { ResolutionCandidate, StructuralFamily, ContradictionImpact } from '../domain/resolution-types.js';
+import { ResolutionCandidate, StructuralFamily, ContradictionImpact, ResolutionReasoningResult } from '../domain/resolution-types.js';
 
 export class InvestigationPlanningEngine {
   constructor(
@@ -266,12 +266,12 @@ export class InvestigationPlanningEngine {
           id: contraActId,
           targetCandidateId: contra.contradictionId,
           targetType: 'EVIDENCE',
-          targetLabel: `Contradiction: ${contra.conflictingEvidence.map(e => e.label).join(' vs ')}`,
+          targetLabel: `Contradiction: ${contra.conflictingEvidence.map((e: any) => e.label).join(' vs ')}`,
           targetPossibilities: affected,
-          targetFamilies: Array.from(new Set(affected.map(pid => pToFamily.get(pid)).filter(Boolean) as string[])),
+          targetFamilies: Array.from(new Set(affected.map((pid: string) => pToFamily.get(pid)).filter(Boolean) as string[])),
           question: `Arbitrate contradiction between '${contra.conflictingEvidence[0]?.label}' and '${contra.conflictingEvidence[1]?.label}' via authoritative audit records.`,
           evidenceClasses: ['LOG', 'SYSTEM_RECORD'],
-          requiredEntities: contra.conflictingEvidence.map(e => ({ id: e.id, label: e.label, role: 'Disputed Evidence Node' })),
+          requiredEntities: contra.conflictingEvidence.map((e: any) => ({ id: e.id, label: e.label, role: 'Disputed Evidence Node' })),
           graphBasis: 'CONTRADICTION_ARBITRATION',
           algorithmBasis: 'Contradiction Subgraph Arbitration',
           expectedPartitions: {
@@ -283,7 +283,7 @@ export class InvestigationPlanningEngine {
               unknownSet: [],
               probability: probAffected,
               resultingPossibilityCount: affected.length,
-              resultingFamilyCount: new Set(affected.map(pid => pToFamily.get(pid)).filter(Boolean)).size
+              resultingFamilyCount: new Set(affected.map((pid: string) => pToFamily.get(pid)).filter(Boolean)).size
             },
             REFUTED: {
               outcome: 'REFUTED',
@@ -293,7 +293,7 @@ export class InvestigationPlanningEngine {
               unknownSet: [],
               probability: probUnaffected,
               resultingPossibilityCount: unaffected.length,
-              resultingFamilyCount: new Set(unaffected.map(pid => pToFamily.get(pid)).filter(Boolean)).size
+              resultingFamilyCount: new Set(unaffected.map((pid: string) => pToFamily.get(pid)).filter(Boolean)).size
             },
             CONFLICTING: {
               outcome: 'CONFLICTING',
@@ -542,7 +542,7 @@ export class InvestigationPlanningEngine {
     actions.push({
       id: 'ACT-RECOVERY-01',
       targetCandidateId: 'CAND-RECOVERY',
-      targetType: 'ENTITY',
+      targetType: 'NODE',
       targetLabel: targetItem ? `Asset Recovery: ${targetItem.label}` : 'Asset Recovery & Search Warrant',
       targetPossibilities: possIds,
       targetFamilies: ['FAM-PRIMARY'],
@@ -811,9 +811,9 @@ export class InvestigationPlanningEngine {
     // Inspect target node in baseGraph if available
     const node = baseGraph.nodes.find(n => n.id === cand.targetEntities[0]);
     if (node) {
-      if (node.category === 'LOCATION') return 'CCTV';
+      if (node.type === 'LOCATION') return 'CCTV';
       if (node.category === 'EVENT') return 'LOG';
-      if (node.category === 'PERSON') return 'PHONE_RECORD';
+      if (node.type === 'PERSON') return 'PHONE_RECORD';
     }
 
     return 'LOG';
@@ -824,7 +824,7 @@ export class InvestigationPlanningEngine {
     for (const entId of cand.targetEntities) {
       const node = baseGraph.nodes.find(n => n.id === entId);
       if (node?.metadata?.temporalInterval) {
-        const ti = node.metadata.temporalInterval;
+        const ti = node.metadata.temporalInterval as any;
         return {
           start: ti.startTime,
           end: ti.endTime,
@@ -841,7 +841,7 @@ export class InvestigationPlanningEngine {
         const otherId = edge.source === entId ? edge.target : edge.source;
         const otherNode = baseGraph.nodes.find(n => n.id === otherId);
         if (otherNode?.metadata?.temporalInterval) {
-          const ti = otherNode.metadata.temporalInterval;
+          const ti = otherNode.metadata.temporalInterval as any;
           return {
             start: ti.startTime,
             end: ti.endTime,

@@ -210,8 +210,8 @@ export class CourtPacketService {
         name: caseData.name,
         description: caseData.description,
         status: caseData.status,
-        createdAt: caseData.createdAt,
-        updatedAt: caseData.updatedAt
+        createdAt: caseData.createdAt || new Date().toISOString(),
+        updatedAt: caseData.updatedAt || new Date().toISOString()
       },
       provenanceMetrics: {
         totalEntities: entityNodes.length,

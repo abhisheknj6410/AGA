@@ -197,16 +197,17 @@ export interface ResolutionCandidate {
 }
 
 export interface GraphPayload {
+  caseId?: string;
   nodes: GraphNode[];
   edges: GraphEdge[];
-  metadata: {
+  metadata?: {
     caseId?: string;
-    nodeCount: number;
-    edgeCount: number;
-    entityCount: number;
-    eventCount: number;
-    evidenceCount: number;
-    generatedAt: string;
+    nodeCount?: number;
+    edgeCount?: number;
+    entityCount?: number;
+    eventCount?: number;
+    evidenceCount?: number;
+    generatedAt?: string;
   };
 }
 

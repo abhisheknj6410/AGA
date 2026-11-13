@@ -258,7 +258,7 @@ export class InvestigationDecisionEngine {
           };
         }
         if (n.metadata?.temporalInterval) {
-          const ti = n.metadata.temporalInterval;
+          const ti = n.metadata.temporalInterval as any;
           return {
             start: ti.startTime,
             end: ti.endTime,

@@ -109,7 +109,7 @@ export class PossibilityEngine {
 
       kPaths.paths.forEach((path, idx) => {
         const pathEdges = baseGraph.edges.filter(e => path.edgeIds.includes(e.id));
-        const candidateSummary = `${path.nodes[0]?.label} → ${path.nodes.slice(1, -1).map(n => n.label).join(' → ')} → ${path.nodes[path.nodes.length - 1]?.label}`;
+        const candidateSummary = `${path.nodes[0]?.label} → ${path.nodes.slice(1, -1).map((n: any) => n.label).join(' → ')} → ${path.nodes[path.nodes.length - 1]?.label}`;
 
         // Step 1: Temporal Chronology Check
         if (options.disableTemporalValidation !== true) {
@@ -173,7 +173,7 @@ export class PossibilityEngine {
             phase: 'TEMPORAL_VALIDATION',
             algorithm: 'TEMPORAL_CHRONOLOGY_CHECK',
             status: 'PASSED',
-            detail: `Verified monotonic event timestamps along path (${path.nodes.filter(n => n.category === 'EVENT').length} events).`,
+            detail: `Verified monotonic event timestamps along path (${path.nodes.filter((n: any) => n.category === 'EVENT').length} events).`,
             timestamp: new Date().toISOString()
           },
           {
@@ -202,7 +202,7 @@ export class PossibilityEngine {
           status: 'VALID',
           generationMethod: 'ALTERNATIVE_PATHS',
           assumptions: [
-            `Path relies on sequence: ${path.nodes.map(n => n.label).join(' → ')}`,
+            `Path relies on sequence: ${path.nodes.map((n: any) => n.label).join(' → ')}`,
             `Traverses ${path.edgeIds.length} directed relationships`
           ],
           graphChanges: {

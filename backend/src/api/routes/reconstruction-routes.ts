@@ -52,13 +52,13 @@ export function createReconstructionRouter(graphService: GraphService): Router {
             edgeType: edge.type,
             status: edge.status,
             supportingFacts: [],
-            sourceEvidences: edge.evidenceRefs.map(ref => ({
+            sourceEvidences: (edge.evidenceRefs || []).map(ref => ({
               id: ref,
               name: `Evidence ${ref}`,
               kind: 'SYSTEM',
               reference: `Citation for ${ref}`
             })),
-            derivationChain: [`Directly linked to evidence: ${edge.evidenceRefs.join(', ')}`],
+            derivationChain: [`Directly linked to evidence: ${(edge.evidenceRefs || []).join(', ')}`],
             isDirectlyObserved: edge.status === 'OBSERVED',
             isInference: edge.status === 'DERIVED'
           });

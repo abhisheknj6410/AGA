@@ -42,7 +42,7 @@ export function seedSimpleCase(db: DatabaseSync): string {
     category: 'EVIDENCE',
     type: 'DOCUMENT',
     label: 'Electronic Keycard Audit Log',
-    source: { name: 'keycard_logs_oct20.csv', kind: 'FILE', reference: 'LOG-SERVER-01' },
+    source: { name: 'keycard_logs_oct20.csv', kind: 'SYSTEM', reference: 'LOG-SERVER-01' },
     reliability: 1.0,
     collectionTime: '2026-10-20T10:02:00Z',
     properties: { format: 'CSV' }

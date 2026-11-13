@@ -13,7 +13,7 @@ export class GraphExporter {
       '  <key id="d_rel_type" for="edge" attr.name="type" attr.type="string"/>',
       '  <key id="d_status" for="edge" attr.name="status" attr.type="string"/>',
       '  <key id="d_cost" for="edge" attr.name="cost" attr.type="double"/>',
-      `  <graph id="${graph.metadata.caseId}" edgedefault="directed">`
+      `  <graph id="${graph.caseId || graph.metadata?.caseId || 'graph'}" edgedefault="directed">`
     ];
 
     for (const node of graph.nodes) {

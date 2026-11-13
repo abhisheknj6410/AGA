@@ -1,6 +1,6 @@
 import { CaseReasoningPipeline } from '../case-reasoning-pipeline.js';
 import { EvidenceReconstructionEngine } from '../evidence-reconstruction-engine.js';
-import { EvidenceFact } from '../../domain/evidence-types.js';
+import { EvidenceFact } from '../../domain/reconstruction-types.js';
 import { PipelineVariant, SyntheticBenchmarkCase, PipelineEvaluationResult, CaseEvaluationReport } from './evaluation-types.js';
 
 export class EndToEndEvaluationEngine {
@@ -119,8 +119,8 @@ export class EndToEndEvaluationEngine {
       validPossibilitiesRetained,
       invalidPossibilitiesEliminated,
       contradictionsDetected: report.branches.length > 1 ? report.branches.length : 0,
-      structuralDistinctionsDiscovered: report.branchComparison?.resolutionCandidates.length || 0,
-      resolutionCandidates: report.branchComparison?.resolutionCandidates.length || 0,
+      structuralDistinctionsDiscovered: report.branchComparison?.differingResolutions.length || 0,
+      resolutionCandidates: report.branchComparison?.differingResolutions.length || 0,
       investigationActions: report.commonConclusions.universalActions.length,
       entropyReduction: 0,
       unsupportedConclusions: report.provenanceCoveragePercent < 100 ? 1 : 0,

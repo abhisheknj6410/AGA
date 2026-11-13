@@ -12,14 +12,14 @@ export class NodeRepository {
     `);
     insertNode.run(
       node.id,
-      node.caseId,
+      node.caseId || null,
       node.category,
       node.type,
       node.label,
       JSON.stringify(node.properties || {}),
       JSON.stringify(node.metadata || {}),
-      node.createdAt,
-      node.updatedAt
+      node.createdAt || new Date().toISOString(),
+      node.updatedAt || null
     );
 
     // 2. Insert category-specific extension
@@ -107,9 +107,9 @@ export class NodeRepository {
       node.label,
       JSON.stringify(node.properties || {}),
       JSON.stringify(node.metadata || {}),
-      node.updatedAt,
+      node.updatedAt || null,
       node.id,
-      node.caseId
+      node.caseId || null
     );
 
     if (node.category === 'EVENT' && node.time) {
