@@ -581,16 +581,16 @@ export class AiExtractionService {
         .map(m => m[1])
         .filter(p => !['Incident Report', 'Police Department', 'Metropolitan Police', 'Case Ref', 'Pier Wharf', 'Starlight Diner', 'Ford Transit', 'Dodge Charger', 'West Wharf'].includes(p));
 
-      const locMatch = sentence.match(/\b(?:at|in|near|to|from)\s+(?:the\s+)?([A-Z0-9][A-Za-z0-9_\s-]*?(?:Wharf|Diner|Gate|Depository|Corridor|Vault|Room(?:\s+\d+)?|Floor|Boulevard|Street|Avenue|Plaza|Sector(?:\s+\d+)?|Building|Dock|Office|Depot))\b/i);
+      const locMatch = sentence.match(/\b(?:at|in|near|to|from)\s+(?:the\s+)?([A-Za-z0-9_\s-]*?(?:college|campus|university|school|lab|laboratory|library|classroom|dorm|office|building|hall|room|bank|store|shop|house|apartment|hospital|warehouse|facility|wharf|diner|gate|depository|corridor|vault|floor|boulevard|street|avenue|plaza|sector|dock|depot))\b/i);
       const locName = locMatch ? locMatch[1].trim() : null;
 
       const vehicleMatch = sentence.match(/\b((?:[a-z0-9-]+\s+){0,3}(?:van|sedan|truck|courier|car|vehicle))\b/i);
       const vehicleName = vehicleMatch ? vehicleMatch[1].replace(/^(?:into|by|in|from|a|an|the)\s+/i, '').trim() : null;
 
-      const devMatch = sentence.match(/\b((?:[A-Za-z0-9-]+\s+){0,2}(?:cell tower|mobile device|camera|CCTV|terminal|server|reader))\b/i);
-      const deviceName = devMatch ? devMatch[1].trim() : null;
+      const devMatch = sentence.match(/\b((?:[A-Za-z0-9-]+\s+){0,2}(?:laptop|desktop|computer|pc|phone|smartphone|tablet|drive|usb|hard drive|badge|keycard|camera|CCTV|terminal|server|reader|device|cell tower))\b/i);
+      const deviceName = devMatch ? devMatch[1].replace(/^(?:into|by|in|from|a|an|the)\s+/i, '').trim() : null;
 
-      const hasAction = /\b(executed|arrived|disabled|unlocked|entered|discharged|breached|seized|loaded|accelerated|captured|switched|moved|claims|logged|connecting to|contradicting|swiped|took|stole|drove)\b/i.test(sentence);
+      const hasAction = /\b(stolen|stole|theft|robbed|breached|hacked|taken|compromised|damaged|accessed|removed|lost|missing|executed|arrived|disabled|unlocked|entered|discharged|seized|loaded|accelerated|captured|switched|moved|claims|logged|connecting to|contradicting|swiped|took|drove)\b/i.test(sentence);
 
       if (people.length > 0 || locName || vehicleName || deviceName || hasAction) {
         const eventId = `ev-gen-${uuidv4().slice(0, 8)}`;
