@@ -20,7 +20,15 @@ export function seedDatabase(customDb?: any): { caseId: string } {
   const caseService = new CaseService(db);
   const graphService = new GraphService(db);
 
-  // Always ensure multi-domain large cases are seeded
+  // Check if primary seed case already exists
+  const existingCases = caseService.listCases();
+  const found = existingCases.find(c => c.name === 'Unauthorized Database Access');
+  if (found) {
+    console.log(`[Seed] Database already seeded (Primary case ID: ${found.id})`);
+    return { caseId: found.id };
+  }
+
+  // Ensure multi-domain large cases are seeded
   try {
     const possibilityRepo = new PossibilityRepository(db);
     const algorithmRepo = new AlgorithmRepository(db);
@@ -31,14 +39,6 @@ export function seedDatabase(customDb?: any): { caseId: string } {
     seedOperationGrandMeridian(db, possibilityEngine);
   } catch (err) {
     console.error('Failed to seed multi-domain or physical heist cases:', err);
-  }
-
-  // Check if primary seed case already exists
-  const existingCases = caseService.listCases();
-  const found = existingCases.find(c => c.name === 'Unauthorized Database Access');
-  if (found) {
-    console.log(`Seed case already exists with ID: ${found.id}`);
-    return { caseId: found.id };
   }
 
   // 1. Create Investigation Case
