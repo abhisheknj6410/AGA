@@ -35,7 +35,7 @@ export class TemporalAnalysisAlgorithm {
   /**
    * Verifies that all timestamped events along a path follow chronological order (t_i <= t_{i+1}).
    */
-  static validatePathChronology(pathNodes: GraphNode[]): TemporalPathValidation {
+  static validatePathChronology(pathNodes: Array<{ id: string; label: string; category: string; type?: string; time?: any }>): TemporalPathValidation {
     const events = pathNodes.filter(n => n.category === 'EVENT' && n.time?.start);
     const violations: TemporalPathValidation['violations'] = [];
 

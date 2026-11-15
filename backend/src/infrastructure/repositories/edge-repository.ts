@@ -11,7 +11,7 @@ export class EdgeRepository {
     `);
     insertEdge.run(
       edge.id,
-      edge.caseId,
+      edge.caseId || null,
       edge.source,
       edge.target,
       edge.type,
@@ -19,8 +19,8 @@ export class EdgeRepository {
       edge.cost ?? 1.0,
       edge.confidence ?? null,
       JSON.stringify(edge.properties || {}),
-      edge.createdAt,
-      edge.updatedAt
+      edge.createdAt || new Date().toISOString(),
+      edge.updatedAt || null
     );
 
     // Insert evidence references
@@ -126,9 +126,9 @@ export class EdgeRepository {
       edge.cost ?? 1.0,
       edge.confidence ?? null,
       JSON.stringify(edge.properties || {}),
-      edge.updatedAt,
+      edge.updatedAt || null,
       edge.id,
-      edge.caseId
+      edge.caseId || null
     );
 
     // Refresh evidence refs

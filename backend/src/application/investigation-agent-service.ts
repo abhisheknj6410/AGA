@@ -1,4 +1,6 @@
 import { GraphPayload, GraphNode } from '../domain/types.js';
+import { InvestigationPlan } from '../domain/planning-types.js';
+import { GraphDelta } from '../domain/possibility-types.js';
 import { PossibilityRepository } from '../infrastructure/repositories/possibility-repository.js';
 import { GraphAnalysisEngine } from './graph-analysis-engine.js';
 import { PossibilityEngine } from './possibility-engine.js';
@@ -451,7 +453,7 @@ export class InvestigationAgentService {
       }
 
       if (plan && plan.actions.length > 0) {
-        const topActions = plan.actions.slice(0, 4).map((a, i) =>
+        const topActions = plan.actions.slice(0, 4).map((a: any, i: number) =>
           `${i + 1}. **Action ${a.id}**: ${a.question}\n` +
           `   - Target: ${a.targetLabel} (${a.targetType})\n` +
           `   - Graph Basis: ${a.graphBasis} (${a.algorithmBasis})\n` +
@@ -1144,9 +1146,9 @@ export class InvestigationAgentService {
         intent: 'INVARIANTS_ACROSS_VERSIONS',
         algorithmUsed: 'COMMON_INVARIANTS_ENGINE',
         factualAnswer: `Invariants remaining universal across all ${valid.length} surviving possibilities:\n\n` +
-          `• Common Entities & Events: ${invariants.nodes.map(n => n.label).join(', ')}\n` +
-          `• Common Provenance: ${invariants.evidence.map(e => e.label).join(', ') || 'None'}\n` +
-          `• Common Directed Relationships: ${invariants.edges.length} edges remain structurally required regardless of branch evolution.`,
+          `• Common Entities & Events: ${invariants.commonNodes.map((n: any) => n.label).join(', ')}\n` +
+          `• Common Provenance: ${invariants.commonEvidenceRefs.join(', ') || 'None'}\n` +
+          `• Common Directed Relationships: ${invariants.commonEdges.length} edges remain structurally required regardless of branch evolution.`,
         structuredData: { invariants },
         suggestedFollowUps: [
           'What structurally distinguishes the possibilities?',

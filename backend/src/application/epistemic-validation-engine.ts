@@ -320,7 +320,7 @@ export class EpistemicValidationEngine {
     const refutedCount = action.expectedPartitions?.REFUTED?.confirmedSet?.length || 0;
 
     let isJustified = true;
-    let falsePositiveRisk: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+    let falsePositiveRisk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
     let unresolvedGap = 'Target cleanly partitions active hypothesis space with positive information gain.';
     let justificationReason = `Valid graph-derived discriminator via ${action.graphBasis}.`;
     let epistemicStatus: EpistemicStatus = 'STRUCTURALLY_SUPPORTED';

@@ -49,7 +49,7 @@ const PROVIDERS: ProviderPreset[] = [
     id: 'gemini',
     name: 'Google Gemini',
     defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    defaultModel: 'gemini-2.5-flash-lite',
+    defaultModel: 'gemini-2.0-flash',
     keyPrefix: 'AIzaSy...',
     keyHint: 'Google AI Studio API Key'
   },
@@ -57,7 +57,7 @@ const PROVIDERS: ProviderPreset[] = [
     id: 'nvidia',
     name: 'NVIDIA NIM',
     defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
-    defaultModel: 'deepseek-ai/deepseek-v4.1-flash',
+    defaultModel: 'deepseek-ai/deepseek-r1',
     keyPrefix: 'nvapi-...',
     keyHint: 'NVIDIA NIM API Key'
   },

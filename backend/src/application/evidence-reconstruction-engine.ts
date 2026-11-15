@@ -40,7 +40,7 @@ export class EvidenceReconstructionEngine {
 
     // 6. Verify Hard Invariant: Every edge must have explicit provenance or labelled inference
     const hardInvariantVerified = acceptedGraph.edges.every(
-      e => e.evidenceRefs.length > 0 || e.status === 'DERIVED' || e.status === 'HYPOTHESIZED'
+      e => (e.evidenceRefs?.length ?? 0) > 0 || e.status === 'DERIVED' || e.status === 'HYPOTHESIZED'
     );
 
     return {
@@ -509,7 +509,7 @@ export class EvidenceReconstructionEngine {
     const traces: EdgeProvenanceTrace[] = [];
 
     for (const e of graph.edges) {
-      const supporting = facts.filter(f => e.evidenceRefs.includes(f.provenance.sourceEvidenceId));
+      const supporting = facts.filter(f => (e.evidenceRefs || []).includes(f.provenance.sourceEvidenceId));
       const sourceNode = graph.nodes.find(n => n.id === e.source) || { id: e.source, label: e.source, category: 'ENTITY' };
       const targetNode = graph.nodes.find(n => n.id === e.target) || { id: e.target, label: e.target, category: 'EVENT' };
 
@@ -799,7 +799,7 @@ export class EvidenceReconstructionEngine {
 
     // Hard Invariant Check: Calculate provenance coverage on accepted graph edges
     const acceptedEdges = result.acceptedGraph.edges;
-    const coveredEdges = acceptedEdges.filter(e => e.evidenceRefs.length > 0 && e.properties.sourceReference);
+    const coveredEdges = acceptedEdges.filter(e => (e.evidenceRefs?.length ?? 0) > 0 && e.properties?.sourceReference);
     const provenanceCoveragePercent = acceptedEdges.length > 0
       ? Number(((coveredEdges.length / acceptedEdges.length) * 100).toFixed(1))
       : 100.0;

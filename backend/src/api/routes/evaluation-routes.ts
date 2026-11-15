@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { EndToEndEvaluationEngine } from '../../application/evaluation/end-to-end-evaluation-engine.js';
 import { CaseReasoningPipeline } from '../../application/case-reasoning-pipeline.js';
 import { SyntheticBenchmarkCase } from '../../application/evaluation/evaluation-types.js';
-import { EvidenceFact } from '../../domain/evidence-types.js';
+import { EvidenceFact } from '../../domain/reconstruction-types.js';
 
 export function createEvaluationRouter(pipeline: CaseReasoningPipeline): Router {
   const router = Router();

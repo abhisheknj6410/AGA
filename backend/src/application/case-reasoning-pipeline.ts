@@ -123,7 +123,7 @@ export class CaseReasoningPipeline {
       const sourceId = this.findSourceId(interp.graph.nodes, interp.graph.edges);
       const targetId = this.findTargetId(interp.graph.nodes, interp.graph.edges, sourceId);
       
-      let reachability = { reachable: true, temporalFailure: false, violations: [] as any[], summary: 'Execution skipped by configuration', shortestTemporalPath: null as any, evidenceRefs: [] as string[] };
+      let reachability = { reachable: true, temporalFailure: false, violations: [] as any[], summary: 'Execution skipped by configuration', shortestTemporalPath: null as any, evidenceRefs: [] as string[], sourceLabel: '', targetLabel: '', validPathsCount: 0 };
       const skipReachability = config?.mode === 'BASELINE' || (config?.mode === 'ABLATION' && config?.disabledAlgorithms?.includes('TEMPORAL_REACHABILITY'));
       
       if (!skipReachability) {
@@ -823,12 +823,12 @@ export class CaseReasoningPipeline {
         stage: 8,
         stageName: 'EPISTEMIC_VALIDATION',
         label: 'Adversarial Epistemic Validation & Triad Checks',
-        summary: `Validated possibilities against over-confidence, false convergence, and disconnected evidence leakage. Stress score: ${primaryBranch.epistemicReport.adversarialStressScore}/100.`,
+        summary: `Validated possibilities against over-confidence, false convergence, and disconnected evidence leakage. Status: ${primaryBranch.epistemicReport.overallStatus}.`,
         inputs: { possibilityCount: primaryBranch.possibilities.length },
         outputs: {
-          overallStatus: primaryBranch.epistemicReport.overallEpistemicStatus,
-          stressScore: primaryBranch.epistemicReport.adversarialStressScore,
-          checksPassed: primaryBranch.epistemicReport.falsePositiveDetections.filter(d => !d.detected).length
+          overallStatus: primaryBranch.epistemicReport.overallStatus,
+          stressScore: Object.values(primaryBranch.epistemicReport.adversarialReport || {}).filter(Boolean).length * 14,
+          checksPassed: primaryBranch.epistemicReport.falsePositiveDetections.length
         },
         reasonForDownstreamChanges: 'Flags uncorroborated corridors and prevents premature epistemic closure.',
         provenanceLinked: true
@@ -893,7 +893,7 @@ export class CaseReasoningPipeline {
     }
 
     // 1. Why do possibilities exist?
-    const primaryBranch = branches.find(b => b.branchStatus === 'ACTIVE') || branches[0];
+    const primaryBranch = branches.find(b => b.branchStatus === 'SURVIVING') || branches[0];
     
     for (const p of primaryBranch.possibilities.slice(0, 3)) {
       catalog.push({
@@ -906,7 +906,7 @@ export class CaseReasoningPipeline {
         supportingFacts: p.supportingEvidence,
         provenanceReferences: p.supportingEvidence,
         algorithmicBasis: 'YEN_K_SHORTEST_PATHS & TOPOLOGICAL_SORT',
-        confidenceOrCoherence: p.confidenceScore
+        confidenceOrCoherence: ((p.algorithmResults?.confidenceScore as number) ?? 1.0)
       });
     }
 
@@ -1003,7 +1003,7 @@ export class CaseReasoningPipeline {
         directAnswer: `Recommended because it targets the highest information-gain distinction (expected entropy reduction: ${topStrategy.expectedEntropyReduction} bits, objective: ${topStrategy.objective}).`,
         structuralRationale: topStrategy.tradeoffSummary.pros.join('; ') || topStrategy.targetedDistinction,
         supportingFacts: topStrategy.targetedPossibilities,
-        provenanceReferences: topStrategy.evidenceTargets.map(t => t.evidenceTarget),
+        provenanceReferences: topStrategy.evidenceTargets.map(t => t.elementId),
         algorithmicBasis: topStrategy.algorithmBasis,
         confidenceOrCoherence: 1.0
       });

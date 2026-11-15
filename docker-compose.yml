@@ -1,0 +1,16 @@
+services:
+  investigation-system:
+    build: .
+    container_name: graphical-investigation-system
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/evidence_graph.db
+    volumes:
+      - db_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  db_data:

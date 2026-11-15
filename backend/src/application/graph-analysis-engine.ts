@@ -133,7 +133,7 @@ export class GraphAnalysisEngine {
       nodes: finalNodes,
       edges: finalEdges,
       metadata: {
-        caseId: baseGraph.metadata.caseId,
+        caseId: baseGraph.caseId || baseGraph.metadata?.caseId,
         nodeCount: finalNodes.length,
         edgeCount: finalEdges.length,
         entityCount: finalNodes.filter(n => n.category === 'ENTITY').length,

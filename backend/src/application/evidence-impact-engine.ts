@@ -109,7 +109,7 @@ export class EvidenceImpactEngine {
       if (!evidenceNode.source || typeof evidenceNode.source !== 'object' || !evidenceNode.source.name) {
         evidenceNode.source = {
           name: (evidenceNode.properties as any)?.source || evidenceNode.metadata?.source || 'Investigator Input',
-          kind: 'INVESTIGATIVE_COLLECTION'
+          kind: 'OTHER'
         };
       }
     }
@@ -626,14 +626,14 @@ export class EvidenceImpactEngine {
 
     // Get expected partition from action if available
     const expectedConfirmed = action.expectedPartitions?.CONFIRMED;
-    const expectedSurvivingIds = expectedConfirmed?.survivingPossibilityIds || [];
-    const expectedEliminatedIds = expectedConfirmed?.eliminatedPossibilityIds || [];
+    const expectedSurvivingIds = expectedConfirmed?.confirmedSet || [];
+    const expectedEliminatedIds = expectedConfirmed?.refutedSet || [];
 
     let predictionAccuracy: 'EXACT' | 'PARTIAL' | 'UNEXPECTED' = 'PARTIAL';
     if (
       expectedSurvivingIds.length > 0 &&
       expectedSurvivingIds.length === survivingIds.length &&
-      expectedSurvivingIds.every(id => survivingIds.includes(id))
+      expectedSurvivingIds.every((id: string) => survivingIds.includes(id))
     ) {
       predictionAccuracy = 'EXACT';
     } else if (survivingIds.length === 0) {

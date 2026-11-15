@@ -144,7 +144,7 @@ test('Graph Exporter - GraphML & DOT Formats', async (t) => {
       type: 'VIDEO',
       label: 'Security Camera Footage Hallway 2',
       evidenceType: 'VIDEO',
-      source: { name: 'Facility DVR', kind: 'CCTV' },
+      source: { name: 'Facility DVR', kind: 'SENSOR' },
       reliability: 0.95,
       hashChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
       properties: {},

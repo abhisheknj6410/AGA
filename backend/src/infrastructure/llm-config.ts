@@ -17,7 +17,7 @@ export interface LlmConfigState {
 export function getActiveLlmConfig(): { apiKey: string; baseUrl: string; model: string } {
   const apiKey = process.env.GEMINI_API_KEY || process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.OPENCODE_ZEN_API_KEY || '';
   const baseUrl = process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai';
-  const model = process.env.LLM_MODEL || 'gemini-2.5-flash-lite';
+  const model = process.env.LLM_MODEL || 'gemini-2.0-flash';
   return { apiKey, baseUrl, model };
 }
 

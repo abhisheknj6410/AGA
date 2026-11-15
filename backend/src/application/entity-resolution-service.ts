@@ -29,7 +29,7 @@ export class EntityResolutionService {
       return { candidatesFlagged: [] };
     }
 
-    const existingNodes = this.nodeRepo.getByCaseId(newNode.caseId);
+    const existingNodes = this.nodeRepo.getByCaseId(newNode.caseId || '');
     const flagged: ResolutionCandidate[] = [];
 
     for (const existing of existingNodes) {
@@ -99,6 +99,8 @@ export class EntityResolutionService {
       const now = new Date().toISOString();
 
       // 1. Preserve aliases in canonical node
+      canonicalNode.properties = canonicalNode.properties || {};
+      duplicateNode.properties = duplicateNode.properties || {};
       const currentAliases = (canonicalNode.properties.aliases as string[]) || [];
       if (!currentAliases.includes(duplicateNode.label)) {
         currentAliases.push(duplicateNode.label);
