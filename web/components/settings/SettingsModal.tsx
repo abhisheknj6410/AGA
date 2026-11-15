@@ -305,7 +305,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Input
               type={showKey ? 'text' : 'password'}
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setApiKey(val);
+                const trimmed = val.trim();
+                if (trimmed.startsWith('AIzaSy') && selectedProvider !== 'gemini') {
+                  handleSelectProvider('gemini');
+                } else if (trimmed.startsWith('nvapi-') && selectedProvider !== 'nvidia') {
+                  handleSelectProvider('nvidia');
+                } else if (trimmed.startsWith('sk-') && selectedProvider === 'gemini') {
+                  handleSelectProvider('openai');
+                }
+              }}
               placeholder={activeConfig?.apiKeyMasked ? `Currently: ${activeConfig.apiKeyMasked}` : currentPreset.keyHint}
               endContent={
                 <button

@@ -138,9 +138,15 @@ export async function testLlmConnection(config: {
 
     if (!res.ok) {
       const errText = await res.text();
+      let hint = '';
+      if (res.status === 400 && baseUrl.includes('googleapis.com') && apiKey.startsWith('sk-')) {
+        hint = ' (Hint: Key starts with "sk-". For Google Gemini, keys start with "AIzaSy...". Switch provider to OpenAI or Custom in the preset list).';
+      } else if (res.status === 401 && baseUrl.includes('openai.com') && !apiKey.startsWith('sk-')) {
+        hint = ' (Hint: OpenAI keys typically start with "sk-").';
+      }
       return {
         success: false,
-        message: `API returned HTTP ${res.status}: ${errText.slice(0, 180)}`
+        message: `API returned HTTP ${res.status}: ${errText.slice(0, 150)}${hint}`
       };
     }
 
