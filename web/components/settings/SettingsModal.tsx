@@ -25,7 +25,8 @@ import {
   Sparkles,
   RefreshCw,
   Sliders,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { fetchSettings, updateSettings, testSettingsConnection } from '../../api/client';
 
@@ -40,6 +41,7 @@ interface ProviderPreset {
   name: string;
   defaultBaseUrl: string;
   defaultModel: string;
+  availableModels: string[];
   keyPrefix: string;
   keyHint: string;
 }
@@ -50,38 +52,43 @@ const PROVIDERS: ProviderPreset[] = [
     name: 'Google Gemini',
     defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     defaultModel: 'gemini-2.0-flash',
+    availableModels: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
     keyPrefix: 'AIzaSy...',
-    keyHint: 'Google AI Studio API Key'
-  },
-  {
-    id: 'nvidia',
-    name: 'NVIDIA NIM',
-    defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
-    defaultModel: 'deepseek-ai/deepseek-r1',
-    keyPrefix: 'nvapi-...',
-    keyHint: 'NVIDIA NIM API Key'
+    keyHint: 'Google AI Studio Key (starts with AIzaSy)'
   },
   {
     id: 'openai',
     name: 'OpenAI',
     defaultBaseUrl: 'https://api.openai.com/v1',
     defaultModel: 'gpt-4o-mini',
-    keyPrefix: 'sk-proj-...',
-    keyHint: 'OpenAI Platform Key'
+    availableModels: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'],
+    keyPrefix: 'sk-...',
+    keyHint: 'OpenAI Platform Key (starts with sk-)'
   },
   {
     id: 'deepseek',
     name: 'DeepSeek Direct',
     defaultBaseUrl: 'https://api.deepseek.com',
     defaultModel: 'deepseek-chat',
+    availableModels: ['deepseek-chat', 'deepseek-reasoner'],
     keyPrefix: 'sk-...',
-    keyHint: 'DeepSeek API Key'
+    keyHint: 'DeepSeek API Key (starts with sk-)'
+  },
+  {
+    id: 'nvidia',
+    name: 'NVIDIA NIM',
+    defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
+    defaultModel: 'deepseek-ai/deepseek-r1',
+    availableModels: ['deepseek-ai/deepseek-r1', 'meta/llama-3.1-70b-instruct'],
+    keyPrefix: 'nvapi-...',
+    keyHint: 'NVIDIA NIM Key (starts with nvapi-)'
   },
   {
     id: 'custom',
     name: 'Local / Ollama / vLLM',
     defaultBaseUrl: 'http://localhost:11434/v1',
     defaultModel: 'llama3:8b',
+    availableModels: ['llama3:8b', 'mistral', 'qwen2.5:7b'],
     keyPrefix: '',
     keyHint: 'Local API Key (or leave empty)'
   }
@@ -191,6 +198,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const currentPreset = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
 
+  // Validation warning if key prefix doesn't match selected provider
+  const keyWarning = (() => {
+    const trimmed = apiKey.trim();
+    if (!trimmed) return null;
+    if (selectedProvider === 'gemini' && trimmed.startsWith('sk-')) {
+      return 'You selected Google Gemini, but your key starts with "sk-". If this is an OpenAI or DeepSeek key, please select OpenAI or DeepSeek above.';
+    }
+    if ((selectedProvider === 'openai' || selectedProvider === 'deepseek') && trimmed.startsWith('AIzaSy')) {
+      return 'You selected OpenAI/DeepSeek, but your key starts with "AIzaSy" (Google Gemini). Please select Google Gemini above.';
+    }
+    if (selectedProvider === 'nvidia' && !trimmed.startsWith('nvapi-')) {
+      return 'NVIDIA NIM API keys typically start with "nvapi-".';
+    }
+    return null;
+  })();
+
   return (
     <Modal
       isOpen={isOpen}
@@ -213,30 +236,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               Forensic Copilot & LLM Settings
             </span>
             <span className="text-xs text-slate-500 font-normal">
-              Configure or change your API keys for Senior Investigator Eve and evidence extraction.
+              Select your AI provider first, then enter your API key and model.
             </span>
           </div>
         </ModalHeader>
 
-        <ModalBody className="p-6 space-y-5">
-          {/* Active Status Badge */}
-          {activeConfig && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/80 dark:border-zinc-700/80 text-xs">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${activeConfig.hasApiKey ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                <span className="font-semibold text-slate-700 dark:text-zinc-300">
-                  Current Engine:
-                </span>
-                <span className="font-mono text-teal-600 dark:text-teal-400">
-                  {activeConfig.model}
-                </span>
-                <span className="text-slate-400">({activeConfig.provider.toUpperCase()})</span>
-              </div>
-              <div className="font-mono text-slate-500 text-[11px]">
-                Key: {activeConfig.apiKeyMasked || 'None'}
-              </div>
+        <ModalBody className="px-6 py-5 space-y-4">
+          {/* Active Config Status Badge */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/60 dark:border-zinc-700/60">
+            <div className="flex items-center gap-2">
+              <div className={`w-2.5 h-2.5 rounded-full ${activeConfig?.hasApiKey ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">
+                {activeConfig?.hasApiKey ? 'Live AI Mode Active' : 'Offline / Local NLP Mode'}
+              </span>
             </div>
-          )}
+            {activeConfig?.hasApiKey && (
+              <Chip size="sm" variant="flat" color="success" className="font-mono text-[10px]">
+                {activeConfig.model}
+              </Chip>
+            )}
+          </div>
 
           {/* Feedback Alerts */}
           {statusNotice && (
@@ -257,11 +276,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             />
           )}
 
-          {/* Provider Preset Selector */}
+          {/* STEP 1: SELECT PROVIDER FIRST */}
           <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-2">
-              Select Provider / Service
-            </label>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[11px] font-bold flex items-center justify-center">1</span>
+              <label className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                Select Your AI Provider
+              </label>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {PROVIDERS.map((prov) => {
                 const isSelected = selectedProvider === prov.id;
@@ -272,15 +294,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClick={() => handleSelectProvider(prov.id)}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       isSelected
-                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 dark:border-teal-500 ring-1 ring-teal-500'
+                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 dark:border-teal-500 ring-2 ring-teal-500'
                         : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 bg-white dark:bg-zinc-800/40'
                     }`}
                   >
                     <div className="font-semibold text-xs text-slate-800 dark:text-zinc-200 flex items-center justify-between">
                       {prov.name}
-                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />}
+                      {isSelected && <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />}
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate mt-0.5 font-mono">
+                    <div className="text-[10px] text-slate-400 truncate mt-1 font-mono">
                       {prov.defaultModel}
                     </div>
                   </button>
@@ -291,52 +313,89 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <Divider />
 
-          {/* API Key Input */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-teal-600" />
-                API Key
+          {/* STEP 2: ENTER KEY & MODEL */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-[11px] font-bold flex items-center justify-center">2</span>
+              <label className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                Enter API Key & Model for {currentPreset.name}
               </label>
-              <span className="text-[10px] text-slate-400">
-                {activeConfig?.hasApiKey ? '(Leave blank to keep existing key)' : '(Required)'}
-              </span>
             </div>
-            <Input
-              type={showKey ? 'text' : 'password'}
-              value={apiKey}
-              onChange={(e) => {
-                const val = e.target.value;
-                setApiKey(val);
-                const trimmed = val.trim();
-                if (trimmed.startsWith('AIzaSy') && selectedProvider !== 'gemini') {
-                  handleSelectProvider('gemini');
-                } else if (trimmed.startsWith('nvapi-') && selectedProvider !== 'nvidia') {
-                  handleSelectProvider('nvidia');
-                } else if (trimmed.startsWith('sk-') && selectedProvider === 'gemini') {
-                  handleSelectProvider('openai');
-                }
-              }}
-              placeholder={activeConfig?.apiKeyMasked ? `Currently: ${activeConfig.apiKeyMasked}` : currentPreset.keyHint}
-              endContent={
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="text-slate-400 hover:text-slate-600 focus:outline-none"
-                >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              }
-              variant="bordered"
-              radius="lg"
-              size="sm"
-            />
-          </div>
 
-          {/* Base URL and Model Inputs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* API Key Input */}
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-teal-600" />
+                  API Key
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {currentPreset.keyPrefix ? `Expected: ${currentPreset.keyPrefix}` : ''}
+                </span>
+              </div>
+              <Input
+                type={showKey ? 'text' : 'password'}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={activeConfig?.apiKeyMasked ? `Currently: ${activeConfig.apiKeyMasked}` : currentPreset.keyHint}
+                endContent={
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
+                variant="bordered"
+                radius="lg"
+                size="sm"
+              />
+              {keyWarning && (
+                <div className="mt-1.5 flex items-start gap-1.5 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-[11px] text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <span>{keyWarning}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Model Selection and Quick Pills */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300 block">
+                  Model Identifier
+                </label>
+                <div className="flex items-center gap-1">
+                  {currentPreset.availableModels.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setModel(m)}
+                      className={`text-[10px] px-2 py-0.5 rounded font-mono transition-colors ${
+                        model === m
+                          ? 'bg-teal-600 text-white font-bold'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                variant="bordered"
+                radius="lg"
+                size="sm"
+                placeholder={currentPreset.defaultModel}
+                className="font-mono text-xs"
+              />
+            </div>
+
+            {/* API Base URL */}
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300 block mb-1.5">
                 API Base URL
               </label>
               <Input
@@ -346,20 +405,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 radius="lg"
                 size="sm"
                 placeholder="https://..."
-                className="font-mono text-xs"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1.5">
-                Model Identifier
-              </label>
-              <Input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                variant="bordered"
-                radius="lg"
-                size="sm"
-                placeholder="gemini-2.5-flash-lite"
                 className="font-mono text-xs"
               />
             </div>
@@ -380,8 +425,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             color="primary"
             isLoading={isTesting}
             onPress={handleTest}
-            startContent={!isTesting && <Sparkles className="w-3.5 h-3.5" />}
-            className="text-xs font-semibold"
+            startContent={!isTesting && <RefreshCw className="w-3.5 h-3.5" />}
+            className="font-semibold text-xs"
           >
             Test Connection
           </Button>
@@ -391,18 +436,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               size="sm"
               variant="light"
               onPress={onClose}
-              className="text-xs font-medium text-slate-500"
+              className="text-xs text-slate-500"
             >
               Cancel
             </Button>
             <Button
               size="sm"
               color="primary"
-              className="bg-teal-600 text-white text-xs font-semibold px-4 shadow-sm"
+              variant="solid"
               isLoading={isSaving}
               onPress={handleSave}
+              className="font-semibold text-xs bg-teal-600 text-white shadow-teal-500/20"
             >
-              Save & Apply
+              Save & Apply Settings
             </Button>
           </div>
         </ModalFooter>
