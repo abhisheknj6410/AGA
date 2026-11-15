@@ -1,11 +1,14 @@
 import { heroui } from "@heroui/theme";
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}"
+    "./web/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./web/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
+    "./web/node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -63,3 +66,5 @@ module.exports = {
     }
   })],
 };
+
+export default config;
